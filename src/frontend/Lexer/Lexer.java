@@ -10,7 +10,7 @@ public class Lexer {
     private String curToken;
     private LexType curType;
     private int lineNum;
-    private final HashMap<String, String> reservedWords = new HashMap<String, String>() {
+    private final HashMap<String, String> reservedWords = new HashMap<>() {
         {
             put("main", "MAINTK");
             put("const", "CONSTTK");
@@ -121,11 +121,41 @@ public class Lexer {
         curToken = identifier;
     }
 
-    private void parseString() {
+    private boolean isLegalLetter(char c) {
+        return (c >= 32 && c <= 126) || (c >= 7 && c <= 12) || (c == 0);
+    }
 
+    private void parseString() {
+        StringBuilder sb = new StringBuilder();
+        do {
+            sb.append(source.charAt(curPos));
+            curPos++;
+        } while (source.charAt(curPos) != '\"' && isLegalLetter(source.charAt(curPos)));
+        sb.append(source.charAt(curPos));
+        curPos++;
+        curType = LexType.STRCON;
+        curToken = sb.toString();
     }
 
     private void parseChar() {
+        StringBuilder sb = new StringBuilder();
+        curPos++;
+        if (isLegalLetter(source.charAt(curPos))) {
+            sb.append(source.charAt(curPos));
+            curPos++;
+        } else {
+            curType = LexType.ERROR;
+            curToken = "";
+        }
+        if (source.charAt(curPos) == '\'') {
+            sb.append(source.charAt(curPos));
+            curPos++;
+            curType = LexType.CHARCON;
+            curToken = sb.toString();
+        } else {
+            curType = LexType.ERROR;
+            curToken = "";
+        }
     }
 
     private void parseSign() {
