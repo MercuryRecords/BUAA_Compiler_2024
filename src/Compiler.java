@@ -11,9 +11,7 @@ public class Compiler {
 
     public static void main(String[] args) {
         try {
-            String content = "";
-            content = new String(Files.readAllBytes(Paths.get(forInput)));
-            // System.out.println(content);
+            String content = new String(Files.readAllBytes(Paths.get(forInput)));
             Lexer lexer = new Lexer(content);
             lexer.analyze(forOutput, forError);
         } catch (IOException e) {

@@ -77,8 +77,55 @@ public class Lexer {
             }
             curPos++;
         }
+        // TODO 四大类和保留字
+        if (Character.isDigit(source.charAt(curPos))) {
+            parseNumber();
+        } else if (Character.isLetter(source.charAt(curPos))) {
+            parseIdentifierOrReservedWord();
+        } else if (source.charAt(curPos) == '\"') {
+            parseString();
+        } else if (source.charAt(curPos) == '\'') {
+            parseChar();
+        } else {
+            parseSign();
+        }
+    }
 
-        parseSign();
+    private void parseNumber() {
+        StringBuilder sb = new StringBuilder();
+        if (source.charAt(curPos) == '0') {
+            sb.append(source.charAt(curPos));
+            curPos++;
+        } else {
+            while (Character.isDigit(source.charAt(curPos))) {
+                sb.append(source.charAt(curPos));
+                curPos++;
+            }
+        }
+        curType = LexType.INTCON;
+        curToken = sb.toString();
+    }
+
+    private void parseIdentifierOrReservedWord() {
+        StringBuilder sb = new StringBuilder();
+        while (Character.isLetterOrDigit(source.charAt(curPos))) {
+            sb.append(source.charAt(curPos));
+            curPos++;
+        }
+        String identifier = sb.toString();
+        if (reservedWords.containsKey(identifier)) {
+            curType = LexType.valueOf(reservedWords.get(identifier));
+        } else {
+            curType = LexType.IDENFR;
+        }
+        curToken = identifier;
+    }
+
+    private void parseString() {
+
+    }
+
+    private void parseChar() {
     }
 
     private void parseSign() {
@@ -210,6 +257,7 @@ public class Lexer {
                     curType = LexType.ERROR;
                 }
             }
+            // TODO '/' 与注释
             default -> {
                 curToken = "";
                 curType = LexType.ERROR;
