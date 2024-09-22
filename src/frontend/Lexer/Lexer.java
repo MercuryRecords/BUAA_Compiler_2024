@@ -39,16 +39,27 @@ public class Lexer {
 
     public void analyze(String forOutput, String forError) {
         StringBuilder res = new StringBuilder();
+        StringBuilder err = new StringBuilder();
         nextToken();
         while (curToken != null) {
-            if (curType != LexType.UNKNOWN)
+            if (curType != LexType.ERROR)
                 res.append(curType).append(" ").append(curToken).append("\n");
+            else if (!curToken.isEmpty()) {
+                err.append(lineNum).append(" a\n");
+            }
             nextToken();
         }
 
         // 将 res 写入 forOutput 文件
         try (FileWriter writer = new FileWriter(forOutput)) {
             writer.write(res.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // 将 err 写入 forError 文件
+        try (FileWriter writer = new FileWriter(forError)) {
+            writer.write(err.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -66,15 +77,56 @@ public class Lexer {
             }
             curPos++;
         }
+
+        parseSign();
+    }
+
+    private void parseSign() {
         switch (source.charAt(curPos)) {
-            // 处理 ! 与 !=
-            /*
             case '!' -> {
-                curToken = "!";
-                curType = LexType.NOT;
                 curPos++;
+                if (source.charAt(curPos) == '=') {
+                    curToken = "!=";
+                    curType = LexType.NEQ;
+                    curPos++;
+                } else {
+                    curToken = "!";
+                    curType = LexType.NOT;
+                }
             }
-            */
+            case '<' -> {
+                curPos++;
+                if (source.charAt(curPos) == '=') {
+                    curToken = "<=";
+                    curType = LexType.LEQ;
+                    curPos++;
+                } else {
+                    curToken = "<";
+                    curType = LexType.LSS;
+                }
+            }
+            case '>' -> {
+                curPos++;
+                if (source.charAt(curPos) == '=') {
+                    curToken = ">=";
+                    curType = LexType.GEQ;
+                    curPos++;
+                } else {
+                    curToken = ">";
+                    curType = LexType.GRE;
+                }
+            }
+            case '=' -> {
+                curPos++;
+                if (source.charAt(curPos) == '=') {
+                    curToken = "==";
+                    curType = LexType.EQL;
+                    curPos++;
+                } else {
+                    curToken = "=";
+                    curType = LexType.ASSIGN;
+                }
+            }
             case '+' -> {
                 curToken = "+";
                 curType = LexType.PLUS;
@@ -90,15 +142,6 @@ public class Lexer {
                 curType = LexType.MULT;
                 curPos++;
             }
-            // 处理注释
-            /*
-            case '/' -> {
-                curToken = "/";
-                curType = LexType.DIVIDE;
-                curPos++;
-            }
-            */
-
             case '%' -> {
                 curToken = "%";
                 curType = LexType.MOD;
@@ -144,9 +187,32 @@ public class Lexer {
                 curType = LexType.RBRACE;
                 curPos++;
             }
+            case '|' -> {
+                curPos++;
+                if (source.charAt(curPos) == '|') {
+                    curToken = "||";
+                    curType = LexType.OR;
+                    curPos++;
+                } else {
+                    curToken = "|";
+                    curType = LexType.ERROR;
+                }
+            }
+            case '&' -> {
+                curPos++;
+                if (source.charAt(curPos) == '&') {
+                    curToken = "&&";
+                    curType = LexType.AND;
+                    curPos++;
+                }
+                else {
+                    curToken = "&";
+                    curType = LexType.ERROR;
+                }
+            }
             default -> {
                 curToken = "";
-                curType = LexType.UNKNOWN;
+                curType = LexType.ERROR;
                 curPos++;
             }
         }
