@@ -129,6 +129,8 @@ public class Lexer {
     }
 
     private char parseEscape() {
+        return source.charAt(curPos);
+        /*
         return switch (source.charAt(curPos)) {
             case 'a' -> '\u0007';
             case 'b' -> '\b';
@@ -142,6 +144,7 @@ public class Lexer {
             case '0' -> '\0';
             default -> 127; // error
         };
+        */
     }
 
     private void parseString() {
@@ -151,6 +154,7 @@ public class Lexer {
                 sb.append(source.charAt(curPos));
                 curPos++;
             } else {
+                sb.append(source.charAt(curPos));
                 curPos++;
                 char ch = parseEscape();
                 if (ch == 127) {
@@ -335,11 +339,51 @@ public class Lexer {
                 }
             }
             // TODO '/' 与注释
+            case '/' -> parseNote();
             default -> {
                 curToken = "";
                 curType = LexType.ERROR;
                 curPos++;
             }
+        }
+    }
+
+    private void parseNote() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(source.charAt(curPos++));
+        if (curPos < source.length() && source.charAt(curPos) == '/') {
+            sb.append(source.charAt(curPos++));
+            while (curPos < source.length() && source.charAt(curPos) != '\n') {
+                sb.append(source.charAt(curPos++));
+            }
+            if (curPos < source.length()) {
+                sb.append(source.charAt(curPos++));
+                lineNum++;
+            }
+            curToken = sb.toString();
+            curType = LexType.NOTE;
+        } else if (curPos < source.length() && source.charAt(curPos) == '*') {
+            sb.append(source.charAt(curPos++));
+            while (curPos < source.length()) {
+                while (curPos < source.length() && source.charAt(curPos) != '*') {
+                    if (source.charAt(curPos) == '\n') {
+                        lineNum++;
+                    }
+                    sb.append(source.charAt(curPos++));
+                }
+                while (curPos < source.length() && source.charAt(curPos) == '*') {
+                    sb.append(source.charAt(curPos++));
+                }
+                if (curPos < source.length() && source.charAt(curPos) == '/') {
+                    sb.append(source.charAt(curPos++));
+                    curToken = sb.toString();
+                    curType = LexType.NOTE;
+                    break;
+                }
+            }
+        } else {
+            curToken = "/";
+            curType = LexType.ERROR;
         }
     }
 }
