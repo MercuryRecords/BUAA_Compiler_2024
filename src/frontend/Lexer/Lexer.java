@@ -77,10 +77,9 @@ public class Lexer {
             }
             curPos++;
         }
-        // TODO 四大类和保留字
         if (Character.isDigit(source.charAt(curPos))) {
             parseNumber();
-        } else if (Character.isLetter(source.charAt(curPos))) {
+        } else if (isIdentifierFirstLetter(source.charAt(curPos))) {
             parseIdentifierOrReservedWord();
         } else if (source.charAt(curPos) == '\"') {
             parseString();
@@ -106,9 +105,13 @@ public class Lexer {
         curToken = sb.toString();
     }
 
+    private boolean isIdentifierFirstLetter(char c) {
+        return Character.isLetter(c) || c == '_';
+    }
+
     private void parseIdentifierOrReservedWord() {
         StringBuilder sb = new StringBuilder();
-        while (Character.isLetterOrDigit(source.charAt(curPos))) {
+        while (Character.isLetterOrDigit(source.charAt(curPos)) || source.charAt(curPos) == '_') {
             sb.append(source.charAt(curPos));
             curPos++;
         }
@@ -122,14 +125,43 @@ public class Lexer {
     }
 
     private boolean isLegalLetter(char c) {
-        return (c >= 32 && c <= 126) || (c >= 7 && c <= 12) || (c == 0);
+        return (c >= 32 && c <= 126) || (c == 0);
+    }
+
+    private char parseEscape() {
+        return switch (source.charAt(curPos)) {
+            case 'a' -> '\u0007';
+            case 'b' -> '\b';
+            case 't' -> '\t';
+            case 'n' -> '\n';
+            case 'v' -> '\u000B';
+            case 'f' -> '\f';
+            case '\"' -> '\"';
+            case '\'' -> '\'';
+            case '\\' -> '\\';
+            case '0' -> '\0';
+            default -> 127; // error
+        };
     }
 
     private void parseString() {
         StringBuilder sb = new StringBuilder();
         do {
-            sb.append(source.charAt(curPos));
-            curPos++;
+            if (source.charAt(curPos) != '\\') {
+                sb.append(source.charAt(curPos));
+                curPos++;
+            } else {
+                curPos++;
+                char ch = parseEscape();
+                if (ch == 127) {
+                    curType = LexType.ERROR;
+                    curToken = "";
+                    return;
+                } else {
+                    sb.append(ch);
+                    curPos++;
+                }
+            }
         } while (source.charAt(curPos) != '\"' && isLegalLetter(source.charAt(curPos)));
         sb.append(source.charAt(curPos));
         curPos++;
@@ -139,13 +171,28 @@ public class Lexer {
 
     private void parseChar() {
         StringBuilder sb = new StringBuilder();
+        sb.append(source.charAt(curPos));
         curPos++;
         if (isLegalLetter(source.charAt(curPos))) {
-            sb.append(source.charAt(curPos));
-            curPos++;
+            if (source.charAt(curPos) != '\\') {
+                sb.append(source.charAt(curPos));
+                curPos++;
+            } else {
+                curPos++;
+                char ch = parseEscape();
+                if (ch == 127) {
+                    curType = LexType.ERROR;
+                    curToken = "";
+                    return;
+                } else {
+                    sb.append(ch);
+                    curPos++;
+                }
+            }
         } else {
             curType = LexType.ERROR;
             curToken = "";
+            return;
         }
         if (source.charAt(curPos) == '\'') {
             sb.append(source.charAt(curPos));
