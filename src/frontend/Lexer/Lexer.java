@@ -66,16 +66,16 @@ public class Lexer {
     }
 
     public void nextToken() {
-        if (curPos >= source.length()) {
-            curToken = null;
-            return;
-        }
         // 更新 curToken 和 curType
-        while (source.charAt(curPos) == ' ' || source.charAt(curPos) == '\t' || source.charAt(curPos) == '\n') {
+        while (curPos < source.length() && (source.charAt(curPos) == ' ' || source.charAt(curPos) == '\t' || source.charAt(curPos) == '\n')) {
             if (source.charAt(curPos) == '\n') {
                 lineNum++;
             }
             curPos++;
+        }
+        if (curPos >= source.length()) {
+            curToken = null;
+            return;
         }
         if (Character.isDigit(source.charAt(curPos))) {
             parseNumber();
@@ -96,7 +96,7 @@ public class Lexer {
             sb.append(source.charAt(curPos));
             curPos++;
         } else {
-            while (Character.isDigit(source.charAt(curPos))) {
+            while (curPos < source.length() && Character.isDigit(source.charAt(curPos))) {
                 sb.append(source.charAt(curPos));
                 curPos++;
             }
@@ -111,7 +111,7 @@ public class Lexer {
 
     private void parseIdentifierOrReservedWord() {
         StringBuilder sb = new StringBuilder();
-        while (Character.isLetterOrDigit(source.charAt(curPos)) || source.charAt(curPos) == '_') {
+        while (curPos < source.length() && (Character.isLetterOrDigit(source.charAt(curPos)) || source.charAt(curPos) == '_')) {
             sb.append(source.charAt(curPos));
             curPos++;
         }
@@ -166,7 +166,7 @@ public class Lexer {
                     curPos++;
                 }
             }
-        } while (source.charAt(curPos) != '\"' && isLegalLetter(source.charAt(curPos)));
+        } while (curPos < source.length() && source.charAt(curPos) != '\"' && isLegalLetter(source.charAt(curPos)));
         sb.append(source.charAt(curPos));
         curPos++;
         curType = LexType.STRCON;
@@ -177,11 +177,12 @@ public class Lexer {
         StringBuilder sb = new StringBuilder();
         sb.append(source.charAt(curPos));
         curPos++;
-        if (isLegalLetter(source.charAt(curPos))) {
+        if (curPos < source.length() && isLegalLetter(source.charAt(curPos))) {
             if (source.charAt(curPos) != '\\') {
                 sb.append(source.charAt(curPos));
                 curPos++;
             } else {
+                sb.append(source.charAt(curPos));
                 curPos++;
                 char ch = parseEscape();
                 if (ch == 127) {
@@ -198,10 +199,10 @@ public class Lexer {
             curToken = "";
             return;
         }
-        if (source.charAt(curPos) == '\'') {
+        if (curPos < source.length() && source.charAt(curPos) == '\'') {
             sb.append(source.charAt(curPos));
             curPos++;
-            curType = LexType.CHARCON;
+            curType = LexType.CHRCON;
             curToken = sb.toString();
         } else {
             curType = LexType.ERROR;
@@ -213,7 +214,7 @@ public class Lexer {
         switch (source.charAt(curPos)) {
             case '!' -> {
                 curPos++;
-                if (source.charAt(curPos) == '=') {
+                if (curPos < source.length() && source.charAt(curPos) == '=') {
                     curToken = "!=";
                     curType = LexType.NEQ;
                     curPos++;
@@ -224,7 +225,7 @@ public class Lexer {
             }
             case '<' -> {
                 curPos++;
-                if (source.charAt(curPos) == '=') {
+                if (curPos < source.length() && source.charAt(curPos) == '=') {
                     curToken = "<=";
                     curType = LexType.LEQ;
                     curPos++;
@@ -235,7 +236,7 @@ public class Lexer {
             }
             case '>' -> {
                 curPos++;
-                if (source.charAt(curPos) == '=') {
+                if (curPos < source.length() && source.charAt(curPos) == '=') {
                     curToken = ">=";
                     curType = LexType.GEQ;
                     curPos++;
@@ -246,7 +247,7 @@ public class Lexer {
             }
             case '=' -> {
                 curPos++;
-                if (source.charAt(curPos) == '=') {
+                if (curPos < source.length() && source.charAt(curPos) == '=') {
                     curToken = "==";
                     curType = LexType.EQL;
                     curPos++;
@@ -317,7 +318,7 @@ public class Lexer {
             }
             case '|' -> {
                 curPos++;
-                if (source.charAt(curPos) == '|') {
+                if (curPos < source.length() && source.charAt(curPos) == '|') {
                     curToken = "||";
                     curType = LexType.OR;
                     curPos++;
@@ -328,7 +329,7 @@ public class Lexer {
             }
             case '&' -> {
                 curPos++;
-                if (source.charAt(curPos) == '&') {
+                if (curPos < source.length() && source.charAt(curPos) == '&') {
                     curToken = "&&";
                     curType = LexType.AND;
                     curPos++;
@@ -383,7 +384,7 @@ public class Lexer {
             }
         } else {
             curToken = "/";
-            curType = LexType.ERROR;
+            curType = LexType.DIV;
         }
     }
 }
