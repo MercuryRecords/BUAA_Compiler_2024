@@ -42,7 +42,7 @@ public class Lexer {
         StringBuilder err = new StringBuilder();
         nextToken();
         while (curToken != null) {
-            if (curType != LexType.ERROR)
+            if (curType != LexType.ERROR && curType != LexType.NOTE)
                 res.append(curType).append(" ").append(curToken).append("\n");
             else if (!curToken.isEmpty()) {
                 err.append(lineNum).append(" a\n");
