@@ -1,4 +1,4 @@
-import frontend.Lexer.Lexer;
+import frontend.Parser.Parser;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -12,8 +12,8 @@ public class Compiler {
     public static void main(String[] args) {
         try {
             String content = new String(Files.readAllBytes(Paths.get(forInput)));
-            Lexer lexer = new Lexer(content);
-            lexer.analyze(forOutput, forError);
+            Parser parser = new Parser(content);
+            parser.analyze(forOutput, forError);
         } catch (IOException e) {
             e.printStackTrace();
         }

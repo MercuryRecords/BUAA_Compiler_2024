@@ -353,10 +353,9 @@ public class Lexer {
         StringBuilder sb = new StringBuilder();
         sb.append(source.charAt(curPos++));
         if (curPos < source.length() && source.charAt(curPos) == '/') {
-            sb.append(source.charAt(curPos++));
-            while (curPos < source.length() && source.charAt(curPos) != '\n') {
+            do {
                 sb.append(source.charAt(curPos++));
-            }
+            } while (curPos < source.length() && source.charAt(curPos) != '\n');
             if (curPos < source.length()) {
                 sb.append(source.charAt(curPos++));
                 lineNum++;
