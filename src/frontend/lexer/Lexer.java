@@ -47,11 +47,13 @@ public class Lexer {
         do {
             try {
                 nextToken();
+                if (curType != LexType.NOTE && curToken != null) {
+                    res.add(new Token(curType, curToken, lineNum));
+                }
             } catch (CompilerException e) {
                 err.append(e).append("\n");
-            }
-            if (curType != LexType.NOTE) {
-                res.add(new Token(curType, curToken, lineNum));
+            } catch (OutOfMemoryError e) {
+                System.out.println("Here");
             }
         } while (curToken != null);
 
@@ -75,7 +77,7 @@ public class Lexer {
 
     public void nextToken() throws CompilerException {
         // 更新 curToken 和 curType
-        while (curPos < source.length() && (source.charAt(curPos) == ' ' || source.charAt(curPos) == '\t' || source.charAt(curPos) == '\n')) {
+        while (curPos < source.length() && (source.charAt(curPos) == ' ' || source.charAt(curPos) == '\t' || source.charAt(curPos) == '\n' || source.charAt(curPos) == '\r')) {
             if (source.charAt(curPos) == '\n') {
                 lineNum++;
             }
@@ -299,7 +301,7 @@ public class Lexer {
                 }
                 else {
                     curToken = "&";
-                    curType = LexType.OR;
+                    curType = LexType.AND;
                     throw new CompilerException(lineNum, "a");
                 }
             }
