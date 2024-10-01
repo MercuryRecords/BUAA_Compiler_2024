@@ -1,4 +1,4 @@
-package frontend.Lexer;
+package frontend.lexer;
 
 // 枚举类
 public enum LexType {
