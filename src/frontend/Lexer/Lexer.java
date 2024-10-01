@@ -1,7 +1,10 @@
 package frontend.Lexer;
 
+import frontend.Token;
+
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Lexer {
@@ -37,24 +40,20 @@ public class Lexer {
         this.lineNum = 1;
     }
 
-    public void analyze(String forOutput, String forError) {
-        StringBuilder res = new StringBuilder();
+    public ArrayList<Token> analyze(String forError) {
+        ArrayList<Token> res = new ArrayList<>();
+        // StringBuilder res = new StringBuilder();
         StringBuilder err = new StringBuilder();
         nextToken();
         while (curToken != null) {
-            if (curType != LexType.ERROR && curType != LexType.NOTE)
-                res.append(curType).append(" ").append(curToken).append("\n");
+            if (curType != LexType.ERROR && curType != LexType.NOTE) {
+                res.add(new Token(curType, curToken, lineNum));
+                // res.append(curType).append(" ").append(curToken).append("\n");
+            }
             else if (!curToken.isEmpty()) {
                 err.append(lineNum).append(" a\n");
             }
             nextToken();
-        }
-
-        // 将 res 写入 forOutput 文件
-        try (FileWriter writer = new FileWriter(forOutput)) {
-            writer.write(res.toString());
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         // 将 err 写入 forError 文件
@@ -63,6 +62,7 @@ public class Lexer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return res;
     }
 
     public void nextToken() {
