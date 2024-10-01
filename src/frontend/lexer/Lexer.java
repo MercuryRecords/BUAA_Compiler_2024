@@ -1,5 +1,6 @@
 package frontend.lexer;
 
+import frontend.CompilerException;
 import frontend.Token;
 
 import java.io.FileWriter;
@@ -40,32 +41,39 @@ public class Lexer {
         this.lineNum = 1;
     }
 
-    public ArrayList<Token> analyze(String forError) {
+    public ArrayList<Token> analyze(String foroutput, String forError) {
         ArrayList<Token> res = new ArrayList<>();
-        // StringBuilder res = new StringBuilder();
         StringBuilder err = new StringBuilder();
-        nextToken();
-        while (curToken != null) {
-            if (curType != LexType.ERROR && curType != LexType.NOTE) {
+        do {
+            try {
+                nextToken();
+            } catch (CompilerException e) {
+                err.append(e).append("\n");
+            }
+            if (curType != LexType.NOTE) {
                 res.add(new Token(curType, curToken, lineNum));
-                // res.append(curType).append(" ").append(curToken).append("\n");
             }
-            else if (!curToken.isEmpty()) {
-                err.append(lineNum).append(" a\n");
+        } while (curToken != null);
+
+        // 将 res 写入 forOutput 文件
+        try (FileWriter writer = new FileWriter(foroutput)) {
+            for (Token token : res) {
+                writer.write(token + "\n");
             }
-            nextToken();
+        } catch (IOException e) {
+            e.printStackTrace(System.out);
         }
 
         // 将 err 写入 forError 文件
         try (FileWriter writer = new FileWriter(forError)) {
             writer.write(err.toString());
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
         return res;
     }
 
-    public void nextToken() {
+    public void nextToken() throws CompilerException {
         // 更新 curToken 和 curType
         while (curPos < source.length() && (source.charAt(curPos) == ' ' || source.charAt(curPos) == '\t' || source.charAt(curPos) == '\n')) {
             if (source.charAt(curPos) == '\n') {
@@ -128,43 +136,14 @@ public class Lexer {
         return (c >= 32 && c <= 126) || (c == 0);
     }
 
-    private char parseEscape() {
-        return source.charAt(curPos);
-        /*
-        return switch (source.charAt(curPos)) {
-            case 'a' -> '\u0007';
-            case 'b' -> '\b';
-            case 't' -> '\t';
-            case 'n' -> '\n';
-            case 'v' -> '\u000B';
-            case 'f' -> '\f';
-            case '\"' -> '\"';
-            case '\'' -> '\'';
-            case '\\' -> '\\';
-            case '0' -> '\0';
-            default -> 127; // error
-        };
-        */
-    }
-
     private void parseString() {
         StringBuilder sb = new StringBuilder();
         do {
-            if (source.charAt(curPos) != '\\') {
+            sb.append(source.charAt(curPos));
+            curPos++;
+            if (curPos < source.length() && source.charAt(curPos - 1) == '\\') {
                 sb.append(source.charAt(curPos));
                 curPos++;
-            } else {
-                sb.append(source.charAt(curPos));
-                curPos++;
-                char ch = parseEscape();
-                if (ch == 127) {
-                    curType = LexType.ERROR;
-                    curToken = "";
-                    return;
-                } else {
-                    sb.append(ch);
-                    curPos++;
-                }
             }
         } while (curPos < source.length() && source.charAt(curPos) != '\"' && isLegalLetter(source.charAt(curPos)));
         sb.append(source.charAt(curPos));
@@ -178,39 +157,22 @@ public class Lexer {
         sb.append(source.charAt(curPos));
         curPos++;
         if (curPos < source.length() && isLegalLetter(source.charAt(curPos))) {
-            if (source.charAt(curPos) != '\\') {
+            sb.append(source.charAt(curPos));
+            curPos++;
+            if (curPos < source.length() && source.charAt(curPos - 1) == '\\') {
                 sb.append(source.charAt(curPos));
                 curPos++;
-            } else {
-                sb.append(source.charAt(curPos));
-                curPos++;
-                char ch = parseEscape();
-                if (ch == 127) {
-                    curType = LexType.ERROR;
-                    curToken = "";
-                    return;
-                } else {
-                    sb.append(ch);
-                    curPos++;
-                }
             }
-        } else {
-            curType = LexType.ERROR;
-            curToken = "";
-            return;
         }
         if (curPos < source.length() && source.charAt(curPos) == '\'') {
             sb.append(source.charAt(curPos));
             curPos++;
             curType = LexType.CHRCON;
             curToken = sb.toString();
-        } else {
-            curType = LexType.ERROR;
-            curToken = "";
         }
     }
 
-    private void parseSign() {
+    private void parseSign() throws CompilerException {
         switch (source.charAt(curPos)) {
             case '!' -> {
                 curPos++;
@@ -324,7 +286,8 @@ public class Lexer {
                     curPos++;
                 } else {
                     curToken = "|";
-                    curType = LexType.ERROR;
+                    curType = LexType.OR;
+                    throw new CompilerException(lineNum, "a");
                 }
             }
             case '&' -> {
@@ -336,16 +299,11 @@ public class Lexer {
                 }
                 else {
                     curToken = "&";
-                    curType = LexType.ERROR;
+                    curType = LexType.OR;
+                    throw new CompilerException(lineNum, "a");
                 }
             }
-            // TODO '/' 与注释
             case '/' -> parseNote();
-            default -> {
-                curToken = "";
-                curType = LexType.ERROR;
-                curPos++;
-            }
         }
     }
 

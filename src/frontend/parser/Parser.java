@@ -12,4 +12,7 @@ public class Parser {
 
     public void analyze(String forOutput, String forError) {
     }
+
+    public void analyze() {
+    }
 }

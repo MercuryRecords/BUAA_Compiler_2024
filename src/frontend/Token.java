@@ -11,4 +11,9 @@ public class Token {
         this.token = curToken;
         this.lineNum = lineNum;
     }
+
+    @Override
+    public String toString() {
+        return type + " " + token;
+    }
 }
