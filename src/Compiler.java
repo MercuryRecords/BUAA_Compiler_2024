@@ -1,5 +1,5 @@
-import frontend.Lexer.Lexer;
-import frontend.Parser.Parser;
+import frontend.lexer.Lexer;
+import frontend.parser.Parser;
 import frontend.Token;
 
 import java.io.IOException;
