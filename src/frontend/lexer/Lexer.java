@@ -1,6 +1,7 @@
 package frontend.lexer;
 
 import frontend.CompilerException;
+import frontend.Reporter;
 import frontend.Token;
 
 import java.io.FileWriter;
@@ -41,9 +42,8 @@ public class Lexer {
         this.lineNum = 1;
     }
 
-    public ArrayList<Token> analyze(String foroutput, String forError) {
+    public ArrayList<Token> analyze(String foroutput) {
         ArrayList<Token> res = new ArrayList<>();
-        StringBuilder err = new StringBuilder();
         do {
             try {
                 nextToken();
@@ -51,9 +51,7 @@ public class Lexer {
                     res.add(new Token(curType, curToken, lineNum));
                 }
             } catch (CompilerException e) {
-                err.append(e).append("\n");
-            } catch (OutOfMemoryError e) {
-                System.out.println("Here");
+                Reporter.REPORTER.add(e);
             }
         } while (curToken != null);
 
@@ -62,13 +60,6 @@ public class Lexer {
             for (Token token : res) {
                 writer.write(token + "\n");
             }
-        } catch (IOException e) {
-            e.printStackTrace(System.out);
-        }
-
-        // 将 err 写入 forError 文件
-        try (FileWriter writer = new FileWriter(forError)) {
-            writer.write(err.toString());
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }
