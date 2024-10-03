@@ -70,13 +70,66 @@ public class Parser {
     }
 
     private ASTNode parseFuncDef() {
+        // <FuncDef> ::= <FuncType> <Ident> '(' [<FuncFParams>] ')' <Block>
+        ASTNode node = new ASTNode("FuncDef");
+        node.addChild(parseFuncType());
+        node.addChild(parseIdent());
+        node.addChild(parseTokenType(LexType.LPARENT));
+        if (!curToken().isType(LexType.RPARENT)) {
+            node.addChild(parseFuncFParams());
+        }
+        node.addChild(parseTokenType(LexType.RPARENT));
+        node.addChild(parseBlock());
+        return node;
+    }
+
+    private ASTNode parseFuncType() {
+        // <FuncType> ::= 'void' | 'int' | 'char'
+        ASTNode node = new ASTNode("FuncType");
+        if (curToken().isType(LexType.VOIDTK) || curToken().isType(LexType.INTTK) || curToken().isType(LexType.CHARTK)) {
+            node.addChild(new LeafASTNode(curToken()));
+            nextToken();
+            return node;
+        }
+        return null;
+    }
+
+    private ASTNode parseBlock() {
+        // <Block> ::= '{' { <BlockItem> } '}'
+        ASTNode node = new ASTNode("Block");
+        node.addChild(parseTokenType(LexType.LBRACE));
+        while (!curToken().isType(LexType.RBRACE)) {
+            node.addChild(parseBlockItem());
+        }
+        node.addChild(parseTokenType(LexType.RBRACE));
+        return node;
+    }
+
+    private ASTNode parseBlockItem() {
+        // <BlockItem> ::= <Decl> | <Stmt>
+        ASTNode node = new ASTNode("BlockItem");
+        if (isDecl()) {
+            node.addChild(parseDecl());
+        } else {
+            node.addChild(parseStmt());
+        }
+        return node;
+    }
+
+    private ASTNode parseStmt() {
         // TODO
         return null;
     }
 
     private ASTNode parseMainFuncDef() {
-        // TODO
-        return null;
+        // <MainFuncDef> ::= 'int' 'main' '(' ')' <Block>
+        ASTNode node = new ASTNode("MainFuncDef");
+        node.addChild(parseTokenType(LexType.INTTK));
+        node.addChild(parseTokenType(LexType.MAINTK));
+        node.addChild(parseTokenType(LexType.LPARENT));
+        node.addChild(parseTokenType(LexType.RPARENT));
+        node.addChild(parseBlock());
+        return node;
     }
 
     private ASTNode parseConstDecl() {
