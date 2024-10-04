@@ -185,6 +185,18 @@ public class Parser {
         return node;
     }
 
+    private boolean isLValEQL() {
+        int lineNum = curToken().lineNum;
+        for (int i = 1; isReachable(i); i++) {
+            if (tokenWithOffset(i).isType(LexType.ASSIGN))
+                return true;
+
+            if (tokenWithOffset(i).lineNum != lineNum || tokenWithOffset(i).isType(LexType.SEMICN))
+                break;
+        }
+        return false;
+    }
+
     private ASTNode parseStmt() {
         /*
            <Stmt> ::= <Block>
@@ -268,30 +280,27 @@ public class Parser {
             if (isReachable(1) && tokenWithOffset(1).isType(LexType.LPARENT)) {
                 // <Ident> '(' [ FuncRParams ] ')'，解析 Exp
                 node.addChild(parseExp());
-                checkSemicn();
-                node.addChild(parseTokenType(LexType.SEMICN));
-            } else  {
+            } else {
                 // 区分 <LVal> 来自 <PrimaryExp> 还是 <LVal> '=' <Exp>
                 // <LVal> ::= <Ident> | <Ident> '[' <Exp> ']'
-                int offset = 1;
-                if (isReachable(1) && tokenWithOffset(1).isType(LexType.LBRACK)) {
-                    // 进行中括号匹配，假设中间一定是合法 <Exp>, 且可构成 <Ident> '[' <Exp> ']' 作为 <LVal>
-                    int cnt = 0;
-                    do {
-                        if (tokenWithOffset(offset).isType(LexType.LBRACK)) {
-                            cnt++;
-                        } else if (tokenWithOffset(offset).isType(LexType.RBRACK)) {
-                            cnt--;
-                        }
-                        offset++;
-                    } while (isReachable(offset) && cnt != 0);
-                    if (cnt != 0) {
-                        // TODO 中括号不匹配，应该报错；情况有点复杂有待考虑
-                        return null;
-                    }
-                }
+//                int offset = 1;
+//                if (isReachable(1) && tokenWithOffset(1).isType(LexType.LBRACK)) {
+//                    // 进行中括号匹配，假设中间一定是合法 <Exp>, 且可构成 <Ident> '[' <Exp> ']' 作为 <LVal>
+//                    int cnt = 0, lineNum = tokenWithOffset(1).lineNum;
+//                    do {
+//                        if (tokenWithOffset(offset).isType(LexType.LBRACK)) {
+//                            cnt++;
+//                        } else if (tokenWithOffset(offset).isType(LexType.RBRACK)) {
+//                            cnt--;
+//                        } else if (tokenWithOffset(offset).isType(LexType.SEMICN) || tokenWithOffset(offset).isType(LexType.ASSIGN)) {
+//                            break;
+//                        }
+//                        offset++;
+//                    } while (isReachable(offset) && cnt != 0 && tokenWithOffset(offset).lineNum == lineNum);
+//                }
                 // 找到 <LVal> 结束处，判断 tokenWithOffset(offset) 是否为 '='
-                if (tokenWithOffset(offset).isType(LexType.ASSIGN)) {
+//                if (tokenWithOffset(offset).isType(LexType.ASSIGN)) {
+                if (isLValEQL()) {
                     node.addChild(parseLVal());
                     node.addChild(parseTokenType(LexType.ASSIGN));
                     // | <LVal> '=' 'getint' '(' ')' ';'
@@ -311,11 +320,12 @@ public class Parser {
                         node.addChild(parseExp());
                     }
                 } else {
+                    // <Exp>
                     node.addChild(parseExp());
                 }
-                checkSemicn();
-                node.addChild(parseTokenType(LexType.SEMICN));
             }
+            checkSemicn();
+            node.addChild(parseTokenType(LexType.SEMICN));
         } else if (curToken().isType(LexType.SEMICN)) {
             checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
@@ -527,12 +537,6 @@ public class Parser {
 
     private ASTNode parseIdent() {
         return parseTokenType(LexType.IDENFR);
-        // ASTNode node = new ASTNode("Ident");
-        // if (curToken().isType(LexType.IDENFR)) {
-        //     node.addChild(parseTokenType(LexType.IDENFR));
-        //     return node;
-        // }
-        // return null;
     }
 
     private ASTNode parseConstExp() {
@@ -613,7 +617,7 @@ public class Parser {
     private ASTNode parseUnaryExp() {
         // <UnaryExp> ::= <PrimaryExp> | <UnaryOp> <UnaryExp> | <Ident> '(' [<FuncFParams>] ')'
         ASTNode node = new ASTNode("UnaryExp");
-        if (curToken().isType(LexType.IDENFR) && tokenWithOffset(1).isType(LexType.LPARENT)) {
+        if (curToken().isType(LexType.IDENFR) && isReachable(1) && tokenWithOffset(1).isType(LexType.LPARENT)) {
             node.addChild(parseIdent());
             node.addChild(parseTokenType(LexType.LPARENT));
             if (!curToken().isType(LexType.RPARENT)) {
@@ -621,16 +625,14 @@ public class Parser {
             }
             checkRparent();
             node.addChild(parseTokenType(LexType.RPARENT));
-        } else if (isPrimaryExp()) {
-            node.addChild(parsePrimaryExp());
         } else if (isUnaryOp()) {
             node.addChild(parseUnaryOp());
             node.addChild(parseUnaryExp());
         } else {
-            node = null;
+            node.addChild(parsePrimaryExp());
         }
 
-        if (OUTPUT && node != null) {
+        if (OUTPUT) {
             sb.append(node.print()).append("\n");
         }
         return node;
@@ -691,20 +693,14 @@ public class Parser {
             node.addChild(parseTokenType(LexType.PLUS));
         } else if (curToken().isType(LexType.MINU)) {
             node.addChild(parseTokenType(LexType.MINU));
-        } else if (curToken().isType(LexType.NOT)) {
-            node.addChild(parseTokenType(LexType.NOT));
         } else {
-            node = null;
+            node.addChild(parseTokenType(LexType.NOT));
         }
 
-        if (OUTPUT && node != null) {
+        if (OUTPUT) {
             sb.append(node.print()).append("\n");
         }
         return node;
-    }
-
-    private boolean isPrimaryExp() {
-        return curToken().isType(LexType.LPARENT) || curToken().isType(LexType.IDENFR) || curToken().isType(LexType.INTCON) || curToken().isType(LexType.CHRCON);
     }
 
     private ASTNode parsePrimaryExp() {
@@ -719,13 +715,11 @@ public class Parser {
             node.addChild(parseLVal());
         } else if (curToken().isType(LexType.INTCON)) {
             node.addChild(parseNumber());
-        } else if (curToken().isType(LexType.CHRCON)) {
-            node.addChild(parseChar());
         } else {
-            node = null;
+            node.addChild(parseChar());
         }
 
-        if (OUTPUT && node != null) {
+        if (OUTPUT) {
             sb.append(node.print()).append("\n");
         }
         return node;
@@ -851,7 +845,6 @@ public class Parser {
         } else {
             node.addChild(parseExp());
         }
-
         if (OUTPUT) {
             sb.append(node.print()).append("\n");
         }
@@ -859,14 +852,10 @@ public class Parser {
     }
 
     private ASTNode parseTokenType(LexType type) {
-        if (!curToken().isType(type)) {
-            return null;
-        }
-
-        if (OUTPUT) {
+         if (!curToken().isType(type))
+             return null;
+        if (OUTPUT)
             sb.append(curToken()).append("\n");
-        }
-
         nextToken();
         return new LeafASTNode(tokenWithOffset(-1));
     }
