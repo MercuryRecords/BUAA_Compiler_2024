@@ -714,16 +714,18 @@ public class Parser {
         node.addChild(parseTokenType(LexType.INTCON));
         if (OUTPUT) {
             sb.append(node.print()).append("\n");
-
         }
         return node;
     }
 
     private ASTNode parseChar() {
         // <Character> ::= <CharConst>
-        // ASTNode node = new ASTNode("Character");
-        // node.addChild(parseTokenType(LexType.CHRCON));
-        return parseTokenType(LexType.CHRCON);
+        ASTNode node = new ASTNode("Character");
+        node.addChild(parseTokenType(LexType.CHRCON));
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
+        return node;
     }
 
     private ASTNode parseConstInitVal() {
