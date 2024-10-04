@@ -560,7 +560,7 @@ public class Parser {
             node.addChild(parseIdent());
             node.addChild(parseTokenType(LexType.LPARENT));
             if (!curToken().isType(LexType.RPARENT)) {
-                node.addChild(parseFuncFParams());
+                node.addChild(parseFuncRParams());
             }
             node.addChild(parseTokenType(LexType.RPARENT));
         } else if (isPrimaryExp()) {
@@ -573,6 +573,20 @@ public class Parser {
         }
 
         if (OUTPUT && node != null) {
+            sb.append(node.print()).append("\n");
+        }
+        return node;
+    }
+
+    private ASTNode parseFuncRParams() {
+        // FuncRParams ::= <Exp> {',' <Exp>}
+        ASTNode node = new ASTNode("FuncRParams");
+        node.addChild(parseExp());
+        while (curToken().isType(LexType.COMMA)) {
+            node.addChild(parseTokenType(LexType.COMMA));
+            node.addChild(parseExp());
+        }
+        if (OUTPUT) {
             sb.append(node.print()).append("\n");
         }
         return node;
