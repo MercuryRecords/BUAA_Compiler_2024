@@ -6,6 +6,7 @@ import frontend.Token;
 import frontend.lexer.LexType;
 
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class Parser {
@@ -21,7 +22,7 @@ public class Parser {
         ASTNode root = parseCompUnit();
         try (FileWriter writer = new FileWriter(forOutput)) {
             writer.write(sb.toString());
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace(System.out);
         }
         return root;
@@ -143,11 +144,7 @@ public class Parser {
         ASTNode node = new ASTNode("Block");
         node.addChild(parseTokenType(LexType.LBRACE));
         while (!curToken().isType(LexType.RBRACE)) {
-            try {
-                node.addChild(parseBlockItem());
-            } catch (OutOfMemoryError e) {
-                return null;
-            }
+            node.addChild(parseBlockItem());
         }
         node.addChild(parseTokenType(LexType.RBRACE));
 
@@ -249,15 +246,15 @@ public class Parser {
                 int offset = 1;
                 if (isReachable(1) && tokenWithOffset(1).isType(LexType.LBRACK)) {
                     // 进行中括号匹配，假设中间一定是合法 <Exp>, 且可构成 <Ident> '[' <Exp> ']' 作为 <LVal>
-                    int cnt = 1;
-                    while (isReachable(offset) && cnt != 0) {
+                    int cnt = 0;
+                    do {
                         if (tokenWithOffset(offset).isType(LexType.LBRACK)) {
                             cnt++;
                         } else if (tokenWithOffset(offset).isType(LexType.RBRACK)) {
                             cnt--;
                         }
                         offset++;
-                    }
+                    } while (isReachable(offset) && cnt != 0);
                     if (cnt != 0) {
                         return null;
                     }
