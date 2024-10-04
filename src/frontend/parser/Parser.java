@@ -31,6 +31,10 @@ public class Parser {
         index++;
     }
 
+    private boolean isReachable(int offset) {
+        return index + offset < tokens.size();
+    }
+
     private ASTNode parseCompUnit() {
         // <CompUnit> ::= {<Decl>} {<FuncDef>} <MainFuncDef>
         ASTNode node = new ASTNode("CompUnit");
@@ -117,6 +121,142 @@ public class Parser {
     }
 
     private ASTNode parseStmt() {
+        /*
+           <Stmt> ::= <Block>
+                    | 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
+                    | 'for' '(' [ <ForStmt> ] ';' [ <Cond> ] ';' [ <ForStmt> ] ')' <Stmt>
+                    | 'break' ';'
+                    | 'continue' ';'
+                    | 'return' [ <Exp> ] ';'
+                    | 'printf' '(' <StringConst> { ',' Exp } ')' ';'
+                    | <LVal> '=' 'getint' '(' ')' ';'
+                    | <LVal> '=' 'getchar' '(' ')' ';'
+                    | <LVal> '=' <Exp> ';'
+                    | [Exp] ';'
+         */
+        ASTNode node = new ASTNode("Stmt");
+        if (curToken().isType(LexType.LBRACE)) {
+            node.addChild(parseBlock());
+        } else if (curToken().isType(LexType.IFTK)) {
+            node.addChild(parseTokenType(LexType.IFTK));
+            node.addChild(parseTokenType(LexType.LPARENT));
+            node.addChild(parseCond());
+            node.addChild(parseTokenType(LexType.RPARENT));
+            node.addChild(parseStmt());
+            if (curToken().isType(LexType.ELSETK)) {
+                node.addChild(parseTokenType(LexType.ELSETK));
+                node.addChild(parseStmt());
+            }
+        } else if (curToken().isType(LexType.FORTK)) {
+            node.addChild(parseTokenType(LexType.FORTK));
+            node.addChild(parseTokenType(LexType.LPARENT));
+            if (!curToken().isType(LexType.SEMICN)) {
+                node.addChild(parseForStmt());
+            }
+            node.addChild(parseTokenType(LexType.SEMICN));
+            if (!curToken().isType(LexType.SEMICN)) {
+                node.addChild(parseCond());
+            }
+            node.addChild(parseTokenType(LexType.SEMICN));
+            if (!curToken().isType(LexType.RPARENT)) {
+                node.addChild(parseForStmt());
+            }
+            node.addChild(parseTokenType(LexType.RPARENT));
+            node.addChild(parseStmt());
+        } else if (curToken().isType(LexType.BREAKTK)) {
+            node.addChild(parseTokenType(LexType.BREAKTK));
+            node.addChild(parseTokenType(LexType.SEMICN));
+        } else if (curToken().isType(LexType.CONTINUETK)) {
+            node.addChild(parseTokenType(LexType.CONTINUETK));
+            node.addChild(parseTokenType(LexType.SEMICN));
+        } else if (curToken().isType(LexType.RETURNTK)) {
+            node.addChild(parseTokenType(LexType.RETURNTK));
+            if (!curToken().isType(LexType.SEMICN)) {
+                node.addChild(parseExp());
+            }
+            node.addChild(parseTokenType(LexType.SEMICN));
+        } else if (curToken().isType(LexType.PRINTFTK)) {
+            node.addChild(parseTokenType(LexType.PRINTFTK));
+            node.addChild(parseTokenType(LexType.LPARENT));
+            node.addChild(parseStringConst());
+            while (curToken().isType(LexType.COMMA)) {
+                node.addChild(parseTokenType(LexType.COMMA));
+                node.addChild(parseExp());
+            }
+            node.addChild(parseTokenType(LexType.RPARENT));
+            node.addChild(parseTokenType(LexType.SEMICN));
+        } else if (curToken().isType(LexType.IDENFR)) {
+            // 可能是 LVal '=', 也可能是 Exp
+            // <LVal> ::= <Ident> | <Ident> '[' <Exp> ']'
+            // <Exp> ::= <AddExp> ::= <MulExp> ::= <UnaryExp> ::= <PrimaryExp> | <Ident> '(' [ FuncRParams ] ')'
+            // <PrimaryExp> ::= '(' <Exp> ')' | <LVal> | <Number> | <Character>
+            // case 1: <Ident> '(' [ FuncRParams ] ')'
+            if (isReachable(1) && tokenWithOffset(1).isType(LexType.LPARENT)) {
+                // <Ident> '(' [ FuncRParams ] ')'，解析 Exp
+                node.addChild(parseExp());
+                node.addChild(parseTokenType(LexType.SEMICN));
+            } else  {
+                // 区分 <LVal> 来自 <PrimaryExp> 还是 <LVal> '=' <Exp>
+                // <LVal> ::= <Ident> | <Ident> '[' <Exp> ']'
+                int offset = 1;
+                if (isReachable(1) && tokenWithOffset(1).isType(LexType.LBRACK)) {
+                    // 进行中括号匹配，假设中间一定是合法 <Exp>, 且可构成 <Ident> '[' <Exp> ']' 作为 <LVal>
+                    int cnt = 1;
+                    while (isReachable(offset) && cnt != 0) {
+                        if (tokenWithOffset(offset).isType(LexType.LBRACK)) {
+                            cnt++;
+                        } else if (tokenWithOffset(offset).isType(LexType.RBRACK)) {
+                            cnt--;
+                        }
+                        offset++;
+                    }
+                    if (cnt != 0) {
+                        return null;
+                    }
+                }
+                // 找到 <LVal> 结束处，判断 tokenWithOffset(offset) 是否为 '='
+                if (tokenWithOffset(offset).isType(LexType.ASSIGN)) {
+                    node.addChild(parseLVal());
+                    node.addChild(parseTokenType(LexType.ASSIGN));
+                    // | <LVal> '=' 'getint' '(' ')' ';'
+                    // | <LVal> '=' 'getchar' '(' ')' ';'
+                    // | <LVal> '=' <Exp> ';'
+                    if (curToken().isType(LexType.GETINTTK)) {
+                        node.addChild(parseTokenType(LexType.GETINTTK));
+                        node.addChild(parseTokenType(LexType.LPARENT));
+                        node.addChild(parseTokenType(LexType.RPARENT));
+                    } else if (curToken().isType(LexType.GETCHARTK)) {
+                        node.addChild(parseTokenType(LexType.GETCHARTK));
+                        node.addChild(parseTokenType(LexType.LPARENT));
+                        node.addChild(parseTokenType(LexType.RPARENT));
+                    } else {
+                        node.addChild(parseExp());
+                    }
+                } else {
+                    node.addChild(parseExp());
+                }
+                node.addChild(parseTokenType(LexType.SEMICN));
+            }
+        } else if (curToken().isType(LexType.SEMICN)) {
+            node.addChild(parseTokenType(LexType.SEMICN));
+        } else {
+            node.addChild(parseExp());
+            node.addChild(parseTokenType(LexType.SEMICN));
+        }
+        return node;
+    }
+
+    private ASTNode parseCond() {
+        // TODO
+        return null;
+    }
+
+    private ASTNode parseForStmt() {
+        // TODO
+        return null;
+    }
+
+    private ASTNode parseStringConst() {
         // TODO
         return null;
     }
