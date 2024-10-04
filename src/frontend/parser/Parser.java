@@ -52,8 +52,23 @@ public class Parser {
     }
 
     private boolean isDecl() {
-        // TODO
-        return false;
+        // 用于区分 <Decl> <Stmt> <FuncDef>
+        // <Decl> ::= <ConstDecl> | <VarDecl>
+        // FIRST(ConstDecl) = {'const'}
+        // FIRST(VarDecl) = {'int', 'char'}
+        // FIRST(Stmt) 中 不含以上两种
+        // FIRST(FuncDef) = {'int', 'char', 'void'}
+        if (curToken().isType(LexType.CONSTTK))
+            return true;
+
+        if (!curToken().isType(LexType.INTTK) && !curToken().isType(LexType.CHARTK))
+            return false;
+
+        if (curToken().isType(LexType.VOIDTK))
+            return false;
+
+        // 区分 VarDecl 和 FuncDef
+        return isReachable(2) && !tokenWithOffset(2).isType(LexType.LPARENT);
     }
 
     private ASTNode parseDecl() {
@@ -69,7 +84,17 @@ public class Parser {
     }
 
     private boolean isFuncDef() {
-        // TODO
+        // 用于区分 <Decl> <FuncDef> <MainFuncDef>
+        if (curToken().isType(LexType.VOIDTK))
+            return true;
+
+        if (curToken().isType(LexType.CHARTK))
+            return isReachable(2) && tokenWithOffset(2).isType(LexType.LPARENT);
+
+        if (curToken().isType(LexType.INTTK))
+            // 区分 <FuncDef> <MainFuncDef>
+            return isReachable(1) && !tokenWithOffset(1).isType(LexType.MAINTK);
+
         return false;
     }
 
@@ -247,18 +272,70 @@ public class Parser {
     }
 
     private ASTNode parseCond() {
-        // TODO
-        return null;
+        // <Cond> ::= <LOrExp>
+        ASTNode node = new ASTNode("Cond");
+        node.addChild(parseLOrExp());
+        return node;
+    }
+
+    private ASTNode parseLOrExp() {
+        // <LOrExp> ::= <LAndExp> { '||' <LAndExp> }
+        ASTNode node = new ASTNode("LOrExp");
+        node.addChild(parseLAndExp());
+        while (curToken().isType(LexType.OR)) {
+            node.addChild(parseTokenType(LexType.OR));
+            node.addChild(parseLAndExp());
+        }
+        return node;
+    }
+
+    private ASTNode parseLAndExp() {
+        // <LAndExp> ::= <EqExp> { '&&' <EqExp> }
+        ASTNode node = new ASTNode("LAndExp");
+        node.addChild(parseEqExp());
+        while (curToken().isType(LexType.AND)) {
+            node.addChild(parseTokenType(LexType.AND));
+            node.addChild(parseEqExp());
+        }
+        return node;
+    }
+
+    private ASTNode parseEqExp() {
+        // <EqExp> ::= <RelExp> { ('==' | '!=') <RelExp> }
+        ASTNode node = new ASTNode("EqExp");
+        node.addChild(parseRelExp());
+        while (curToken().isType(LexType.EQL) || curToken().isType(LexType.NEQ)) {
+            node.addChild(parseTokenType(curToken().type));
+            node.addChild(parseRelExp());
+        }
+        return node;
+    }
+
+    private ASTNode parseRelExp() {
+        // <RelExp> ::= <AddExp> { ('<' | '<=' | '>' | '>=' ) <AddExp> }
+        ASTNode node = new ASTNode("RelExp");
+        node.addChild(parseAddExp());
+        while (curToken().isType(LexType.LSS) || curToken().isType(LexType.LEQ) || curToken().isType(LexType.GRE) || curToken().isType(LexType.GEQ)) {
+            node.addChild(parseTokenType(curToken().type));
+            node.addChild(parseAddExp());
+        }
+        return node;
     }
 
     private ASTNode parseForStmt() {
-        // TODO
-        return null;
+        // <ForStmt> ::=  <LVal> '=' <Exp>
+        ASTNode node = new ASTNode("ForStmt");
+        node.addChild(parseLVal());
+        node.addChild(parseTokenType(LexType.ASSIGN));
+        node.addChild(parseExp());
+        return node;
     }
 
     private ASTNode parseStringConst() {
-        // TODO
-        return null;
+        // <StringConst> ::= <Str>
+        ASTNode node = new ASTNode("StringConst");
+        node.addChild(parseTokenType(LexType.STRCON));
+        return node;
     }
 
     private ASTNode parseMainFuncDef() {
