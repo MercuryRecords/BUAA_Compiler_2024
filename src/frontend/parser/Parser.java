@@ -143,7 +143,11 @@ public class Parser {
         ASTNode node = new ASTNode("Block");
         node.addChild(parseTokenType(LexType.LBRACE));
         while (!curToken().isType(LexType.RBRACE)) {
-            node.addChild(parseBlockItem());
+            try {
+                node.addChild(parseBlockItem());
+            } catch (OutOfMemoryError e) {
+                return null;
+            }
         }
         node.addChild(parseTokenType(LexType.RBRACE));
 
@@ -446,7 +450,7 @@ public class Parser {
             node.addChild(parseTokenType(LexType.RBRACK));
         }
         // '='
-        node.addChild(parseTokenType(LexType.EQL));
+        node.addChild(parseTokenType(LexType.ASSIGN));
         // <ConstInitVal>
         node.addChild(parseConstInitVal());
 
@@ -575,14 +579,29 @@ public class Parser {
     }
 
     private ASTNode parseFuncFParams() {
-        // FuncFParams ::= <Exp> {',' <Exp>}
+        // FuncFParams ::= <FuncFParam> {',' <FuncFParam>}
         ASTNode node = new ASTNode("FuncFParams");
-        node.addChild(parseExp());
+        node.addChild(parseFuncFParam());
         while (curToken().isType(LexType.COMMA)) {
             node.addChild(parseTokenType(LexType.COMMA));
-            node.addChild(parseExp());
+            node.addChild(parseFuncFParam());
         }
 
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
+        return node;
+    }
+
+    private ASTNode parseFuncFParam() {
+        // // FuncFParam ::= <BType> <Ident> [ '[' ']' ]
+        ASTNode node = new ASTNode("FuncFParam");
+        node.addChild(parseBType());
+        node.addChild(parseIdent());
+        if (curToken().isType(LexType.LBRACK)) {
+            node.addChild(parseTokenType(LexType.LBRACK));
+            node.addChild(parseTokenType(LexType.RBRACK));
+        }
         if (OUTPUT) {
             sb.append(node.print()).append("\n");
         }
