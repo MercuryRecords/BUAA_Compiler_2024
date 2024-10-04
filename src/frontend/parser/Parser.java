@@ -134,6 +134,9 @@ public class Parser {
         ASTNode node = new ASTNode("FuncType");
         if (curToken().isType(LexType.VOIDTK) || curToken().isType(LexType.INTTK) || curToken().isType(LexType.CHARTK)) {
             node.addChild(parseTokenType(curToken().type));
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
             return node;
         }
         return null;
@@ -311,8 +314,15 @@ public class Parser {
         ASTNode node = new ASTNode("LOrExp");
         node.addChild(parseLAndExp());
         while (curToken().isType(LexType.OR)) {
-            node.addChild(parseTokenType(LexType.OR));
-            node.addChild(parseLAndExp());
+            // node 成为新的第一个孩子结点
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
+            ASTNode newNode = new ASTNode("LOrExp");
+            newNode.addChild(node);
+            newNode.addChild(parseTokenType(LexType.OR));
+            newNode.addChild(parseLAndExp());
+            node = newNode;
         }
 
         if (OUTPUT) {
@@ -326,8 +336,15 @@ public class Parser {
         ASTNode node = new ASTNode("LAndExp");
         node.addChild(parseEqExp());
         while (curToken().isType(LexType.AND)) {
-            node.addChild(parseTokenType(LexType.AND));
-            node.addChild(parseEqExp());
+            // node 成为新的第一个孩子结点
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
+            ASTNode newNode = new ASTNode("LAndExp");
+            newNode.addChild(node);
+            newNode.addChild(parseTokenType(LexType.AND));
+            newNode.addChild(parseEqExp());
+            node = newNode;
         }
 
         if (OUTPUT) {
@@ -341,8 +358,15 @@ public class Parser {
         ASTNode node = new ASTNode("EqExp");
         node.addChild(parseRelExp());
         while (curToken().isType(LexType.EQL) || curToken().isType(LexType.NEQ)) {
-            node.addChild(parseTokenType(curToken().type));
-            node.addChild(parseRelExp());
+            // node 成为新的第一个孩子结点
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
+            ASTNode newNode = new ASTNode("EqExp");
+            newNode.addChild(node);
+            newNode.addChild(parseTokenType(curToken().type));
+            newNode.addChild(parseRelExp());
+            node = newNode;
         }
 
         if (OUTPUT) {
@@ -356,8 +380,15 @@ public class Parser {
         ASTNode node = new ASTNode("RelExp");
         node.addChild(parseAddExp());
         while (curToken().isType(LexType.LSS) || curToken().isType(LexType.LEQ) || curToken().isType(LexType.GRE) || curToken().isType(LexType.GEQ)) {
-            node.addChild(parseTokenType(curToken().type));
-            node.addChild(parseAddExp());
+            // node 成为新的第一个孩子结点
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
+            ASTNode newNode = new ASTNode("RelExp");
+            newNode.addChild(node);
+            newNode.addChild(parseTokenType(curToken().type));
+            newNode.addChild(parseAddExp());
+            node = newNode;
         }
 
         if (OUTPUT) {
@@ -496,10 +527,16 @@ public class Parser {
         node.addChild(parseMulExp());
 
         while (isAddOp()) {
-            node.addChild(parseAddOp());
-            node.addChild(parseMulExp());
+            // node 成为新的第一个孩子结点
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
+            ASTNode newNode = new ASTNode("AddExp");
+            newNode.addChild(node);
+            newNode.addChild(parseTokenType(curToken().type));
+            newNode.addChild(parseMulExp());
+            node = newNode;
         }
-
 
         if (OUTPUT) {
             sb.append(node.print()).append("\n");
@@ -511,23 +548,21 @@ public class Parser {
         return curToken().isType(LexType.PLUS) || curToken().isType(LexType.MINU);
     }
 
-    private ASTNode parseAddOp() {
-        if (curToken().isType(LexType.PLUS)) {
-            return parseTokenType(LexType.PLUS);
-        } else if (curToken().isType(LexType.MINU)) {
-            return parseTokenType(LexType.MINU);
-        }
-        return null;
-    }
-
     private ASTNode parseMulExp() {
         // <MulExp> ::= <UnaryExp> {<MulOp> <UnaryExp>}
         ASTNode node = new ASTNode("MulExp");
         node.addChild(parseUnaryExp());
 
         while (isMulOp()) {
-            node.addChild(parseMulOp());
-            node.addChild(parseUnaryExp());
+            // node 成为新的第一个孩子结点
+            if (OUTPUT) {
+                sb.append(node.print()).append("\n");
+            }
+            ASTNode newNode = new ASTNode("MulExp");
+            newNode.addChild(node);
+            newNode.addChild(parseTokenType(curToken().type));
+            newNode.addChild(parseUnaryExp());
+            node = newNode;
         }
         if (OUTPUT) {
             sb.append(node.print()).append("\n");
@@ -537,17 +572,6 @@ public class Parser {
 
     private boolean isMulOp() {
         return curToken().isType(LexType.MULT) || curToken().isType(LexType.DIV) || curToken().isType(LexType.MOD);
-    }
-
-    private ASTNode parseMulOp() {
-        if (curToken().isType(LexType.MULT)) {
-            return parseTokenType(LexType.MULT);
-        } else if (curToken().isType(LexType.DIV)) {
-            return parseTokenType(LexType.DIV);
-        } else if (curToken().isType(LexType.MOD)) {
-            return parseTokenType(LexType.MOD);
-        }
-        return null;
     }
 
     private ASTNode parseUnaryExp() {
@@ -686,9 +710,13 @@ public class Parser {
 
     private ASTNode parseNumber() {
         // <Number> ::= <IntConst>
-        // ASTNode node = new ASTNode("Number");
-        // node.addChild(parseTokenType(LexType.INTCON));
-        return parseTokenType(LexType.INTCON);
+        ASTNode node = new ASTNode("Number");
+        node.addChild(parseTokenType(LexType.INTCON));
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+
+        }
+        return node;
     }
 
     private ASTNode parseChar() {
