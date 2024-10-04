@@ -1,8 +1,6 @@
 package frontend.parser;
 
-import frontend.ASTNode;
-import frontend.LeafASTNode;
-import frontend.Token;
+import frontend.*;
 import frontend.lexer.LexType;
 
 import java.io.FileWriter;
@@ -16,6 +14,24 @@ public class Parser {
     private final boolean OUTPUT = true;
     public Parser(ArrayList<Token> tokens) {
         this.tokens = tokens;
+    }
+
+    private void checkSemicn() {
+        if (!curToken().isType(LexType.SEMICN)) {
+            Reporter.REPORTER.add(new CompilerException(tokenWithOffset(-1).lineNum, "i"));
+        }
+    }
+
+    private void checkRparent() {
+        if (!curToken().isType(LexType.RPARENT)) {
+            Reporter.REPORTER.add(new CompilerException(tokenWithOffset(-1).lineNum, "j"));
+        }
+    }
+
+    private void checkRbrack() {
+        if (!curToken().isType(LexType.RBRACK)) {
+            Reporter.REPORTER.add(new CompilerException(tokenWithOffset(-1).lineNum, "k"));
+        }
     }
 
     public ASTNode analyze(String forOutput) {
@@ -120,6 +136,7 @@ public class Parser {
         if (!curToken().isType(LexType.RPARENT)) {
             node.addChild(parseFuncFParams());
         }
+        checkRparent();
         node.addChild(parseTokenType(LexType.RPARENT));
         node.addChild(parseBlock());
 
@@ -189,6 +206,7 @@ public class Parser {
             node.addChild(parseTokenType(LexType.IFTK));
             node.addChild(parseTokenType(LexType.LPARENT));
             node.addChild(parseCond());
+            checkRparent();
             node.addChild(parseTokenType(LexType.RPARENT));
             node.addChild(parseStmt());
             if (curToken().isType(LexType.ELSETK)) {
@@ -201,27 +219,33 @@ public class Parser {
             if (!curToken().isType(LexType.SEMICN)) {
                 node.addChild(parseForStmt());
             }
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
             if (!curToken().isType(LexType.SEMICN)) {
                 node.addChild(parseCond());
             }
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
             if (!curToken().isType(LexType.RPARENT)) {
                 node.addChild(parseForStmt());
             }
+            checkRparent();
             node.addChild(parseTokenType(LexType.RPARENT));
             node.addChild(parseStmt());
         } else if (curToken().isType(LexType.BREAKTK)) {
             node.addChild(parseTokenType(LexType.BREAKTK));
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
         } else if (curToken().isType(LexType.CONTINUETK)) {
             node.addChild(parseTokenType(LexType.CONTINUETK));
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
         } else if (curToken().isType(LexType.RETURNTK)) {
             node.addChild(parseTokenType(LexType.RETURNTK));
             if (!curToken().isType(LexType.SEMICN)) {
                 node.addChild(parseExp());
             }
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
         } else if (curToken().isType(LexType.PRINTFTK)) {
             node.addChild(parseTokenType(LexType.PRINTFTK));
@@ -231,7 +255,9 @@ public class Parser {
                 node.addChild(parseTokenType(LexType.COMMA));
                 node.addChild(parseExp());
             }
+            checkRparent();
             node.addChild(parseTokenType(LexType.RPARENT));
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
         } else if (curToken().isType(LexType.IDENFR)) {
             // 可能是 LVal '=', 也可能是 Exp
@@ -242,6 +268,7 @@ public class Parser {
             if (isReachable(1) && tokenWithOffset(1).isType(LexType.LPARENT)) {
                 // <Ident> '(' [ FuncRParams ] ')'，解析 Exp
                 node.addChild(parseExp());
+                checkSemicn();
                 node.addChild(parseTokenType(LexType.SEMICN));
             } else  {
                 // 区分 <LVal> 来自 <PrimaryExp> 还是 <LVal> '=' <Exp>
@@ -259,6 +286,7 @@ public class Parser {
                         offset++;
                     } while (isReachable(offset) && cnt != 0);
                     if (cnt != 0) {
+                        // TODO 中括号不匹配，应该报错；情况有点复杂有待考虑
                         return null;
                     }
                 }
@@ -272,10 +300,12 @@ public class Parser {
                     if (curToken().isType(LexType.GETINTTK)) {
                         node.addChild(parseTokenType(LexType.GETINTTK));
                         node.addChild(parseTokenType(LexType.LPARENT));
+                        checkRparent();
                         node.addChild(parseTokenType(LexType.RPARENT));
                     } else if (curToken().isType(LexType.GETCHARTK)) {
                         node.addChild(parseTokenType(LexType.GETCHARTK));
                         node.addChild(parseTokenType(LexType.LPARENT));
+                        checkRparent();
                         node.addChild(parseTokenType(LexType.RPARENT));
                     } else {
                         node.addChild(parseExp());
@@ -283,12 +313,15 @@ public class Parser {
                 } else {
                     node.addChild(parseExp());
                 }
+                checkSemicn();
                 node.addChild(parseTokenType(LexType.SEMICN));
             }
         } else if (curToken().isType(LexType.SEMICN)) {
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
         } else {
             node.addChild(parseExp());
+            checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));
         }
 
@@ -423,6 +456,7 @@ public class Parser {
         node.addChild(parseTokenType(LexType.INTTK));
         node.addChild(parseTokenType(LexType.MAINTK));
         node.addChild(parseTokenType(LexType.LPARENT));
+        checkRparent();
         node.addChild(parseTokenType(LexType.RPARENT));
         node.addChild(parseBlock());
 
@@ -447,6 +481,7 @@ public class Parser {
             node.addChild(parseConstDef());
         }
         // ';'
+        checkSemicn();
         node.addChild(parseTokenType(LexType.SEMICN));
 
 
@@ -475,6 +510,7 @@ public class Parser {
         if (curToken().isType(LexType.LBRACK)) {
             node.addChild(parseTokenType(LexType.LBRACK));
             node.addChild(parseConstExp());
+            checkRbrack();
             node.addChild(parseTokenType(LexType.RBRACK));
         }
         // '='
@@ -583,6 +619,7 @@ public class Parser {
             if (!curToken().isType(LexType.RPARENT)) {
                 node.addChild(parseFuncRParams());
             }
+            checkRparent();
             node.addChild(parseTokenType(LexType.RPARENT));
         } else if (isPrimaryExp()) {
             node.addChild(parsePrimaryExp());
@@ -635,6 +672,7 @@ public class Parser {
         node.addChild(parseIdent());
         if (curToken().isType(LexType.LBRACK)) {
             node.addChild(parseTokenType(LexType.LBRACK));
+            checkRbrack();
             node.addChild(parseTokenType(LexType.RBRACK));
         }
         if (OUTPUT) {
@@ -675,6 +713,7 @@ public class Parser {
         if (curToken().isType(LexType.LPARENT)) {
             node.addChild(parseTokenType(LexType.LPARENT));
             node.addChild(parseExp());
+            checkRparent();
             node.addChild(parseTokenType(LexType.RPARENT));
         } else if (curToken().isType(LexType.IDENFR)) {
             node.addChild(parseLVal());
@@ -699,6 +738,7 @@ public class Parser {
         if (curToken().isType(LexType.LBRACK)) {
             node.addChild(parseTokenType(LexType.LBRACK));
             node.addChild(parseExp());
+            checkRbrack();
             node.addChild(parseTokenType(LexType.RBRACK));
         }
 
@@ -763,6 +803,7 @@ public class Parser {
             node.addChild(parseVarDef());
         }
 
+        checkSemicn();
         node.addChild(parseTokenType(LexType.SEMICN));
 
         if (OUTPUT) {
@@ -778,6 +819,7 @@ public class Parser {
         if (curToken().isType(LexType.LBRACK)) {
             node.addChild(parseTokenType(LexType.LBRACK));
             node.addChild(parseConstExp());
+            checkRbrack();
             node.addChild(parseTokenType(LexType.RBRACK));
         }
         if (curToken().isType(LexType.ASSIGN)) {
