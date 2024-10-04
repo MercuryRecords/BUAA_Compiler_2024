@@ -5,18 +5,26 @@ import frontend.LeafASTNode;
 import frontend.Token;
 import frontend.lexer.LexType;
 
+import java.io.FileWriter;
 import java.util.ArrayList;
 
 public class Parser {
     private final ArrayList<Token> tokens;
     private int index = 0;
-    // private boolean OUTPUT = false;
+    private final StringBuilder sb = new StringBuilder();
+    private final boolean OUTPUT = true;
     public Parser(ArrayList<Token> tokens) {
         this.tokens = tokens;
     }
 
-    public void analyze(String forOutput) {
+    public ASTNode analyze(String forOutput) {
         ASTNode root = parseCompUnit();
+        try (FileWriter writer = new FileWriter(forOutput)) {
+            writer.write(sb.toString());
+        } catch (Exception e) {
+            e.printStackTrace(System.out);
+        }
+        return root;
     }
 
     private Token curToken() {
@@ -48,6 +56,10 @@ public class Parser {
         }
         // <MainFuncDef>
         node.addChild(parseMainFuncDef());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -109,6 +121,10 @@ public class Parser {
         }
         node.addChild(parseTokenType(LexType.RPARENT));
         node.addChild(parseBlock());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -116,8 +132,7 @@ public class Parser {
         // <FuncType> ::= 'void' | 'int' | 'char'
         ASTNode node = new ASTNode("FuncType");
         if (curToken().isType(LexType.VOIDTK) || curToken().isType(LexType.INTTK) || curToken().isType(LexType.CHARTK)) {
-            node.addChild(new LeafASTNode(curToken()));
-            nextToken();
+            node.addChild(parseTokenType(curToken().type));
             return node;
         }
         return null;
@@ -131,6 +146,10 @@ public class Parser {
             node.addChild(parseBlockItem());
         }
         node.addChild(parseTokenType(LexType.RBRACE));
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -268,6 +287,10 @@ public class Parser {
             node.addChild(parseExp());
             node.addChild(parseTokenType(LexType.SEMICN));
         }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -275,6 +298,10 @@ public class Parser {
         // <Cond> ::= <LOrExp>
         ASTNode node = new ASTNode("Cond");
         node.addChild(parseLOrExp());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -285,6 +312,10 @@ public class Parser {
         while (curToken().isType(LexType.OR)) {
             node.addChild(parseTokenType(LexType.OR));
             node.addChild(parseLAndExp());
+        }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
         }
         return node;
     }
@@ -297,6 +328,10 @@ public class Parser {
             node.addChild(parseTokenType(LexType.AND));
             node.addChild(parseEqExp());
         }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -307,6 +342,10 @@ public class Parser {
         while (curToken().isType(LexType.EQL) || curToken().isType(LexType.NEQ)) {
             node.addChild(parseTokenType(curToken().type));
             node.addChild(parseRelExp());
+        }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
         }
         return node;
     }
@@ -319,6 +358,10 @@ public class Parser {
             node.addChild(parseTokenType(curToken().type));
             node.addChild(parseAddExp());
         }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -328,6 +371,10 @@ public class Parser {
         node.addChild(parseLVal());
         node.addChild(parseTokenType(LexType.ASSIGN));
         node.addChild(parseExp());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -346,6 +393,10 @@ public class Parser {
         node.addChild(parseTokenType(LexType.LPARENT));
         node.addChild(parseTokenType(LexType.RPARENT));
         node.addChild(parseBlock());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -366,6 +417,10 @@ public class Parser {
         // ';'
         node.addChild(parseTokenType(LexType.SEMICN));
 
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -373,8 +428,7 @@ public class Parser {
         // <BType> ::= 'int' | 'char'
         ASTNode node = new ASTNode("BType");
         if (curToken().isType(LexType.INTTK) || curToken().isType(LexType.CHARTK)) {
-            node.addChild(new LeafASTNode(curToken()));
-            nextToken();
+            node.addChild(parseTokenType(curToken().type));
             return node;
         }
         return null;
@@ -396,23 +450,31 @@ public class Parser {
         // <ConstInitVal>
         node.addChild(parseConstInitVal());
 
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
     private ASTNode parseIdent() {
-        ASTNode node = new ASTNode("Ident");
-        if (curToken().isType(LexType.IDENFR)) {
-            node.addChild(new LeafASTNode(curToken()));
-            nextToken();
-            return node;
-        }
-        return null;
+        return parseTokenType(LexType.IDENFR);
+        // ASTNode node = new ASTNode("Ident");
+        // if (curToken().isType(LexType.IDENFR)) {
+        //     node.addChild(parseTokenType(LexType.IDENFR));
+        //     return node;
+        // }
+        // return null;
     }
 
     private ASTNode parseConstExp() {
         // <ConstExp> ::= <AddExp>
         ASTNode node = new ASTNode("ConstExp");
         node.addChild(parseAddExp());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -420,6 +482,10 @@ public class Parser {
         // <Exp> ::= <AddExp>
         ASTNode node = new ASTNode("Exp");
         node.addChild(parseAddExp());
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -433,6 +499,10 @@ public class Parser {
             node.addChild(parseMulExp());
         }
 
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -458,7 +528,9 @@ public class Parser {
             node.addChild(parseMulOp());
             node.addChild(parseUnaryExp());
         }
-
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -495,6 +567,10 @@ public class Parser {
         } else {
             node = null;
         }
+
+        if (OUTPUT && node != null) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -505,6 +581,10 @@ public class Parser {
         while (curToken().isType(LexType.COMMA)) {
             node.addChild(parseTokenType(LexType.COMMA));
             node.addChild(parseExp());
+        }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
         }
         return node;
     }
@@ -523,6 +603,10 @@ public class Parser {
             node.addChild(parseTokenType(LexType.NOT));
         } else {
             node = null;
+        }
+
+        if (OUTPUT && node != null) {
+            sb.append(node.print()).append("\n");
         }
         return node;
     }
@@ -547,6 +631,10 @@ public class Parser {
         } else {
             node = null;
         }
+
+        if (OUTPUT && node != null) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -559,21 +647,25 @@ public class Parser {
             node.addChild(parseExp());
             node.addChild(parseTokenType(LexType.RBRACK));
         }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
     private ASTNode parseNumber() {
         // <Number> ::= <IntConst>
-        ASTNode node = new ASTNode("Number");
-        node.addChild(parseTokenType(LexType.INTCON));
-        return node;
+        // ASTNode node = new ASTNode("Number");
+        // node.addChild(parseTokenType(LexType.INTCON));
+        return parseTokenType(LexType.INTCON);
     }
 
     private ASTNode parseChar() {
         // <Character> ::= <CharConst>
-        ASTNode node = new ASTNode("Character");
-        node.addChild(parseTokenType(LexType.CHRCON));
-        return node;
+        // ASTNode node = new ASTNode("Character");
+        // node.addChild(parseTokenType(LexType.CHRCON));
+        return parseTokenType(LexType.CHRCON);
     }
 
     private ASTNode parseConstInitVal() {
@@ -594,6 +686,10 @@ public class Parser {
         } else {
             node.addChild(parseConstExp());
         }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -608,6 +704,10 @@ public class Parser {
         }
 
         node.addChild(parseTokenType(LexType.SEMICN));
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
@@ -623,6 +723,10 @@ public class Parser {
         if (curToken().isType(LexType.ASSIGN)) {
             node.addChild(parseTokenType(LexType.ASSIGN));
             node.addChild(parseInitVal());
+        }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
         }
         return node;
     }
@@ -645,12 +749,20 @@ public class Parser {
         } else {
             node.addChild(parseExp());
         }
+
+        if (OUTPUT) {
+            sb.append(node.print()).append("\n");
+        }
         return node;
     }
 
     private ASTNode parseTokenType(LexType type) {
         if (!curToken().isType(type)) {
             return null;
+        }
+
+        if (OUTPUT) {
+            sb.append(curToken()).append("\n");
         }
 
         nextToken();

@@ -26,4 +26,9 @@ public class ASTNode {
         children.add(child);
         child.setParent(this);
     }
+
+    public String print() {
+        if (this instanceof LeafASTNode) return "";
+        return "<" + name + ">";
+    }
 }

@@ -42,7 +42,7 @@ public class Lexer {
         this.lineNum = 1;
     }
 
-    public ArrayList<Token> analyze(String foroutput) {
+    public ArrayList<Token> analyze(String forOutput) {
         ArrayList<Token> res = new ArrayList<>();
         do {
             try {
@@ -56,7 +56,7 @@ public class Lexer {
         } while (curToken != null);
 
         // 将 res 写入 forOutput 文件
-        try (FileWriter writer = new FileWriter(foroutput)) {
+        try (FileWriter writer = new FileWriter(forOutput)) {
             for (Token token : res) {
                 writer.write(token + "\n");
             }
