@@ -1,6 +1,6 @@
 package frontend.lexer;
 
-import frontend.CompilerException;
+import frontend.MyError;
 import frontend.Reporter;
 import frontend.Token;
 
@@ -45,13 +45,9 @@ public class Lexer {
     public ArrayList<Token> analyze(String forOutput) {
         ArrayList<Token> res = new ArrayList<>();
         do {
-            try {
-                nextToken();
-                if (curType != LexType.NOTE && curToken != null) {
-                    res.add(new Token(curType, curToken, lineNum));
-                }
-            } catch (CompilerException e) {
-                Reporter.REPORTER.add(e);
+            nextToken();
+            if (curType != LexType.NOTE && curToken != null) {
+                res.add(new Token(curType, curToken, lineNum));
             }
         } while (curToken != null);
 
@@ -66,7 +62,7 @@ public class Lexer {
         return res;
     }
 
-    public void nextToken() throws CompilerException {
+    public void nextToken() {
         // 更新 curToken 和 curType
         while (curPos < source.length() && (source.charAt(curPos) == ' ' || source.charAt(curPos) == '\t' || source.charAt(curPos) == '\n' || source.charAt(curPos) == '\r')) {
             if (source.charAt(curPos) == '\n') {
@@ -165,7 +161,7 @@ public class Lexer {
         }
     }
 
-    private void parseSign() throws CompilerException {
+    private void parseSign() {
         switch (source.charAt(curPos)) {
             case '!' -> {
                 curPos++;
@@ -280,7 +276,7 @@ public class Lexer {
                 } else {
                     curToken = "|";
                     curType = LexType.OR;
-                    throw new CompilerException(lineNum, "a");
+                    Reporter.REPORTER.add(new MyError(lineNum, "a"));
                 }
             }
             case '&' -> {
@@ -293,7 +289,7 @@ public class Lexer {
                 else {
                     curToken = "&";
                     curType = LexType.AND;
-                    throw new CompilerException(lineNum, "a");
+                    Reporter.REPORTER.add(new MyError(lineNum, "a"));
                 }
             }
             case '/' -> parseNote();

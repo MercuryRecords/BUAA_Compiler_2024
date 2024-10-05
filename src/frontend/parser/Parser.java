@@ -18,19 +18,19 @@ public class Parser {
 
     private void checkSemicn() {
         if (!curToken().isType(LexType.SEMICN)) {
-            Reporter.REPORTER.add(new CompilerException(tokenWithOffset(-1).lineNum, "i"));
+            Reporter.REPORTER.add(new MyError(tokenWithOffset(-1).lineNum, "i"));
         }
     }
 
     private void checkRparent() {
         if (!curToken().isType(LexType.RPARENT)) {
-            Reporter.REPORTER.add(new CompilerException(tokenWithOffset(-1).lineNum, "j"));
+            Reporter.REPORTER.add(new MyError(tokenWithOffset(-1).lineNum, "j"));
         }
     }
 
     private void checkRbrack() {
         if (!curToken().isType(LexType.RBRACK)) {
-            Reporter.REPORTER.add(new CompilerException(tokenWithOffset(-1).lineNum, "k"));
+            Reporter.REPORTER.add(new MyError(tokenWithOffset(-1).lineNum, "k"));
         }
     }
 
@@ -615,7 +615,7 @@ public class Parser {
     }
 
     private ASTNode parseUnaryExp() {
-        // <UnaryExp> ::= <PrimaryExp> | <UnaryOp> <UnaryExp> | <Ident> '(' [<FuncFParams>] ')'
+        // <UnaryExp> ::= <PrimaryExp> | <UnaryOp> <UnaryExp> | <Ident> '(' [<FuncRParams>] ')'
         ASTNode node = new ASTNode("UnaryExp");
         if (curToken().isType(LexType.IDENFR) && isReachable(1) && tokenWithOffset(1).isType(LexType.LPARENT)) {
             node.addChild(parseIdent());

@@ -1,11 +1,11 @@
 package frontend;
 
-public class CompilerException extends Exception {
+public class MyError {
     // package-private 写法
     final int lineNum;
     final String message;
 
-    public CompilerException(int lineNum, String message) {
+    public MyError(int lineNum, String message) {
         this.lineNum = lineNum;
         this.message = message;
     }
