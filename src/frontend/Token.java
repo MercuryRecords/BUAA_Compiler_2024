@@ -12,10 +12,6 @@ public class Token {
         this.lineNum = lineNum;
     }
 
-    public boolean isType(LexType type) {
-        return this.type == type;
-    }
-
     @Override
     public String toString() {
         return type + " " + token;
