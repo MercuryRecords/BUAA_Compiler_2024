@@ -34,6 +34,17 @@ public class Parser {
         }
     }
 
+    private boolean isActuallyEmpty(ASTNode node) {
+        while (!(node instanceof LeafASTNode)) {
+            if (!node.children.isEmpty()) {
+                node = node.children.get(0);
+            } else {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public ASTNode analyze(String forOutput) {
         ASTNode root = parseCompUnit();
         try (FileWriter writer = new FileWriter(forOutput)) {
@@ -641,7 +652,10 @@ public class Parser {
     private ASTNode parseFuncRParams() {
         // FuncRParams ::= <Exp> {',' <Exp>}
         ASTNode node = new ASTNode("FuncRParams");
-        node.addChild(parseExp());
+        ASTNode firstNode = parseExp();
+        if (!isActuallyEmpty(firstNode)) {
+            node.addChild(firstNode);
+        }
         while (curToken().isType(LexType.COMMA)) {
             node.addChild(parseTokenType(LexType.COMMA));
             node.addChild(parseExp());

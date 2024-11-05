@@ -435,7 +435,13 @@ public class Visitor {
 
     private void visitForStmt(ASTNode node) {
         // <ForStmt> ::=  <LVal> '=' <Exp>
-        visitLVal(node.children.get(0));
+        SymbolType symbolType = visitLVal(node.children.get(0));
+        ASTNode ident = node.children.get(0).children.get(0);
+
+        if (isConst(symbolType)) {
+            Reporter.REPORTER.add(new MyError(((LeafASTNode) ident).token.lineNum, "h"));
+        }
+
         visitExp(node.children.get(2));
     }
 
