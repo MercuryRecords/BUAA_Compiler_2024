@@ -668,7 +668,7 @@ public class Parser {
     }
 
     private ASTNode parseFuncFParam() {
-        // // FuncFParam ::= <BType> <Ident> [ '[' ']' ]
+        // FuncFParam ::= <BType> <Ident> [ '[' ']' ]
         ASTNode node = new ASTNode("FuncFParam");
         node.addChild(parseBType());
         node.addChild(parseIdent());

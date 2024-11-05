@@ -16,6 +16,10 @@ public class ASTNode {
         this.children = new ArrayList<>();
     }
 
+    public boolean isNode(String name) {
+        return this.name.equals(name);
+    }
+
     private void setParent(ASTNode parent) {
         this.parent = parent;
     }
