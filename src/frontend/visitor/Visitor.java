@@ -526,16 +526,16 @@ public class Visitor {
 
             if (paras.size() != getSymbol(token).paras.size()) {
                 Reporter.REPORTER.add(new MyError(token.lineNum, "d"));
-            }
-
-            boolean flag = false;
-            for (int i = 0; i < paras.size(); i++) {
-                if (!canAccept(getSymbol(token).paras.get(i), paras.get(i))) {
-                    flag = true;
+            } else {
+                boolean flag = false;
+                for (int i = 0; i < paras.size(); i++) {
+                    if (!canAccept(getSymbol(token).paras.get(i), paras.get(i))) {
+                        flag = true;
+                    }
                 }
-            }
-            if (flag) {
-                Reporter.REPORTER.add(new MyError(token.lineNum, "e"));
+                if (flag) {
+                    Reporter.REPORTER.add(new MyError(token.lineNum, "e"));
+                }
             }
 
             return getSymbol(token).symbolType;
