@@ -161,15 +161,31 @@ public class Visitor {
         Token token = ((LeafASTNode) node.children.get(0)).token;
         if (checkErrorB(token)) {
             _SymbolType2 symbolType2 = _SymbolType2.CONST;
-            for (ASTNode child : node.children) {
-                if (child.isNode("LEAF")) {
-                    if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
-                        symbolType2 = _SymbolType2.CONSTARRAY;
-                    }
+            if (node.children.get(1).isNode("LEAF")) {
+                ASTNode child = node.children.get(1);
+                if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
+                    symbolType2 = _SymbolType2.CONSTARRAY;
+                    visitConstExp(node.children.get(2));
                 }
             }
             currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
         }
+
+        visitConstInitVal(node.children.get(node.children.size() - 1));
+    }
+
+    private void visitConstInitVal(ASTNode node) {
+        // <ConstInitVal> ::= <ConstExp> | '{' [ <ConstExp> { ',' <ConstExp> } ] '}' | StringConst
+        for (ASTNode child : node.children) {
+            if (child.isNode("ConstExp")) {
+                visitConstExp(child);
+            }
+        }
+    }
+
+    private void visitConstExp(ASTNode node) {
+        // <ConstExp> ::= <AddExp>
+        visitAddExp(node.children.get(0));
     }
 
     private void visitVarDecl(ASTNode node) {
@@ -186,26 +202,40 @@ public class Visitor {
         }
 
         for (ASTNode child : node.children) {
-            if (child.name.equals("VarDef"))
+            if (child.name.equals("VarDef")) {
                 visitVarDef(child, symbolType1);
+            }
         }
 
     }
 
-    private void visitVarDef(ASTNode child, _SymbolType1 symbolType1) {
+    private void visitVarDef(ASTNode node, _SymbolType1 symbolType1) {
         // <VarDef> ::= <Ident> [ '[' <ConstExp> ']' ] [ '=' <InitVal> ]
-        Token token = ((LeafASTNode) child.children.get(0)).token;
+        Token token = ((LeafASTNode) node.children.get(0)).token;
         if (checkErrorB(token)) {
             _SymbolType2 symbolType2 = _SymbolType2.VAR;
-            for (ASTNode node : child.children) {
-                if (node.isNode("LEAF")) {
-                    if (((LeafASTNode) node).token.isType(LexType.LBRACK)) {
-                        symbolType2 = _SymbolType2.ARRAY;
-                    }
+            if (node.children.size() > 1 && node.children.get(1).isNode("LEAF")) {
+                ASTNode child = node.children.get(1);
+                if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
+                    symbolType2 = _SymbolType2.ARRAY;
+                    visitConstExp(node.children.get(2));
                 }
             }
 
             currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
+        }
+
+        if (node.children.get(node.children.size() - 1).isNode("InitVal")) {
+            visitInitVal(node.children.get(node.children.size() - 1));
+        }
+    }
+
+    private void visitInitVal(ASTNode node) {
+        // <InitVal> ::= <StringConst> | '{' [ <Exp> { ',' <Exp> } ] '}' | <Exp>
+        for (ASTNode child : node.children) {
+            if (child.isNode("Exp")) {
+                visitExp(child);
+            }
         }
     }
 
@@ -384,8 +414,9 @@ public class Visitor {
                     Reporter.REPORTER.add(new MyError(token.lineNum, "m"));
                 }
             } else if (token.isType(LexType.RETURNTK)) {
-                if (checkErrorF) {
-                    if (1 < children.size() && children.get(1).isNode("Exp")) {
+                if (1 < children.size() && children.get(1).isNode("Exp")) {
+                    visitExp(children.get(1));
+                    if (checkErrorF) {
                         Reporter.REPORTER.add(new MyError(token.lineNum, "f"));
                     }
                 }
@@ -404,6 +435,7 @@ public class Visitor {
 
                 for (ASTNode child : children) {
                     if (child.isNode("Exp")) {
+                        visitExp(child);
                         cnt2++;
                     }
                 }
@@ -608,6 +640,7 @@ public class Visitor {
         if (node.children.size() == 1) {
             return getSymbol(token).symbolType;
         } else {
+            visitExp(node.children.get(2));
             String origin = String.valueOf(getSymbol(token).symbolType);
             origin = origin.substring(0, origin.length() - 5);
             return SymbolType.valueOf(origin);
