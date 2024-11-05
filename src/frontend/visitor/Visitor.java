@@ -394,6 +394,13 @@ public class Visitor {
             }
         } else if (children.get(0).isNode("LVal")) {
             visitLVal(children.get(0));
+
+            Token LvalToken = ((LeafASTNode) children.get(0)).token;
+
+            if (isConst(getSymbol(LvalToken))) {
+                Reporter.REPORTER.add(new MyError(LvalToken.lineNum, "h"));
+            }
+
             if (children.get(2).isNode("getint")) {
                 // TODO
             } else if (children.get(2).isNode("getchar")) {
@@ -405,6 +412,13 @@ public class Visitor {
             // TODO
         }
         return false;
+    }
+
+    private boolean isConst(Symbol symbol) {
+        return switch (symbol.symbolType) {
+            case ConstInt, ConstChar, ConstIntArray, ConstCharArray -> true;
+            default -> false;
+        };
     }
 
     private void visitForStmt(ASTNode node) {
