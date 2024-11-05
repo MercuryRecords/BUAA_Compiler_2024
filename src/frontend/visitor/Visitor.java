@@ -131,7 +131,8 @@ public class Visitor {
         Token token = ((LeafASTNode) node.children.get(0)).token;
         String name = token.token;
         if (currTable.hasSymbol(name)) {
-            // TODO 重复定义，错误处理
+            MyError error = new MyError(token.lineNum, "b");
+            Reporter.REPORTER.add(error);
         }
         SymbolType symbolType = null;
         if (node.children.size() == 3) {
@@ -169,7 +170,8 @@ public class Visitor {
         Token token = ((LeafASTNode) child.children.get(0)).token;
         String name = token.token;
         if (currTable.hasSymbol(name)) {
-            // TODO 重复定义，错误处理
+            MyError error = new MyError(token.lineNum, "b");
+            Reporter.REPORTER.add(error);
         }
 
         SymbolType symbolType = null;
@@ -191,7 +193,8 @@ public class Visitor {
         Token token = ((LeafASTNode) node.children.get(1)).token;
         String funcname = token.token;
         if (currTable.hasSymbol(funcname)) {
-            // TODO 重复定义，错误处理
+            MyError error = new MyError(token.lineNum, "b");
+            Reporter.REPORTER.add(error);
         }
         SymbolType symbolType = SymbolType.FUNC;
         BType bType = null;
@@ -237,7 +240,8 @@ public class Visitor {
         Token token = ((LeafASTNode) children.get(1)).token;
         String name = token.token;
         if (currTable.hasSymbol(name)) {
-            // TODO 重复定义，错误处理
+            MyError error = new MyError(token.lineNum, "b");
+            Reporter.REPORTER.add(error);
         }
 
         BType bType = null;
