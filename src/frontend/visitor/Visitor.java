@@ -378,7 +378,7 @@ public class Visitor {
         ArrayList<ASTNode> children = node.children;
         if (children.get(0).isNode("Block")) {
             enterScope();
-            visitBlock(children.get(0), false, false, inLoop);
+            visitBlock(children.get(0), checkErrorF, false, inLoop);
             exitScope();
         } else if (children.get(0).isNode("LEAF")) {
             Token token = ((LeafASTNode) children.get(0)).token;
