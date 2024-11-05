@@ -14,7 +14,7 @@ public class Compiler {
     private static final String forInput = "testfile.txt";
     private static final String forLexer = "lexer.txt";
     private static final String forParser = "parser.txt";
-    private static final String forVisitor = "visitor.txt";
+    private static final String forVisitor = "symbol.txt";
 
     public static void main(String[] args) {
         try {

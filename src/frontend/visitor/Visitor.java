@@ -3,6 +3,8 @@ package frontend.visitor;
 import frontend.*;
 import frontend.lexer.LexType;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.Stack;
@@ -35,16 +37,17 @@ public class Visitor {
                 return a.id - b.id;
         });
 
-        for (Symbol symbol : symbols) {
-            System.out.println(symbol);
+        try (FileWriter writer = new FileWriter(forOutput)) {
+            for (Symbol symbol : symbols) {
+                writer.write(symbol + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace(System.out);
         }
     }
 
     private void enterScope() {
         SymbolTable newTable = new SymbolTable(scopeId++, currTable);
-        if (scopeId == 3) {
-            System.out.println("enter scope 3");
-        }
         symbolTableStack.push(newTable);
         allSymbolTables.add(newTable);
         currTable = newTable;
@@ -82,7 +85,15 @@ public class Visitor {
         exitScope();
     }
     private void visitMainFuncDef(ASTNode node) {
-
+        // <MainFuncDef> ::= 'int' 'main' '(' ')' <Block>
+        if (currTable.hasSymbol("main")) {
+            // TODO 错误处理
+        }
+        // Token token = ((LeafASTNode) node.children.get(1)).token;
+        // currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, BType.INT, SymbolType.FUNC));
+        enterScope();
+        visitBlock(node.children.get(4));
+        exitScope();
     }
 
     private void visitDecl(ASTNode node) {
@@ -254,8 +265,200 @@ public class Visitor {
     }
 
     private void visitBlock(ASTNode node) {
-
+        // <Block> ::= '{' { <BlockItem> } '}'
+        for (ASTNode child : node.children) {
+            if (child.isNode("BlockItem")) {
+                visitBlockItem(child.children.get(0));
+            }
+        }
     }
 
+    private void visitBlockItem(ASTNode node) {
+        // <BlockItem> ::= <Stmt> | <Decl>
+        if (node.isNode("Stmt")) {
+            visitStmt(node);
+        } else if (node.isNode("Decl"))
+            visitDecl(node);
+    }
 
+    private void visitStmt(ASTNode node) {
+        /*
+           <Stmt> ::= <Block>
+                    | 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
+                    | 'for' '(' [ <ForStmt> ] ';' [ <Cond> ] ';' [ <ForStmt> ] ')' <Stmt>
+                    | 'break' ';'
+                    | 'continue' ';'
+                    | 'return' [ <Exp> ] ';'
+                    | 'printf' '(' <StringConst> { ',' Exp } ')' ';'
+                    | <LVal> '=' 'getint' '(' ')' ';'
+                    | <LVal> '=' 'getchar' '(' ')' ';'
+                    | <LVal> '=' <Exp> ';'
+                    | [Exp] ';'
+         */
+        ArrayList<ASTNode> children = node.children;
+        if (children.get(0).isNode("Block")) {
+            enterScope();
+            visitBlock(children.get(0));
+            exitScope();
+        } else if (children.get(0).isNode("LEAF")) {
+            Token token = ((LeafASTNode) children.get(0)).token;
+            if (token.isType(LexType.IFTK)) {
+                visitCond(children.get(2));
+                visitStmt(children.get(4));
+                if (children.size() == 7) {
+                    visitStmt(children.get(6));
+                }
+            } else if (token.isType(LexType.FORTK)) {
+                int i = 2;
+                if (i < children.size() && children.get(i).isNode("ForStmt")) {
+                    visitForStmt(children.get(i));
+                    i++;
+                }
+                i++;
+                if (i < children.size() && children.get(i).isNode("Cond")) {
+                    visitCond(children.get(i));
+                    i++;
+                }
+                i++;
+                if (i < children.size() && children.get(i).isNode("ForStmt")) {
+                    visitForStmt(children.get(i));
+                    i++;
+                }
+                i++;
+                visitStmt(children.get(i));
+            } else if (token.isType(LexType.BREAKTK)) {
+                // TODO
+            } else if (token.isType(LexType.CONTINUETK)) {
+                // TODO
+            } else if (token.isType(LexType.RETURNTK)) {
+                // TODO
+            } else if (token.isType(LexType.PRINTFTK)) {
+                // TODO
+            }
+        } else if (children.get(0).isNode("LVal")) {
+            if (children.get(2).isNode("getint")) {
+                // TODO
+            } else if (children.get(2).isNode("getchar")) {
+                // TODO
+            } else if (children.get(2).isNode("Exp")) {
+                // TODO
+            }
+        } else if (children.get(0).isNode("Exp")) {
+            // TODO
+        }
+    }
+
+    private void visitForStmt(ASTNode node) {
+        // <ForStmt> ::=  <LVal> '=' <Exp>
+        visitLVal(node.children.get(0));
+        visitExp(node.children.get(2));
+    }
+
+    private void visitCond(ASTNode node) {
+        // <Cond> ::= <LOrExp>
+        visitLOrExp(node.children.get(0));
+    }
+
+    private void visitLOrExp(ASTNode node) {
+        // <LOrExp> ::= <LAndExp> { '||' <LAndExp> }
+        for (ASTNode child : node.children) {
+            if (child.isNode("LAndExp")) {
+                visitLAndExp(child);
+            }
+        }
+    }
+
+    private void visitLAndExp(ASTNode node) {
+        // <LAndExp> ::= <EqExp> { '&&' <EqExp> }
+        for (ASTNode child : node.children) {
+            if (child.isNode("EqExp")) {
+                visitEqExp(child);
+            }
+        }
+    }
+
+    private void visitEqExp(ASTNode node) {
+        // <EqExp> ::= <RelExp> { ('==' | '!=') <RelExp> }
+        for (ASTNode child : node.children) {
+            if (child.isNode("RelExp")) {
+                visitRelExp(child);
+            }
+        }
+    }
+
+    private void visitRelExp(ASTNode node) {
+        // <RelExp> ::= <AddExp> { ('<' | '<=' | '>' | '>=' ) <AddExp> }
+        for (ASTNode child : node.children) {
+            if (child.isNode("AddExp")) {
+                visitAddExp(child);
+            }
+        }
+    }
+
+    private void visitAddExp(ASTNode node) {
+        // <AddExp> ::= <MulExp> {<AddOp> <MulExp>}
+        for (ASTNode child : node.children) {
+            if (child.isNode("MulExp")) {
+                visitMulExp(child);
+            }
+        }
+    }
+
+    private void visitMulExp(ASTNode node) {
+        // <MulExp> ::= <UnaryExp> {<MulOp> <UnaryExp>}
+        for (ASTNode child : node.children) {
+            if (child.isNode("UnaryExp")) {
+                visitUnaryExp(child);
+            }
+        }
+    }
+
+    private void visitUnaryExp(ASTNode node) {
+        // <UnaryExp> ::= <PrimaryExp> | <UnaryOp> <UnaryExp> | <Ident> '(' [<FuncRParams>] ')'
+        if (node.children.get(0).isNode("PrimaryExp")) {
+            visitPrimaryExp(node.children.get(0));
+        } else if (node.children.get(0).isNode("UnaryOp")) {
+            visitUnaryExp(node.children.get(1));
+        } else if (node.children.get(0).isNode("LEAF")) {
+
+        }
+    }
+
+    private void visitPrimaryExp(ASTNode node) {
+        // <PrimaryExp> ::= '(' <Exp> ')' | <LVal> | <Number> | <Character>
+        if (node.children.size() == 3) {
+            visitExp(node.children.get(1));
+        } else if (node.children.get(0).isNode("LVal")) {
+            visitLVal(node.children.get(0));
+        } else if (node.children.get(0).isNode("Number")) {
+            visitNumber(node.children.get(0));
+        } else if (node.children.get(0).isNode("Character")) {
+            visitCharacter(node.children.get(0));
+        }
+    }
+
+    private void visitCharacter(ASTNode node) {
+        // TODO
+    }
+
+    private void visitNumber(ASTNode node) {
+        // TODO
+    }
+
+    private void visitLVal(ASTNode node) {
+        // <LVal> ::= <Ident> [ '[' <Exp> ']' ]
+        Token token = ((LeafASTNode) node.children.get(0)).token;
+        if (currTable.hasSymbol(token.token)) {
+            // TODO
+        }
+
+        if (node.children.size() == 4) {
+            visitExp(node.children.get(2));
+        }
+    }
+
+    private void visitExp(ASTNode node) {
+        // <Exp> ::= <AddExp>
+        visitAddExp(node.children.get(0));
+    }
 }
