@@ -238,7 +238,7 @@ public class Visitor {
             checkErrorG = true;
         }
         enterScope();
-        if (node.children.get(4).isNode("FuncFParams")) {
+        if (node.children.get(3).isNode("FuncFParams")) {
             ArrayList<Symbol> paras = visitFParams(node.children.get(3));
             symbol.setParas(paras);
         }
@@ -403,12 +403,11 @@ public class Visitor {
                 }
             }
         } else if (children.get(0).isNode("LVal")) {
-            visitLVal(children.get(0));
+            SymbolType symbolType = visitLVal(children.get(0));
+            ASTNode ident = children.get(0).children.get(0);
 
-            Token LvalToken = ((LeafASTNode) children.get(0)).token;
-
-            if (isConst(getSymbol(LvalToken))) {
-                Reporter.REPORTER.add(new MyError(LvalToken.lineNum, "h"));
+            if (isConst(symbolType)) {
+                Reporter.REPORTER.add(new MyError(((LeafASTNode) ident).token.lineNum, "h"));
             }
 
             if (children.get(2).isNode("Exp")) {
@@ -420,8 +419,8 @@ public class Visitor {
         return false;
     }
 
-    private boolean isConst(Symbol symbol) {
-        return switch (symbol.symbolType) {
+    private boolean isConst(SymbolType symbolType) {
+        return switch (symbolType) {
             case ConstInt, ConstChar, ConstIntArray, ConstCharArray -> true;
             default -> false;
         };
@@ -590,7 +589,14 @@ public class Visitor {
         Token token = ((LeafASTNode) node.children.get(0)).token;
         checkErrorC(token);
 
-        return getSymbol(token).symbolType;
+        if (node.children.size() == 1) {
+            return getSymbol(token).symbolType;
+        } else {
+            String origin = String.valueOf(getSymbol(token).symbolType);
+            origin = origin.substring(0, origin.length() - 5);
+            return SymbolType.valueOf(origin);
+        }
+
     }
 
     private SymbolType visitExp(ASTNode node) {
