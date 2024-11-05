@@ -390,7 +390,26 @@ public class Visitor {
                 }
                 return true;
             } else if (token.isType(LexType.PRINTFTK)) {
-                // TODO
+                int cnt1 = 0, cnt2 = 0;
+                String str = ((LeafASTNode) children.get(2).children.get(0)).token.token;
+                // 找到 %d 或 %c
+                for (int i = 0; i < str.length(); i++) {
+                    if (str.charAt(i) == '%' && i + 1 < str.length()) {
+                        if (str.charAt(i + 1) == 'd' || str.charAt(i + 1) == 'c') {
+                            cnt1++;
+                        }
+                    }
+                }
+
+                for (ASTNode child : children) {
+                    if (child.isNode("Exp")) {
+                        cnt2++;
+                    }
+                }
+
+                if (cnt1 != cnt2) {
+                    Reporter.REPORTER.add(new MyError(token.lineNum, "l"));
+                }
             }
         } else if (children.get(0).isNode("LVal")) {
             visitLVal(children.get(0));
