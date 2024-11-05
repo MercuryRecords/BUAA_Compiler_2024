@@ -6,79 +6,109 @@ public class Symbol {
     public int id;
     public int tableId;
     public Token token;
-    public BType bType;
+    // public _SymbolType1 symbolType1;
+    // public _SymbolType2 symbolType2;
     public SymbolType symbolType;
     public ArrayList<Symbol> paras = null;
 
-    public Symbol(int id, int tableId, Token token, BType bType, SymbolType symbolType) {
+    public Symbol(int id, int tableId, Token token, _SymbolType1 symbolType1, _SymbolType2 symbolType2) {
         this.id = id;
         this.tableId = tableId;
         this.token = token;
-        this.bType = bType;
-        this.symbolType = symbolType;
+        this.symbolType = toType(symbolType1, symbolType2);
     }
 
     public void setParas(ArrayList<Symbol> paras) {
         this.paras = paras;
     }
 
-    private String printType() {
+    public enum _SymbolType1 {
+        INT,
+        CHAR,
+        VOID,
+    }
+
+    public enum _SymbolType2 {
+        VAR,
+        ARRAY,
+        FUNC,
+        CONST,
+        CONSTARRAY,
+    }
+
+
+    public enum SymbolType {
+        ConstInt,
+        Int,
+        IntFunc,
+        IntArray,
+        ConstIntArray,
+        ConstChar,
+        Char,
+        CharFunc,
+        CharArray,
+        ConstCharArray,
+        VoidFunc,
+        ERROR,
+    }
+
+    private SymbolType toType(_SymbolType1 symbolType1, _SymbolType2 symbolType2) {
         // char型常量	ConstChar	    char型变量	    Char	    void型函数	VoidFunc
         // int型常量	    ConstInt	    int型变量	    Int	        char型函数	CharFunc
         // char型常量数组	ConstCharArray	char型变量数组	CharArray	int型函数	IntFunc
         // int型常量数组	ConstIntArray	int型变量数组	    IntArray
-        switch (bType) {
+        switch (symbolType1) {
             case INT -> {
-                switch (symbolType) {
+                switch (symbolType2) {
                     case CONST -> {
-                        return "ConstInt";
+                        return SymbolType.ConstInt;
                     }
                     case VAR -> {
-                        return "Int";
+                        return SymbolType.Int;
                     }
                     case FUNC -> {
-                        return "IntFunc";
+                        return SymbolType.IntFunc;
                     }
                     case ARRAY -> {
-                        return "IntArray";
+                        return SymbolType.IntArray;
                     }
                     case CONSTARRAY -> {
-                        return "ConstIntArray";
+                        return SymbolType.ConstIntArray;
                     }
                 }
             }
             case CHAR -> {
-                switch (symbolType) {
+                switch (symbolType2) {
                     case CONST -> {
-                        return "ConstChar";
+                        return SymbolType.ConstChar;
                     }
                     case VAR -> {
-                        return "Char";
+                        return SymbolType.Char;
                     }
                     case FUNC -> {
-                        return "CharFunc";
+                        return SymbolType.CharFunc;
                     }
                     case ARRAY -> {
-                        return "CharArray";
+                        return SymbolType.CharArray;
                     }
                     case CONSTARRAY -> {
-                        return "ConstCharArray";
+                        return SymbolType.ConstCharArray;
                     }
                 }
             }
             case VOID -> {
-                switch (symbolType) {
+                switch (symbolType2) {
                     case FUNC -> {
-                        return "VoidFunc";
+                        return SymbolType.VoidFunc;
                     }
                 }
             }
         }
-        return "ERROR";
+        return SymbolType.ERROR;
     }
 
     @Override
     public String toString() {
-        return tableId + " " + token.token + " " + printType();
+        return tableId + " " + token.token + " " + symbolType;
     }
 }

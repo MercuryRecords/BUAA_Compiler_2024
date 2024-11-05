@@ -24,4 +24,8 @@ public class SymbolTable {
     public ArrayList<Symbol> getAllSymbols() {
         return new ArrayList<>(symbols.values());
     }
+
+    public Symbol getSymbol(String token) {
+        return symbols.get(token);
+    }
 }
