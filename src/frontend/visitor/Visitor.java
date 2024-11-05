@@ -106,8 +106,6 @@ public class Visitor {
         int i = 0;
         while (i < children.size() && children.get(i).isNode("Decl")) {
             visitDecl(children.get(i));
-
-            // visitConstDecl(children.get(i));
             i++;
         }
         while (i < children.size() && children.get(i).isNode("FuncDef")) {
@@ -122,7 +120,7 @@ public class Visitor {
     private void visitMainFuncDef(ASTNode node) {
         // <MainFuncDef> ::= 'int' 'main' '(' ')' <Block>
         enterScope();
-        visitBlock(node.children.get(4), false, true, false);
+        visitBlock(node.children.get(node.children.size() - 1), false, true, false);
         exitScope();
     }
 
@@ -334,7 +332,7 @@ public class Visitor {
         boolean isReturn = false;
         for (ASTNode child : node.children) {
             if (child.isNode("BlockItem")) {
-                isReturn = visitBlockItem(child.children.get(0), checkErrorF, inLoop);
+                isReturn = visitBlockItem(child, checkErrorF, inLoop);
             }
         }
         if (checkErrorG && !isReturn) {
@@ -353,10 +351,11 @@ public class Visitor {
      */
     private boolean visitBlockItem(ASTNode node, boolean checkErrorF, boolean inLoop) {
         // <BlockItem> ::= <Stmt> | <Decl>
-        if (node.isNode("Stmt")) {
-            return visitStmt(node, checkErrorF, inLoop);
+        ASTNode child = node.children.get(0);
+        if (child.isNode("Stmt")) {
+            return visitStmt(child, checkErrorF, inLoop);
         } else {
-            visitDecl(node);
+            visitDecl(child);
             return false;
         }
     }
