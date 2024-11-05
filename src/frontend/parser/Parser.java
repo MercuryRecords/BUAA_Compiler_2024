@@ -266,7 +266,10 @@ public class Parser {
         } else if (curToken().isType(LexType.RETURNTK)) {
             node.addChild(parseTokenType(LexType.RETURNTK));
             if (!curToken().isType(LexType.SEMICN)) {
-                node.addChild(parseExp());
+                ASTNode expNode = parseExp();
+                if (!isActuallyEmpty(expNode)) {
+                    node.addChild(parseExp());
+                }
             }
             checkSemicn();
             node.addChild(parseTokenType(LexType.SEMICN));

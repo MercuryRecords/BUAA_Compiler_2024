@@ -37,10 +37,12 @@ public class Visitor {
         return new Symbol(0, 0, token, _SymbolType1.VOID, _SymbolType2.VAR);
     }
 
-    private void checkErrorB(Token token) {
+    private boolean checkErrorB(Token token) {
         if (currTable.hasSymbol(token.token)) {
             Reporter.REPORTER.add(new MyError(token.lineNum, "b"));
+            return false;
         }
+        return true;
     }
 
     private void checkErrorC(Token token) {
@@ -157,23 +159,17 @@ public class Visitor {
     private void visitConstDef(ASTNode node, _SymbolType1 symbolType1) {
         // <ConstDef> ::= <Ident> '=' <ConstInitVal> | <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
         Token token = ((LeafASTNode) node.children.get(0)).token;
-        checkErrorB(token);
-        _SymbolType2 symbolType2 = _SymbolType2.CONST;
-        for (ASTNode child : node.children) {
-            if (child.isNode("LEAF")) {
-                if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
-                    symbolType2 = _SymbolType2.CONSTARRAY;
+        if (checkErrorB(token)) {
+            _SymbolType2 symbolType2 = _SymbolType2.CONST;
+            for (ASTNode child : node.children) {
+                if (child.isNode("LEAF")) {
+                    if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
+                        symbolType2 = _SymbolType2.CONSTARRAY;
+                    }
                 }
             }
+            currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
         }
-        //if (node.children.size() == 3) {
-        //    // <Ident> '=' <ConstInitVal>
-        //    symbolType2 = _SymbolType2.CONST;
-        //} else if (node.children.size() == 6) {
-        //    // <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
-        //    symbolType2 = _SymbolType2.CONSTARRAY;
-        //}
-        currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
     }
 
     private void visitVarDecl(ASTNode node) {
@@ -199,18 +195,18 @@ public class Visitor {
     private void visitVarDef(ASTNode child, _SymbolType1 symbolType1) {
         // <VarDef> ::= <Ident> [ '[' <ConstExp> ']' ] [ '=' <InitVal> ]
         Token token = ((LeafASTNode) child.children.get(0)).token;
-        checkErrorB(token);
-
-        _SymbolType2 symbolType2 = _SymbolType2.VAR;
-        for (ASTNode node : child.children) {
-            if (node.isNode("LEAF")) {
-                if (((LeafASTNode) node).token.isType(LexType.LBRACK)) {
-                    symbolType2 = _SymbolType2.ARRAY;
+        if (checkErrorB(token)) {
+            _SymbolType2 symbolType2 = _SymbolType2.VAR;
+            for (ASTNode node : child.children) {
+                if (node.isNode("LEAF")) {
+                    if (((LeafASTNode) node).token.isType(LexType.LBRACK)) {
+                        symbolType2 = _SymbolType2.ARRAY;
+                    }
                 }
             }
-        }
 
-        currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
+            currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
+        }
     }
 
 
@@ -219,7 +215,7 @@ public class Visitor {
         // <FuncType> ::= 'void' | 'int' | 'char'
         Token token = ((LeafASTNode) node.children.get(1)).token;
 
-        checkErrorB(token);
+        boolean checkErrorB = checkErrorB(token);
 
         _SymbolType2 symbolType2 = _SymbolType2.FUNC;
         _SymbolType1 symbolType1 = null;
@@ -234,8 +230,11 @@ public class Visitor {
             // char
             symbolType1 = _SymbolType1.CHAR;
         }
-        Symbol symbol = new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2);
-        currTable.addSymbol(symbol);
+        Symbol symbol = null;
+        if (checkErrorB) {
+            symbol = new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2);
+            currTable.addSymbol(symbol);
+        }
 
         boolean checkErrorF = false;
         boolean checkErrorG = false;
@@ -247,7 +246,9 @@ public class Visitor {
         enterScope();
         if (node.children.get(3).isNode("FuncFParams")) {
             ArrayList<Symbol> paras = visitFParams(node.children.get(3));
-            symbol.setParas(paras);
+            if (checkErrorB) {
+                symbol.setParas(paras);
+            }
         }
         ASTNode blockNode = node.children.get(node.children.size() - 1);
         visitBlock(blockNode, checkErrorF, checkErrorG, false);
@@ -270,7 +271,7 @@ public class Visitor {
         ArrayList<ASTNode> children = node.children;
 
         Token token = ((LeafASTNode) children.get(1)).token;
-        checkErrorB(token);
+        boolean checkErrorB = checkErrorB(token);
 
         _SymbolType1 symbolType1 = null;
         LeafASTNode leafNode = (LeafASTNode) children.get(0).children.get(0);
@@ -290,7 +291,9 @@ public class Visitor {
             // <BType> <Ident> '[' ']'
             symbol = new Symbol(symbolId++, currTable.id, token, symbolType1, _SymbolType2.ARRAY);
         }
-        currTable.addSymbol(symbol);
+        if (checkErrorB) {
+            currTable.addSymbol(symbol);
+        }
 
         return symbol;
 
@@ -428,7 +431,7 @@ public class Visitor {
 
     private boolean isConst(SymbolType symbolType) {
         return switch (symbolType) {
-            case ConstInt, ConstChar, ConstIntArray, ConstCharArray -> true;
+            case ConstInt, ConstChar -> true;
             default -> false;
         };
     }
