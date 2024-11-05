@@ -9,7 +9,7 @@ public class Symbol {
     // public _SymbolType1 symbolType1;
     // public _SymbolType2 symbolType2;
     public SymbolType symbolType;
-    public ArrayList<Symbol> paras = null;
+    public ArrayList<SymbolType> paras = new ArrayList<>();
 
     public Symbol(int id, int tableId, Token token, _SymbolType1 symbolType1, _SymbolType2 symbolType2) {
         this.id = id;
@@ -19,7 +19,10 @@ public class Symbol {
     }
 
     public void setParas(ArrayList<Symbol> paras) {
-        this.paras = paras;
+        this.paras = new ArrayList<>();
+        for (Symbol para : paras) {
+            this.paras.add(para.symbolType);
+        }
     }
 
     public enum _SymbolType1 {

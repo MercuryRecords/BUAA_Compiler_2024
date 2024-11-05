@@ -24,17 +24,17 @@ public class Visitor {
         this.root = node;
     }
 
-    private SymbolType getSymbolType(Token token) {
+    private Symbol getSymbol(Token token) {
         SymbolTable table = currTable;
         while (table != null) {
             if (table.hasSymbol(token.token)) {
-                return table.getSymbol(token.token).symbolType;
+                return table.getSymbol(token.token);
             }
 
             table = table.parentTable;
         }
 
-        return SymbolType.ERROR;
+        return new Symbol(0, 0, token, _SymbolType1.VOID, _SymbolType2.VAR);
     }
 
     private void checkErrorB(Token token) {
@@ -472,11 +472,46 @@ public class Visitor {
                 paras = new ArrayList<>();
             }
 
-            // TODO
+            if (paras.size() != getSymbol(token).paras.size()) {
+                Reporter.REPORTER.add(new MyError(token.lineNum, "d"));
+            }
 
-            return getSymbolType(token);
+            boolean flag = false;
+            for (int i = 0; i < paras.size(); i++) {
+                if (!canAccept(getSymbol(token).paras.get(i), paras.get(i))) {
+                    flag = true;
+                }
+            }
+            if (flag) {
+                Reporter.REPORTER.add(new MyError(token.lineNum, "e"));
+            }
+
+            return getSymbol(token).symbolType;
         }
         return SymbolType.ERROR;
+    }
+
+    private boolean isArray(SymbolType symbolType) {
+        return switch (symbolType) {
+            case IntArray, ConstIntArray, CharArray, ConstCharArray -> true;
+            default -> false;
+        };
+    }
+
+    private boolean canAccept(SymbolType formal, SymbolType real) {
+        if (isArray(formal) != isArray(real)) {
+            return false;
+        }
+
+        if (formal == SymbolType.CharArray || formal == SymbolType.ConstCharArray) {
+            return real == SymbolType.CharArray || real == SymbolType.ConstCharArray;
+        }
+
+        if (formal == SymbolType.IntArray || formal == SymbolType.ConstIntArray) {
+            return real == SymbolType.IntArray || real == SymbolType.ConstIntArray;
+        }
+
+        return true;
     }
 
     private ArrayList<SymbolType> visitFuncRParams(ASTNode node) {
@@ -509,7 +544,7 @@ public class Visitor {
         Token token = ((LeafASTNode) node.children.get(0)).token;
         checkErrorC(token);
 
-        return getSymbolType(token);
+        return getSymbol(token).symbolType;
     }
 
     private SymbolType visitExp(ASTNode node) {
