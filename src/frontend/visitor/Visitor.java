@@ -158,14 +158,21 @@ public class Visitor {
         // <ConstDef> ::= <Ident> '=' <ConstInitVal> | <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
         Token token = ((LeafASTNode) node.children.get(0)).token;
         checkErrorB(token);
-        _SymbolType2 symbolType2 = null;
-        if (node.children.size() == 3) {
-            // <Ident> '=' <ConstInitVal>
-            symbolType2 = _SymbolType2.CONST;
-        } else if (node.children.size() == 6) {
-            // <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
-            symbolType2 = _SymbolType2.CONSTARRAY;
+        _SymbolType2 symbolType2 = _SymbolType2.CONST;
+        for (ASTNode child : node.children) {
+            if (child.isNode("LEAF")) {
+                if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
+                    symbolType2 = _SymbolType2.CONSTARRAY;
+                }
+            }
         }
+        //if (node.children.size() == 3) {
+        //    // <Ident> '=' <ConstInitVal>
+        //    symbolType2 = _SymbolType2.CONST;
+        //} else if (node.children.size() == 6) {
+        //    // <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
+        //    symbolType2 = _SymbolType2.CONSTARRAY;
+        //}
         currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
     }
 
@@ -194,13 +201,13 @@ public class Visitor {
         Token token = ((LeafASTNode) child.children.get(0)).token;
         checkErrorB(token);
 
-        _SymbolType2 symbolType2;
-        if (child.children.size() == 1 || child.children.size() == 3) {
-            // <Ident> [ '=' <InitVal> ]
-            symbolType2 = _SymbolType2.VAR;
-        } else {
-            // <Ident> '[' <ConstExp> ']' [ '=' <InitVal> ]
-            symbolType2 = _SymbolType2.ARRAY;
+        _SymbolType2 symbolType2 = _SymbolType2.VAR;
+        for (ASTNode node : child.children) {
+            if (node.isNode("LEAF")) {
+                if (((LeafASTNode) node).token.isType(LexType.LBRACK)) {
+                    symbolType2 = _SymbolType2.ARRAY;
+                }
+            }
         }
 
         currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
