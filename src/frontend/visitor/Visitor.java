@@ -340,6 +340,7 @@ public class Visitor {
                 // TODO
             }
         } else if (children.get(0).isNode("LVal")) {
+            visitLVal(children.get(0));
             if (children.get(2).isNode("getint")) {
                 // TODO
             } else if (children.get(2).isNode("getchar")) {
@@ -424,7 +425,11 @@ public class Visitor {
         } else if (node.children.get(0).isNode("UnaryOp")) {
             visitUnaryExp(node.children.get(1));
         } else if (node.children.get(0).isNode("LEAF")) {
-
+            Token token = ((LeafASTNode) node.children.get(0)).token;
+            if (!currTable.hasSymbol(token.token)) {
+                MyError error = new MyError(token.lineNum, "c");
+                Reporter.REPORTER.add(error);
+            }
         }
     }
 
@@ -452,8 +457,9 @@ public class Visitor {
     private void visitLVal(ASTNode node) {
         // <LVal> ::= <Ident> [ '[' <Exp> ']' ]
         Token token = ((LeafASTNode) node.children.get(0)).token;
-        if (currTable.hasSymbol(token.token)) {
-            // TODO
+        if (!currTable.hasSymbol(token.token)) {
+            MyError error = new MyError(token.lineNum, "c");
+            Reporter.REPORTER.add(error);
         }
 
         if (node.children.size() == 4) {
