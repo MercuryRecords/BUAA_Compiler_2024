@@ -127,7 +127,7 @@ public class Visitor {
         // Token token = ((LeafASTNode) node.children.get(1)).token;
         // currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, BType.INT, SymbolType.FUNC));
         enterScope();
-        visitBlock(node.children.get(4));
+        visitBlock(node.children.get(4), false);
         exitScope();
     }
 
@@ -238,6 +238,11 @@ public class Visitor {
         }
         Symbol symbol = new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2);
         currTable.addSymbol(symbol);
+
+        boolean checkErrorF = false;
+        if (symbolType1 == _SymbolType1.VOID) {
+            checkErrorF = true;
+        }
         enterScope();
         if (node.children.get(4).isNode("FuncFParams")) {
             ArrayList<Symbol> paras = visitFParams(node.children.get(3));
@@ -245,7 +250,7 @@ public class Visitor {
         }
         for (ASTNode child : node.children) {
             if (child.isNode("Block")) {
-                visitBlock(child);
+                visitBlock(child, checkErrorF);
             }
         }
         exitScope();
@@ -293,24 +298,25 @@ public class Visitor {
 
     }
 
-    private void visitBlock(ASTNode node) {
+    private void visitBlock(ASTNode node, boolean checkErrorF) {
         // <Block> ::= '{' { <BlockItem> } '}'
         for (ASTNode child : node.children) {
             if (child.isNode("BlockItem")) {
-                visitBlockItem(child.children.get(0));
+                visitBlockItem(child.children.get(0), checkErrorF);
             }
         }
     }
 
-    private void visitBlockItem(ASTNode node) {
+    private void visitBlockItem(ASTNode node, boolean checkErrorF) {
         // <BlockItem> ::= <Stmt> | <Decl>
         if (node.isNode("Stmt")) {
-            visitStmt(node);
-        } else if (node.isNode("Decl"))
+            visitStmt(node, checkErrorF);
+        } else if (node.isNode("Decl")) {
             visitDecl(node);
+        }
     }
 
-    private void visitStmt(ASTNode node) {
+    private void visitStmt(ASTNode node, boolean checkErrorF) {
         /*
            <Stmt> ::= <Block>
                     | 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
@@ -327,7 +333,7 @@ public class Visitor {
         ArrayList<ASTNode> children = node.children;
         if (children.get(0).isNode("Block")) {
             enterScope();
-            visitBlock(children.get(0));
+            visitBlock(children.get(0), false);
             exitScope();
         } else if (children.get(0).isNode("LEAF")) {
             Token token = ((LeafASTNode) children.get(0)).token;
@@ -336,7 +342,7 @@ public class Visitor {
                 visitCond(children.get(i++));
                 while (i < children.size()) {
                     if (children.get(i).isNode("Stmt")) {
-                        visitStmt(children.get(i));
+                        visitStmt(children.get(i), checkErrorF);
                     }
                     i++;
                 }
@@ -357,13 +363,17 @@ public class Visitor {
                     i++;
                 }
                 i++;
-                visitStmt(children.get(i));
+                visitStmt(children.get(i), checkErrorF);
             } else if (token.isType(LexType.BREAKTK)) {
                 // TODO
             } else if (token.isType(LexType.CONTINUETK)) {
                 // TODO
             } else if (token.isType(LexType.RETURNTK)) {
-                // TODO
+                if (checkErrorF) {
+                    if (1 < children.size() && children.get(1).isNode("Exp")) {
+                        Reporter.REPORTER.add(new MyError(token.lineNum, "f"));
+                    }
+                }
             } else if (token.isType(LexType.PRINTFTK)) {
                 // TODO
             }
