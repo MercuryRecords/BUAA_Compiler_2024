@@ -133,7 +133,7 @@ public class Parser {
         node.addChild(parseFuncType());
         node.addChild(parseIdent());
         node.addChild(parseTokenType(LexType.LPARENT));
-        if (!curToken().isType(LexType.RPARENT)) {
+        if (!curToken().isType(LexType.RPARENT) && !curToken().isType(LexType.LBRACE)) {
             node.addChild(parseFuncFParams());
         }
         checkRparent();
