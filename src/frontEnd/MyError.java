@@ -1,4 +1,4 @@
-package frontend;
+package frontEnd;
 
 public class MyError {
     // package-private 写法

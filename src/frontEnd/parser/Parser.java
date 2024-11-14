@@ -1,7 +1,7 @@
-package frontend.parser;
+package frontEnd.parser;
 
-import frontend.*;
-import frontend.lexer.LexType;
+import frontEnd.*;
+import frontEnd.lexer.LexType;
 
 import java.io.FileWriter;
 import java.io.IOException;

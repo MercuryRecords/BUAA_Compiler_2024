@@ -1,4 +1,4 @@
-package frontend;
+package frontEnd;
 
 public class LeafASTNode extends ASTNode{
     public final Token token;

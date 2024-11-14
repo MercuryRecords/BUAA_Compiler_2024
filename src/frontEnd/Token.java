@@ -1,6 +1,6 @@
-package frontend;
+package frontEnd;
 
-import frontend.lexer.LexType;
+import frontEnd.lexer.LexType;
 
 public class Token {
     public final LexType type;

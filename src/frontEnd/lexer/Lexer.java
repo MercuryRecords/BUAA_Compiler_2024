@@ -1,8 +1,8 @@
-package frontend.lexer;
+package frontEnd.lexer;
 
-import frontend.MyError;
-import frontend.Reporter;
-import frontend.Token;
+import frontEnd.MyError;
+import frontEnd.Reporter;
+import frontEnd.Token;
 
 import java.io.FileWriter;
 import java.io.IOException;

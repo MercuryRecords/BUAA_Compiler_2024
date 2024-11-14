@@ -1,4 +1,4 @@
-package frontend;
+package frontEnd;
 
 import java.io.FileWriter;
 import java.io.IOException;

@@ -1,10 +1,10 @@
-package frontend.visitor;
+package frontEnd.visitor;
 
-import frontend.*;
-import frontend.Symbol._SymbolType1;
-import frontend.Symbol._SymbolType2;
-import frontend.Symbol.SymbolType;
-import frontend.lexer.LexType;
+import frontEnd.*;
+import frontEnd.Symbol._SymbolType1;
+import frontEnd.Symbol._SymbolType2;
+import frontEnd.Symbol.SymbolType;
+import frontEnd.lexer.LexType;
 
 import java.io.FileWriter;
 import java.io.IOException;

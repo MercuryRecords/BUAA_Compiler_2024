@@ -1,9 +1,9 @@
-import frontend.Token;
-import frontend.ASTNode;
-import frontend.Reporter;
-import frontend.lexer.Lexer;
-import frontend.parser.Parser;
-import frontend.visitor.Visitor;
+import frontEnd.Token;
+import frontEnd.ASTNode;
+import frontEnd.Reporter;
+import frontEnd.lexer.Lexer;
+import frontEnd.parser.Parser;
+import frontEnd.visitor.Visitor;
 
 import java.io.IOException;
 import java.nio.file.Files;
