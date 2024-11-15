@@ -19,7 +19,7 @@ public class Module {
     public String toString() {
         StringBuilder module = new StringBuilder();
         for (GlobalValue globalValue : globalValues) {
-            module.append(globalValue.toString());
+            module.append(globalValue.toString()).append("\n");
         }
         return module.toString();
     }

@@ -277,7 +277,7 @@ public class Visitor {
         if (node.children.get(3).isNode("FuncFParams")) {
             ArrayList<Symbol> paras = visitFParams(node.children.get(3));
             if (checkErrorB) {
-                symbol.setParas(paras);
+                symbol.setParams(paras);
             }
         }
         ASTNode blockNode = node.children.get(node.children.size() - 1);
@@ -566,12 +566,12 @@ public class Visitor {
                 paras = new ArrayList<>();
             }
 
-            if (paras.size() != getSymbol(token).paras.size()) {
+            if (paras.size() != getSymbol(token).params.size()) {
                 Reporter.REPORTER.add(new MyError(token.lineNum, "d"));
             } else {
                 boolean flag = false;
                 for (int i = 0; i < paras.size(); i++) {
-                    if (!canAccept(getSymbol(token).paras.get(i), paras.get(i))) {
+                    if (!canAccept(getSymbol(token).params.get(i).symbolType, paras.get(i))) {
                         flag = true;
                     }
                 }
