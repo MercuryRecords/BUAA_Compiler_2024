@@ -10,12 +10,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EmptyStackException;
+import java.util.HashMap;
 import java.util.Stack;
 
 public class Visitor {
     private final ASTNode root;
     private final Stack<SymbolTable> symbolTableStack = new Stack<>();
-    private final ArrayList<SymbolTable> allSymbolTables = new ArrayList<>();
+    private final HashMap<Integer, SymbolTable> allSymbolTables = new HashMap<>();
     private SymbolTable currTable = null;
     private int symbolId = 1;
     private int scopeId = 1;
@@ -59,10 +60,10 @@ public class Visitor {
     }
 
 
-    public void analyze(String forOutput) {
+    public HashMap<Integer, SymbolTable> analyze(String forOutput) {
         visitCompUnit(root);
         ArrayList<Symbol> symbols = new ArrayList<>();
-        for (SymbolTable table : allSymbolTables) {
+        for (SymbolTable table : allSymbolTables.values()) {
             symbols.addAll(table.getAllSymbols());
         }
 
@@ -81,12 +82,13 @@ public class Visitor {
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }
+        return allSymbolTables;
     }
 
     private void enterScope() {
         SymbolTable newTable = new SymbolTable(scopeId++, currTable);
         symbolTableStack.push(newTable);
-        allSymbolTables.add(newTable);
+        allSymbolTables.put(newTable.id, newTable);
         currTable = newTable;
     }
 

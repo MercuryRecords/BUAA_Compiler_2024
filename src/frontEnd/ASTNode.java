@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 public class ASTNode {
     public String name;
-    public ASTNode parent = null;
+    // public ASTNode parent = null;
     public ArrayList<ASTNode> children;
 //    public ASTNode(String name, ASTNode parent) {
 //        this.name = name;
@@ -20,15 +20,15 @@ public class ASTNode {
         return this.name.equals(name);
     }
 
-    private void setParent(ASTNode parent) {
-        this.parent = parent;
-    }
+//    private void setParent(ASTNode parent) {
+//        this.parent = parent;
+//    }
 
     public void addChild(ASTNode child) {
         if (child == null) return;
         if (this instanceof LeafASTNode) return;
         children.add(child);
-        child.setParent(this);
+//        child.setParent(this);
     }
 
     public String print() {
