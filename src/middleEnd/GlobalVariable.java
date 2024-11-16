@@ -8,6 +8,7 @@ public class GlobalVariable extends GlobalValue {
     private final int arrayLength;
     private LLVMType.TypeID baseType;
     private InitVal initVal = null;
+    // "全局变量的初值表达式也必须是常量表达式 ConstExp"，故都可以计算得出
     public GlobalVariable(Symbol symbol, int arrayLength, InitVal initVal) {
         super();
         setFromSymbol(symbol);
@@ -56,13 +57,19 @@ public class GlobalVariable extends GlobalValue {
     }
 
     public int getConstValue() {
-        return 0;
-        // TODO
+        return initVal.getConstValue(0);
     }
 
     public int getConstValue(int i) {
-        return 0;
-        // TODO
+        if (i >= arrayLength) {
+            throw new RuntimeException("Overflow when getting const value from GlobalVariable");
+        }
+
+        if (i < initVal.getConstLength()) {
+            return initVal.getConstValue(i);
+        } else {
+            return 0;
+        }
     }
 
     @Override
@@ -80,11 +87,27 @@ public class GlobalVariable extends GlobalValue {
             sb.append(" x ");
             sb.append(baseType);
             sb.append("] [");
-            // TODO initVal
+            for (int i = 0; i < arrayLength; i++) {
+                sb.append(baseType);
+                sb.append(" ");
+                int val = getConstValue(i);
+                if (baseType == LLVMType.TypeID.CharTyID) {
+                    val = val & 0xFF;
+                }
+                sb.append(val);
+                if (i < arrayLength - 1) {
+                    sb.append(", ");
+                }
+            }
             sb.append("]");
         } else {
             sb.append(baseType);
-            // TODO initVal
+            sb.append(" ");
+            int val = getConstValue();
+            if (baseType == LLVMType.TypeID.CharTyID) {
+                val = val & 0xFF;
+            }
+            sb.append(val);
         }
         if (baseType == LLVMType.TypeID.IntegerTyID) {
             sb.append(", align 4");

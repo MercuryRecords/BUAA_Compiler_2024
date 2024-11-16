@@ -80,7 +80,7 @@ public class ConstCalculator {
         } else {
             int left = calculateAddExp(node.children.get(0));
             int right = calculateMulExp(node.children.get(2));
-            if (node.children.get(1).name.equals("+")) {
+            if (((LeafASTNode) node.children.get(1)).token.token.equals("+")) {
                 return left + right;
             } else {
                 return left - right;
@@ -94,9 +94,9 @@ public class ConstCalculator {
         } else {
             int left = calculateMulExp(node.children.get(0));
             int right = calculateUnaryExp(node.children.get(2));
-            if (node.children.get(1).name.equals("*")) {
+            if (((LeafASTNode) node.children.get(1)).token.token.equals("*")) {
                 return left * right;
-            } else if (node.children.get(1).name.equals("/")) {
+            } else if (((LeafASTNode) node.children.get(1)).token.token.equals("/")) {
                 return left / right;
             } else {
                 return left % right;
@@ -132,10 +132,11 @@ public class ConstCalculator {
         } else if (node.children.get(0).isNode("LVal")) {
             LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
             String token = leaf.token.token;
-            if (node.children.size() == 1) {
+            ASTNode lvalNode = node.children.get(0);
+            if (lvalNode.children.size() == 1) {
                 return getConst(token);
             } else {
-                return getConst(token, calculateConstExp(node.children.get(2)));
+                return getConst(token, calculateConstExp(lvalNode.children.get(2)));
             }
         } else {
             LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
@@ -143,7 +144,7 @@ public class ConstCalculator {
             if (token.isType(LexType.INTCON)) {
                 return Integer.parseInt(token.token);
             } else {
-                return token.token.charAt(0);
+                return token.token.charAt(1);
             }
 
         }

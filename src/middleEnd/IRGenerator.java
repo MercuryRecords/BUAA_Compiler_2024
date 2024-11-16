@@ -17,8 +17,8 @@ public class IRGenerator {
     ASTNode root;
     HashMap<Integer, SymbolTable> symbolTables;
     private int scopeId = 1;
-    private HashSet<Integer> usedScopeId = new HashSet<>();
-    private ConstCalculator constCalculator;
+    private final HashSet<Integer> usedScopeId = new HashSet<>();
+    private final ConstCalculator constCalculator;
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> symbolTables) {
         this.root = root;
         this.symbolTables = symbolTables;
@@ -100,12 +100,12 @@ public class IRGenerator {
                 Symbol symbol = getSymbol(ident);
                 if (symbol.symbolType.toString().endsWith("Array")) {
                     int arrayLength = calculateConstExp(child.children.get(2));
-                    InitVal initVal = translateInitVal(child.children.get(4));
+                    InitVal initVal = translateConstInitVal(child.children.get(5));
                     GlobalVariable var = new GlobalVariable(symbol, arrayLength, initVal);
                     constCalculator.add(scopeId, var);
                     values.add(var);
                 } else {
-                    InitVal initVal = translateInitVal(child.children.get(2));
+                    InitVal initVal = translateConstInitVal(child.children.get(2));
                     GlobalVariable var = new GlobalVariable(symbol, initVal);
                     constCalculator.add(scopeId, var);
                     values.add(var);
@@ -120,14 +120,24 @@ public class IRGenerator {
         return constCalculator.calculateConstExp(scopeId, node);
     }
 
-    private InitVal translateInitVal(ASTNode initVal) {
-        // 包括常量初值 ConstInitVal 和变量初值 InitVal
+    private InitVal translateConstInitVal(ASTNode node) {
+        // 形式上包括常量初值 ConstInitVal 和变量初值 InitVal，但全局变量的初值表达式必须是常量表达式 ConstExp
         // ConstInitVal  ::= ConstExp | '{' ConstExp { ',' ConstExp } '}' | StringConst
         // InitVal       ::= Exp | '{' Exp { ',' Exp } '}' | StringConst
         // ConstExp      ::= AddExp
         // Exp           ::= AddExp
         // TODO
-        return new InitVal();
+        if (node.children.get(0).isNode("StringConst")) {
+            return new InitVal(((LeafASTNode) node.children.get(0)).token.token);
+        } else {
+            InitVal initVal = new InitVal();
+            for (ASTNode child : node.children) {
+                if (child.isNode("ConstExp") || child.isNode("Exp")) {
+                    initVal.addConstExp(calculateConstExp(child));
+                }
+            }
+            return initVal;
+        }
     }
 
     private LinkedList<GlobalValue> translateVarDecl(ASTNode node) {
@@ -140,14 +150,14 @@ public class IRGenerator {
                 if (symbol.symbolType.toString().endsWith("Array")) {
                     int arrayLength = calculateConstExp(child.children.get(2));
                     if (child.children.get(child.children.size() - 1).isNode("InitVal")) {
-                        InitVal initVal = translateInitVal(child.children.get(4));
+                        InitVal initVal = translateConstInitVal(child.children.get(5));
                         values.add(new GlobalVariable(symbol, arrayLength, initVal));
                     } else {
                         values.add(new GlobalVariable(symbol, arrayLength));
                     }
                 } else {
                     if (child.children.get(child.children.size() - 1).isNode("InitVal")) {
-                        InitVal initVal = translateInitVal(child.children.get(2));
+                        InitVal initVal = translateConstInitVal(child.children.get(2));
                         values.add(new GlobalVariable(symbol, initVal));
                     } else {
                         values.add(new GlobalVariable(symbol));
