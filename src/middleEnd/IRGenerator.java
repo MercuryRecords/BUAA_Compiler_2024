@@ -8,10 +8,7 @@ import middleEnd.utils.ConstCalculator;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.*;
 
 public class IRGenerator {
     ASTNode root;
@@ -72,7 +69,7 @@ public class IRGenerator {
         ArrayList<ASTNode> children = root.children;
         for (ASTNode child : children) {
             if (child.isNode("Decl")) {
-                module.addGlobalValues(translateDecl(child));
+                module.addGlobalValues(translateGlobalDecl(child));
             } else if (child.isNode("FuncDef")) {
                 module.addGlobalValue(translateFuncDef(child));
             } else if (child.isNode("MainFuncDef")) {
@@ -83,7 +80,7 @@ public class IRGenerator {
         return module;
     }
 
-    private LinkedList<GlobalValue> translateDecl(ASTNode node) {
+    private LinkedList<GlobalValue> translateGlobalDecl(ASTNode node) {
         ASTNode child = node.children.get(0);
         if (child.isNode("ConstDecl")) {
             return translateConstDecl(child);
@@ -199,6 +196,54 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateBlockItem(ASTNode node) {
+        if (node.children.get(0).isNode("Decl")) {
+            return translateDecl(node.children.get(0));
+        } else {
+            return translateStmt(node.children.get(0));
+        }
+    }
+
+    private LinkedList<Instruction> translateDecl(ASTNode node) {
         return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateStmt(ASTNode node) {
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        if (node.children.get(0) instanceof LeafASTNode child) {
+            switch (child.token.type) {
+                case RETURNTK   -> instructions.addAll(translateReturnStmt(node));
+                case IFTK       -> instructions.addAll(translateIfStmt(node));
+                case FORTK      -> instructions.addAll(translateForStmt(node));
+                case BREAKTK    -> instructions.addAll(translateBreakStmt(node));
+                case CONTINUETK -> instructions.addAll(translateContinueStmt(node));
+                case PRINTFTK   -> instructions.addAll(translatePrintfStmt(node));
+            }
+        }
+
+        return instructions;
+    }
+
+    private LinkedList<Instruction> translateReturnStmt(ASTNode node) {
+        return null;
+    }
+
+    private LinkedList<Instruction> translateIfStmt(ASTNode node) {
+        return null;
+    }
+
+    private LinkedList<Instruction> translateForStmt(ASTNode node) {
+        return null;
+    }
+
+    private LinkedList<Instruction> translateBreakStmt(ASTNode node) {
+        return null;
+    }
+
+    private LinkedList<Instruction> translateContinueStmt(ASTNode node) {
+        return null;
+    }
+
+    private LinkedList<Instruction> translatePrintfStmt(ASTNode node) {
+        return null;
     }
 }
