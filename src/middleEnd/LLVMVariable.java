@@ -2,14 +2,14 @@ package middleEnd;
 
 import frontEnd.Symbol;
 
-public class LLVMSymbol extends Value {
+public class LLVMVariable extends Value {
     public boolean isConst;
     public String name;
     public int arrayLength; // 为 0 是表示不是数组
     public LLVMType.TypeID baseType;
     public InitVal initVal;
 
-    public LLVMSymbol(Symbol symbol, int arrayLength) {
+    public LLVMVariable(Symbol symbol, int arrayLength) {
         super();
         setFromSymbol(symbol);
         this.arrayLength = arrayLength;

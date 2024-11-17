@@ -2,7 +2,7 @@ package middleEnd;
 
 import frontEnd.Symbol;
 
-public class GlobalVariable extends LLVMSymbol {
+public class GlobalVariable extends LLVMVariable {
     public GlobalVariable(Symbol symbol, int arrayLength) {
         super(symbol, arrayLength);
     }

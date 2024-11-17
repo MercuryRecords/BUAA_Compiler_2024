@@ -16,4 +16,20 @@ public class LLVMType {
             return s;
         }
     }
+
+    public enum InstType {
+        AllocaInst("alloca"),
+        LoadInst("load"),
+        StoreInst("store"),
+
+        ;
+        private final String s;
+        InstType(String s) {
+            this.s = s;
+        }
+        @Override
+        public String toString() {
+            return s;
+        }
+    }
 }

@@ -74,8 +74,8 @@ public class IRGenerator {
         return oldSymbolTables.get(scopeId).getSymbol(identName);
     }
 
-    private void addLLVMSymbol(LLVMSymbol symbol) {
-        newSymbolTables.get(scopeId).addSymbol(symbol);
+    private void addLLVMVariable(LLVMVariable symbol) {
+        newSymbolTables.get(scopeId).addVariable(symbol);
     }
 
     private Module translateModule(ASTNode root) {
@@ -95,8 +95,6 @@ public class IRGenerator {
 
         return module;
     }
-
-    /********************** GlobalDecl Begin **********************/
 
     private LinkedList<Value> translateGlobalDecl(ASTNode node) {
         node = node.children.get(0);
@@ -123,7 +121,7 @@ public class IRGenerator {
                 constInitVal.padToLength(arrayLength);
                 var.setInitVal(constInitVal);
                 values.add(var);
-                addLLVMSymbol(var);
+                addLLVMVariable(var);
             }
         }
         return values;
@@ -152,8 +150,6 @@ public class IRGenerator {
         // ConstExp      ::= AddExp，但文法规定使用的 Ident 必须是常量，故可以计算得出
         return constCalculator.calculateConstExp(node, scopeId);
     }
-
-    /********************** GlobalDecl End **********************/
 
     private Function translateMainFuncDef(ASTNode node) {
         Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
