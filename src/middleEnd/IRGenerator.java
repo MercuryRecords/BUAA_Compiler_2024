@@ -12,8 +12,9 @@ import java.io.IOException;
 import java.util.*;
 
 public class IRGenerator {
-    ASTNode root;
-    HashMap<Integer, SymbolTable> oldSymbolTables; // 仅用于快捷查询符号类型，LLVM IR 生成过程中需要新符号表
+    private final ASTNode root;
+    private final HashMap<Integer, SymbolTable> oldSymbolTables; // 仅用于快捷查询符号类型，LLVM IR 生成过程中需要新符号表
+    private HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
     private int scopeId = 1;
     private final HashSet<Integer> usedScopeId = new HashSet<>();
     private final GlobalCalculator constCalculator;
@@ -60,9 +61,13 @@ public class IRGenerator {
         scopeId = oldSymbolTables.get(scopeId).parentTable.id;
     }
 
-    private Symbol getSymbol(LeafASTNode node) {
+    private Symbol getOldSymbol(LeafASTNode node) {
         String identName = node.token.token;
         return oldSymbolTables.get(scopeId).getSymbol(identName);
+    }
+
+    private void addLLVMSymbol(LLVMSymbol symbol) {
+        newSymbolTables.get(scopeId).addSymbol(symbol);
     }
 
     private Module translateModule(ASTNode root) {
@@ -83,69 +88,41 @@ public class IRGenerator {
 
     /********************** GlobalDecl Begin **********************/
 
-    private LinkedList<GlobalValue> translateGlobalDecl(ASTNode node) {
-        ASTNode child = node.children.get(0);
-        if (child.isNode("ConstDecl")) {
-            return translateGlobalConstDecl(child);
-        } else {
-            return translateGlobalVarDecl(child);
-        }
-    }
-
-    private LinkedList<GlobalValue> translateGlobalConstDecl(ASTNode node) {
-        LinkedList<GlobalValue> values = new LinkedList<>();
+    private LinkedList<Value> translateGlobalDecl(ASTNode node) {
+        node = node.children.get(0);
+        LinkedList<Value> values = new LinkedList<>();
         for (ASTNode child : node.children) {
-            if (child.isNode("ConstDef")) {
+            if (child.isNode("ConstDef") || child.isNode("VarDef")) {
                 LeafASTNode ident = (LeafASTNode) child.children.get(0);
-                Symbol symbol = getSymbol(ident);
+                Symbol symbol = getOldSymbol(ident);
+                GlobalVariable var;
+                int arrayLength;
                 if (symbol.symbolType.toString().endsWith("Array")) {
-                    int arrayLength = calculateConstExp(child.children.get(2));
-                    ConstInitVal constInitVal = translateConstInitVal(child.children.get(5));
-                    GlobalVariable var = new GlobalVariable(symbol, arrayLength, constInitVal);
-                    constCalculator.add(var);
-                    values.add(var);
+                    arrayLength = calculateConstExp(child.children.get(2));
                 } else {
-                    ConstInitVal constInitVal = translateConstInitVal(child.children.get(2));
-                    GlobalVariable var = new GlobalVariable(symbol, constInitVal);
-                    constCalculator.add(var);
-                    values.add(var);
+                    arrayLength = 0;
                 }
+                var = new GlobalVariable(symbol, arrayLength);
+                ASTNode lastChild = child.children.get(child.children.size() - 1);
+                ConstInitVal constInitVal;
+                if (lastChild.isNode("InitVal") || lastChild.isNode("ConstInitVal")) {
+                    constInitVal = translateConstInitVal(lastChild);
+                } else {
+                    constInitVal = new ConstInitVal();
+                }
+                constInitVal.padToLength(arrayLength);
+                var.setInitVal(constInitVal);
+                if (var.isConst) {
+                    constCalculator.add(var);
+                }
+                values.add(var);
             }
         }
-        return values;
-    }
-
-    private LinkedList<GlobalValue> translateGlobalVarDecl(ASTNode node) {
-        LinkedList<GlobalValue> values = new LinkedList<>();
-
-        for (ASTNode child : node.children) {
-            if (child.isNode("VarDef")) {
-                LeafASTNode ident = (LeafASTNode) child.children.get(0);
-                Symbol symbol = getSymbol(ident);
-                if (symbol.symbolType.toString().endsWith("Array")) {
-                    int arrayLength = calculateConstExp(child.children.get(2));
-                    if (child.children.get(child.children.size() - 1).isNode("InitVal")) {
-                        ConstInitVal constInitVal = translateConstInitVal(child.children.get(5));
-                        values.add(new GlobalVariable(symbol, arrayLength, constInitVal));
-                    } else {
-                        values.add(new GlobalVariable(symbol, arrayLength));
-                    }
-                } else {
-                    if (child.children.get(child.children.size() - 1).isNode("InitVal")) {
-                        ConstInitVal constInitVal = translateConstInitVal(child.children.get(2));
-                        values.add(new GlobalVariable(symbol, constInitVal));
-                    } else {
-                        values.add(new GlobalVariable(symbol));
-                    }
-                }
-            }
-        }
-
         return values;
     }
 
     private ConstInitVal translateConstInitVal(ASTNode node) {
-        // 形式上包括常量初值 ConstInitVal 和变量初值 InitVal，但全局变量的初值表达式必须是常量表达式 ConstExp
+        // 形式上包括常量初值 ConstInitVal 和变量初值 InitVal，但全局变量的初值表达式必须是常量表达式 ConstExp，故按照 ConstInitVal 翻译
         // ConstInitVal  ::= ConstExp | '{' ConstExp { ',' ConstExp } '}' | StringConst
         // InitVal       ::= Exp | '{' Exp { ',' Exp } '}' | StringConst
         // ConstExp      ::= AddExp
@@ -182,7 +159,7 @@ public class IRGenerator {
 
     private Function translateFuncDef(ASTNode node) {
         LeafASTNode ident = (LeafASTNode) node.children.get(1);
-        Symbol symbol = getSymbol(ident);
+        Symbol symbol = getOldSymbol(ident);
         Function function = new Function(symbol);
         enterScope();
 //        System.out.println("Translating function <" + symbol.token.token + ">, scopeId: " + scopeId);

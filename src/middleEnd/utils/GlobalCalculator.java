@@ -16,14 +16,6 @@ public class GlobalCalculator {
         globalConstVariableHashMap.put(var.name, var);
     }
 
-    private int getConst(String name) {
-        if (globalConstVariableHashMap.containsKey(name)) {
-            return globalConstVariableHashMap.get(name).getConstValue();
-        }
-
-        throw new RuntimeException("Const not found: " + name);
-    }
-
     private int getConst(String name, int i) {
         if (globalConstVariableHashMap.containsKey(name)) {
             return globalConstVariableHashMap.get(name).getConstValue(i);
@@ -96,7 +88,7 @@ public class GlobalCalculator {
             String token = leaf.token.token;
             ASTNode lvalNode = node.children.get(0);
             if (lvalNode.children.size() == 1) {
-                return getConst(token);
+                return getConst(token, 0);
             } else {
                 return getConst(token, calculateConstExp(lvalNode.children.get(2)));
             }

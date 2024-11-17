@@ -2,12 +2,19 @@ package middleEnd;
 
 import java.util.ArrayList;
 
-public class ConstInitVal extends Value {
-    private final ArrayList<Integer> constExpList;
+public class ConstInitVal extends InitVal {
+    private final ArrayList<Integer> constExpList = new ArrayList<>();
+
+
+    // 无初值
+    public ConstInitVal() {
+        super();
+    }
+
+    // 字符串常量
     public ConstInitVal(String StringConst) {
         super();
-        constExpList = new ArrayList<>();
-        // 记得转义字符
+        // 处理转义字符
         boolean isBackslash = false;
         for (char c : StringConst.toCharArray()) {
             if (c == '\\' && !isBackslash) {
@@ -35,23 +42,6 @@ public class ConstInitVal extends Value {
         }
     }
 
-    public ConstInitVal() {
-        super();
-        constExpList = new ArrayList<>();
-    }
-
-    public ConstInitVal(boolean isArray, int size) {
-        super();
-        constExpList = new ArrayList<>();
-        if (isArray) {
-            for (int i = 0; i < size; i++) {
-                constExpList.add(0);
-            }
-        } else {
-            constExpList.add(0);
-        }
-    }
-
     public void addConstExp(int i) {
         constExpList.add(i);
     }
@@ -60,7 +50,13 @@ public class ConstInitVal extends Value {
         return constExpList.get(i);
     }
 
-    public int getConstLength() {
-        return constExpList.size();
+    public void padToLength(int arrayLength) {
+        if (arrayLength == 0) {
+            arrayLength = 1;
+        }
+
+        while (constExpList.size() < arrayLength) {
+            constExpList.add(0);
+        }
     }
 }
