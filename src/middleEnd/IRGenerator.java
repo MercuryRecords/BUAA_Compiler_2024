@@ -5,7 +5,7 @@ import frontEnd.LeafASTNode;
 import frontEnd.Symbol;
 import frontEnd.SymbolTable;
 import frontEnd.lexer.LexType;
-import middleEnd.utils.GlobalCalculator;
+import middleEnd.utils.ConstCalculator;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -14,14 +14,15 @@ import java.util.*;
 public class IRGenerator {
     private final ASTNode root;
     private final HashMap<Integer, SymbolTable> oldSymbolTables; // 仅用于快捷查询符号类型，LLVM IR 生成过程中需要新符号表
-    private HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
-    private int scopeId = 1;
-    private final HashSet<Integer> usedScopeId = new HashSet<>();
-    private final GlobalCalculator constCalculator;
+    private LLVMSymbolTable currTable = null;
+    private final Stack<LLVMSymbolTable> symbolTableStack = new Stack<>();
+    private final HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
+    private int scopeId = 0;
+    private final ConstCalculator constCalculator;
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
         this.root = root;
         this.oldSymbolTables = oldSymbolTables;
-        this.constCalculator = new GlobalCalculator();
+        this.constCalculator = new ConstCalculator(newSymbolTables);
     }
 
     public void translate(String forOutput) {
@@ -51,14 +52,21 @@ public class IRGenerator {
     }
 
     private void enterScope() {
-        do {
-            scopeId++;
-        } while (usedScopeId.contains(scopeId));
+        LLVMSymbolTable newTable = new LLVMSymbolTable(++scopeId, currTable);
+        symbolTableStack.push(newTable);
+        newSymbolTables.put(newTable.id, newTable);
+        currTable = newTable;
     }
 
     private void exitScope() {
-        usedScopeId.add(scopeId);
-        scopeId = oldSymbolTables.get(scopeId).parentTable.id;
+        symbolTableStack.pop();
+        try {
+            currTable = symbolTableStack.peek();
+            scopeId = currTable.id;
+        } catch (EmptyStackException e) {
+            currTable = null;
+            scopeId = 0;
+        }
     }
 
     private Symbol getOldSymbol(LeafASTNode node) {
@@ -73,6 +81,7 @@ public class IRGenerator {
     private Module translateModule(ASTNode root) {
         Module module = new Module();
         ArrayList<ASTNode> children = root.children;
+        enterScope();
         for (ASTNode child : children) {
             if (child.isNode("Decl")) {
                 module.addGlobalValues(translateGlobalDecl(child));
@@ -82,6 +91,7 @@ public class IRGenerator {
                 module.addGlobalValue(translateMainFuncDef(child));
             }
         }
+        exitScope();
 
         return module;
     }
@@ -112,10 +122,8 @@ public class IRGenerator {
                 }
                 constInitVal.padToLength(arrayLength);
                 var.setInitVal(constInitVal);
-                if (var.isConst) {
-                    constCalculator.add(var);
-                }
                 values.add(var);
+                addLLVMSymbol(var);
             }
         }
         return values;
@@ -142,7 +150,7 @@ public class IRGenerator {
 
     private int calculateConstExp(ASTNode node) {
         // ConstExp      ::= AddExp，但文法规定使用的 Ident 必须是常量，故可以计算得出
-        return constCalculator.calculateConstExp(node);
+        return constCalculator.calculateConstExp(node, scopeId);
     }
 
     /********************** GlobalDecl End **********************/
@@ -150,10 +158,8 @@ public class IRGenerator {
     private Function translateMainFuncDef(ASTNode node) {
         Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
         enterScope();
-//        System.out.println("Translating main function, scopeId: " + scopeId);
         main.setBlock(translateBlock(node.children.get(node.children.size() - 1)));
         exitScope();
-//        System.out.println("Finished translating main function, scopeId: " + scopeId);
         return main;
     }
 
@@ -162,7 +168,6 @@ public class IRGenerator {
         Symbol symbol = getOldSymbol(ident);
         Function function = new Function(symbol);
         enterScope();
-//        System.out.println("Translating function <" + symbol.token.token + ">, scopeId: " + scopeId);
         for (ASTNode child : node.children) {
             if (child.isNode("FuncFParams")) {
                 // TODO 形参
@@ -171,7 +176,6 @@ public class IRGenerator {
         }
         function.setBlock(translateBlock(node.children.get(node.children.size() - 1)));
         exitScope();
-//        System.out.println("Finished translating function <" + symbol.token.token + ">, scopeId: " + scopeId);
         return function;
     }
 

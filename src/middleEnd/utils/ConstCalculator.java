@@ -4,27 +4,42 @@ import frontEnd.ASTNode;
 import frontEnd.LeafASTNode;
 import frontEnd.Token;
 import frontEnd.lexer.LexType;
-import middleEnd.GlobalVariable;
+import middleEnd.ConstInitVal;
+import middleEnd.LLVMSymbolTable;
 
 import java.util.HashMap;
 
-public class GlobalCalculator {
-    private final HashMap<String, GlobalVariable> globalConstVariableHashMap = new HashMap<>();
+public class ConstCalculator {
+    private final HashMap<Integer, LLVMSymbolTable> symbolTables;
+    private int scopeId; // 查找用
 
-
-    public void add(GlobalVariable var) {
-        globalConstVariableHashMap.put(var.name, var);
+    public ConstCalculator(HashMap<Integer, LLVMSymbolTable> symbolTables) {
+        this.symbolTables = symbolTables;
     }
 
     private int getConst(String name, int i) {
-        if (globalConstVariableHashMap.containsKey(name)) {
-            return globalConstVariableHashMap.get(name).getConstValue(i);
-        }
+        int currScopeId = scopeId;
+        while (currScopeId > 0) {
+            if (symbolTables.get(currScopeId).symbols.containsKey(name)) {
+                ConstInitVal constInitVal = (ConstInitVal) symbolTables.get(currScopeId).symbols.get(name).initVal;
+                return constInitVal.getConstValue(i);
+            }
 
+            if (symbolTables.get(currScopeId).parentTable == null) {
+                break;
+            }
+
+            currScopeId = symbolTables.get(currScopeId).parentTable.id;
+        }
         throw new RuntimeException("Const not found: " + name);
     }
 
-    public int calculateConstExp(ASTNode node) {
+    public int calculateConstExp(ASTNode node, int scopeId) {
+        this.scopeId = scopeId;
+        return calculateConstExp(node);
+    }
+
+    private int calculateConstExp(ASTNode node) {
         return calculateAddExp(node.children.get(0));
     }
 
@@ -100,7 +115,6 @@ public class GlobalCalculator {
             } else {
                 return token.token.charAt(1);
             }
-
         }
     }
 }

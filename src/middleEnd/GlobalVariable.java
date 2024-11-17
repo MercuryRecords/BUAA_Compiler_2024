@@ -3,18 +3,8 @@ package middleEnd;
 import frontEnd.Symbol;
 
 public class GlobalVariable extends LLVMSymbol {
-    // "全局变量的初值表达式也必须是常量表达式 ConstExp"，故都可以计算得出
-
     public GlobalVariable(Symbol symbol, int arrayLength) {
         super(symbol, arrayLength);
-    }
-
-    public int getConstValue(int i) {
-        if (!isConst) {
-            throw new RuntimeException("GlobalVariable is not const");
-        }
-
-        return ((ConstInitVal) initVal).getConstValue(i);
     }
 
     @Override
