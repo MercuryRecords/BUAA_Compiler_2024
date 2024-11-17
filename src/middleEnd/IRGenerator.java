@@ -4,6 +4,7 @@ import frontEnd.ASTNode;
 import frontEnd.LeafASTNode;
 import frontEnd.Symbol;
 import frontEnd.SymbolTable;
+import frontEnd.lexer.LexType;
 import middleEnd.utils.GlobalCalculator;
 
 import java.io.FileWriter;
@@ -12,7 +13,7 @@ import java.util.*;
 
 public class IRGenerator {
     ASTNode root;
-    HashMap<Integer, SymbolTable> oldSymbolTables;
+    HashMap<Integer, SymbolTable> oldSymbolTables; // 仅用于快捷查询符号类型，LLVM IR 生成过程中需要新符号表
     private int scopeId = 1;
     private final HashSet<Integer> usedScopeId = new HashSet<>();
     private final GlobalCalculator constCalculator;
@@ -80,16 +81,18 @@ public class IRGenerator {
         return module;
     }
 
+    /********************** GlobalDecl Begin **********************/
+
     private LinkedList<GlobalValue> translateGlobalDecl(ASTNode node) {
         ASTNode child = node.children.get(0);
         if (child.isNode("ConstDecl")) {
-            return translateConstDecl(child);
+            return translateGlobalConstDecl(child);
         } else {
-            return translateVarDecl(child);
+            return translateGlobalVarDecl(child);
         }
     }
 
-    private LinkedList<GlobalValue> translateConstDecl(ASTNode node) {
+    private LinkedList<GlobalValue> translateGlobalConstDecl(ASTNode node) {
         LinkedList<GlobalValue> values = new LinkedList<>();
         for (ASTNode child : node.children) {
             if (child.isNode("ConstDef")) {
@@ -112,32 +115,7 @@ public class IRGenerator {
         return values;
     }
 
-    private int calculateConstExp(ASTNode node) {
-        // ConstExp      ::= AddExp，但文法规定使用的 Ident 必须是常量，故可以计算得出
-        return constCalculator.calculateConstExp(node);
-    }
-
-    private ConstInitVal translateConstInitVal(ASTNode node) {
-        // 形式上包括常量初值 ConstInitVal 和变量初值 InitVal，但全局变量的初值表达式必须是常量表达式 ConstExp
-        // ConstInitVal  ::= ConstExp | '{' ConstExp { ',' ConstExp } '}' | StringConst
-        // InitVal       ::= Exp | '{' Exp { ',' Exp } '}' | StringConst
-        // ConstExp      ::= AddExp
-        // Exp           ::= AddExp
-        // TODO
-        if (node.children.get(0).isNode("StringConst")) {
-            return new ConstInitVal(((LeafASTNode) node.children.get(0)).token.token);
-        } else {
-            ConstInitVal constInitVal = new ConstInitVal();
-            for (ASTNode child : node.children) {
-                if (child.isNode("ConstExp") || child.isNode("Exp")) {
-                    constInitVal.addConstExp(calculateConstExp(child));
-                }
-            }
-            return constInitVal;
-        }
-    }
-
-    private LinkedList<GlobalValue> translateVarDecl(ASTNode node) {
+    private LinkedList<GlobalValue> translateGlobalVarDecl(ASTNode node) {
         LinkedList<GlobalValue> values = new LinkedList<>();
 
         for (ASTNode child : node.children) {
@@ -166,9 +144,39 @@ public class IRGenerator {
         return values;
     }
 
+    private ConstInitVal translateConstInitVal(ASTNode node) {
+        // 形式上包括常量初值 ConstInitVal 和变量初值 InitVal，但全局变量的初值表达式必须是常量表达式 ConstExp
+        // ConstInitVal  ::= ConstExp | '{' ConstExp { ',' ConstExp } '}' | StringConst
+        // InitVal       ::= Exp | '{' Exp { ',' Exp } '}' | StringConst
+        // ConstExp      ::= AddExp
+        // Exp           ::= AddExp
+        if (node.children.get(0).isNode("StringConst")) {
+            return new ConstInitVal(((LeafASTNode) node.children.get(0)).token.token);
+        } else {
+            ConstInitVal constInitVal = new ConstInitVal();
+            for (ASTNode child : node.children) {
+                if (child.isNode("ConstExp") || child.isNode("Exp")) {
+                    constInitVal.addConstExp(calculateConstExp(child));
+                }
+            }
+            return constInitVal;
+        }
+    }
+
+    private int calculateConstExp(ASTNode node) {
+        // ConstExp      ::= AddExp，但文法规定使用的 Ident 必须是常量，故可以计算得出
+        return constCalculator.calculateConstExp(node);
+    }
+
+    /********************** GlobalDecl End **********************/
+
     private Function translateMainFuncDef(ASTNode node) {
         Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
-        main.setBasicBlock(translateBlock(node.children.get(node.children.size() - 1)));
+        enterScope();
+//        System.out.println("Translating main function, scopeId: " + scopeId);
+        main.setBlock(translateBlock(node.children.get(node.children.size() - 1)));
+        exitScope();
+//        System.out.println("Finished translating main function, scopeId: " + scopeId);
         return main;
     }
 
@@ -176,21 +184,29 @@ public class IRGenerator {
         LeafASTNode ident = (LeafASTNode) node.children.get(1);
         Symbol symbol = getSymbol(ident);
         Function function = new Function(symbol);
-        function.setBasicBlock(translateBlock(node.children.get(node.children.size() - 1)));
+        enterScope();
+//        System.out.println("Translating function <" + symbol.token.token + ">, scopeId: " + scopeId);
+        for (ASTNode child : node.children) {
+            if (child.isNode("FuncFParams")) {
+                // TODO 形参
+                function.setFParams();
+            }
+        }
+        function.setBlock(translateBlock(node.children.get(node.children.size() - 1)));
+        exitScope();
+//        System.out.println("Finished translating function <" + symbol.token.token + ">, scopeId: " + scopeId);
         return function;
     }
 
-    private BasicBlock translateBlock(ASTNode node) {
-        enterScope();
+    private Block translateBlock(ASTNode node) {
         // System.out.println("In translateBlock: " + node.print());
-        BasicBlock block = new BasicBlock();
+        Block block = new Block();
         for (ASTNode child : node.children) {
             if (child.isNode("BlockItem")) {
                 block.addInst(translateBlockItem(child));
             }
         }
-        exitScope();
-        return new BasicBlock();
+        return new Block();
     }
 
     private LinkedList<Instruction> translateBlockItem(ASTNode node) {
@@ -202,6 +218,21 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateDecl(ASTNode node) {
+        // <Decl> ::= <ConstDecl> | <VarDecl>
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        if (node.children.get(0).isNode("ConstDecl")) {
+            instructions.addAll(translateConstDecl(node.children.get(0)));
+        } else {
+            instructions.addAll(translateVarDecl(node.children.get(0)));
+        }
+        return instructions;
+    }
+
+    private LinkedList<Instruction> translateConstDecl(ASTNode node) {
+        return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateVarDecl(ASTNode node) {
         return new LinkedList<>();
     }
 
@@ -216,6 +247,19 @@ public class IRGenerator {
                 case CONTINUETK -> instructions.addAll(translateContinueStmt(node));
                 case PRINTFTK   -> instructions.addAll(translatePrintfStmt(node));
             }
+        } else if (node.children.get(0).isNode("LVal")) {
+            if (node.children.size() > 2 && node.children.get(2).isNode("LEAF")) {
+                LexType type = ((LeafASTNode) node.children.get(2)).token.type;
+                if (type == LexType.GETCHARTK) {
+                    instructions.addAll(translateGetCharStmt(node));
+                } else {
+                    instructions.addAll(translateGetIntStmt(node));
+                }
+            } else {
+                instructions.addAll(translateAssignStmt(node));
+            }
+        } else {
+            instructions.addAll(translateExpStmt(node));
         }
 
         return instructions;
@@ -242,6 +286,22 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translatePrintfStmt(ASTNode node) {
+        return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateGetCharStmt(ASTNode node) {
+        return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateGetIntStmt(ASTNode node) {
+        return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateAssignStmt(ASTNode node) {
+        return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateExpStmt(ASTNode node) {
         return new LinkedList<>();
     }
 }

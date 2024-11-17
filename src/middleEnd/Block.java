@@ -2,7 +2,7 @@ package middleEnd;
 
 import java.util.LinkedList;
 
-public class BasicBlock extends Value {
+public class Block extends Value {
     private final LinkedList<Instruction> insts = new LinkedList<>();
 
     public void addInst(LinkedList<Instruction> instructions) {

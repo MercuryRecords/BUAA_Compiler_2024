@@ -8,7 +8,7 @@ public class Function extends GlobalValue {
     private LLVMType.TypeID retType;
     private final String name;
     private final LinkedList<Symbol> params = new LinkedList<>(); // TODO 不应该用 Symbol，应该用 Param
-    private BasicBlock basicBlock;
+    private Block block;
 
     public Function(Symbol symbol) {
         super();
@@ -27,8 +27,8 @@ public class Function extends GlobalValue {
         this.name = name;
     }
 
-    public void setBasicBlock(BasicBlock basicBlock) {
-        this.basicBlock = basicBlock;
+    public void setBlock(Block block) {
+        this.block = block;
     }
 
     @Override
@@ -48,8 +48,12 @@ public class Function extends GlobalValue {
             sb.delete(sb.length() - 2, sb.length());
         }
         sb.append(")");
-        sb.append(basicBlock.toString());
+        sb.append(block.toString());
         sb.append("\n");
         return sb.toString();
+    }
+
+    public void setFParams() {
+        // TODO
     }
 }
