@@ -1,6 +1,10 @@
 package middleEnd;
 
 import frontEnd.Symbol;
+import middleEnd.Insts.AllocaInst;
+import middleEnd.utils.RegTracker;
+
+import java.util.LinkedList;
 
 public class LLVMVariable extends Value {
     public boolean isConst;
@@ -38,5 +42,29 @@ public class LLVMVariable extends Value {
             default:
                 throw new RuntimeException("wrong symbol type for GlobalVariable: " + symbol.symbolType);
         }
+    }
+
+    public LinkedList<Instruction> getInstructions(RegTracker tracker) {
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        if (arrayLength == 0) {
+            // 单个变量/常量
+            if (isConst) {
+                // 单个常量
+                int initValAsInt = ((ConstInitVal) initVal).getConstValue(0);
+                instructions.add(new AllocaInst(tracker.nextRegNo(), baseType));
+                // TODO STORE
+            } else {
+                // 单个变量
+
+            }
+        } else {
+            // 数组
+            if (isConst) {
+                // 常量数组
+            } else {
+                // 变量数组
+            }
+        }
+        return instructions;
     }
 }

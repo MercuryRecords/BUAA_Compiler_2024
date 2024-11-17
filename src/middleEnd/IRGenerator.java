@@ -6,6 +6,7 @@ import frontEnd.Symbol;
 import frontEnd.SymbolTable;
 import frontEnd.lexer.LexType;
 import middleEnd.utils.ConstCalculator;
+import middleEnd.utils.RegTracker;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -17,6 +18,7 @@ public class IRGenerator {
     private LLVMSymbolTable currTable = null;
     private final Stack<LLVMSymbolTable> symbolTableStack = new Stack<>();
     private final HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
+    private final HashMap<Integer, RegTracker> regTrackers = new HashMap<>();
     private int scopeId = 0;
     private final ConstCalculator constCalculator;
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
@@ -53,8 +55,10 @@ public class IRGenerator {
 
     private void enterScope() {
         LLVMSymbolTable newTable = new LLVMSymbolTable(++scopeId, currTable);
+        RegTracker tracker = new RegTracker(scopeId);
         symbolTableStack.push(newTable);
         newSymbolTables.put(newTable.id, newTable);
+        regTrackers.put(scopeId, tracker);
         currTable = newTable;
     }
 
@@ -206,11 +210,34 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateConstDecl(ASTNode node) {
-        return new LinkedList<>();
+        LinkedList<Instruction> list = new LinkedList<>();
+        for (ASTNode child : node.children) {
+            if (child.isNode("ConstDef") ) {
+                LeafASTNode ident = (LeafASTNode) child.children.get(0);
+                Symbol symbol = getOldSymbol(ident);
+                LLVMVariable var;
+                int arrayLength;
+                if (symbol.symbolType.toString().endsWith("Array")) {
+                    arrayLength = calculateConstExp(child.children.get(2));
+                } else {
+                    arrayLength = 0;
+                }
+                var = new LLVMVariable(symbol, arrayLength);
+                ASTNode lastChild = child.children.get(child.children.size() - 1);
+                ConstInitVal constInitVal = translateConstInitVal(lastChild);
+                constInitVal.padToLength(arrayLength);
+                var.setInitVal(constInitVal);
+                addLLVMVariable(var);
+                list.addAll(var.getInstructions(regTrackers.get(scopeId)));
+            }
+        }
+        return list;
     }
 
     private LinkedList<Instruction> translateVarDecl(ASTNode node) {
-        return new LinkedList<>();
+        LinkedList<Instruction> list = new LinkedList<>();
+
+        return list;
     }
 
     private LinkedList<Instruction> translateStmt(ASTNode node) {

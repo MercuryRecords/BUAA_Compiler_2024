@@ -15,6 +15,17 @@ public class LLVMType {
         public String toString() {
             return s;
         }
+
+        public int toAlign() {
+            switch (s) {
+                case "i32":
+                    return 4;
+                case "i8":
+                    return 1;
+                default:
+                    return 0;
+            }
+        }
     }
 
     public enum InstType {
