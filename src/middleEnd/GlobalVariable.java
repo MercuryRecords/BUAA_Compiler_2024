@@ -7,32 +7,34 @@ public class GlobalVariable extends GlobalValue {
     public String name;
     private final int arrayLength;
     private LLVMType.TypeID baseType;
-    private InitVal initVal = null;
+    private ConstInitVal constInitVal = null;
     // "全局变量的初值表达式也必须是常量表达式 ConstExp"，故都可以计算得出
-    public GlobalVariable(Symbol symbol, int arrayLength, InitVal initVal) {
+    public GlobalVariable(Symbol symbol, int arrayLength, ConstInitVal constInitVal) {
         super();
         setFromSymbol(symbol);
         this.arrayLength = arrayLength;
-        this.initVal = initVal;
+        this.constInitVal = constInitVal;
     }
 
-    public GlobalVariable(Symbol symbol, InitVal initVal) {
+    public GlobalVariable(Symbol symbol, ConstInitVal constInitVal) {
         super();
         setFromSymbol(symbol);
         this.arrayLength = 0;
-        this.initVal = initVal;
+        this.constInitVal = constInitVal;
     }
 
     public GlobalVariable(Symbol symbol, int arrayLength) {
         super();
         setFromSymbol(symbol);
         this.arrayLength = arrayLength;
+        this.constInitVal = new ConstInitVal(true, arrayLength);
     }
 
     public GlobalVariable(Symbol symbol) {
         super();
         setFromSymbol(symbol);
         this.arrayLength = 0;
+        this.constInitVal = new ConstInitVal(false, 0);
     }
 
     private void setFromSymbol(Symbol symbol) {
@@ -57,7 +59,11 @@ public class GlobalVariable extends GlobalValue {
     }
 
     public int getConstValue() {
-        return initVal.getConstValue(0);
+        if (isConst) {
+            return constInitVal.getConstValue(0);
+        }
+
+        throw new RuntimeException("GlobalVariable is not const");
     }
 
     public int getConstValue(int i) {
@@ -65,8 +71,12 @@ public class GlobalVariable extends GlobalValue {
             throw new RuntimeException("Overflow when getting const value from GlobalVariable");
         }
 
-        if (i < initVal.getConstLength()) {
-            return initVal.getConstValue(i);
+        if (!isConst) {
+            throw new RuntimeException("GlobalVariable is not const");
+        }
+
+        if (i < constInitVal.getConstLength()) {
+            return constInitVal.getConstValue(i);
         } else {
             return 0;
         }
@@ -90,7 +100,12 @@ public class GlobalVariable extends GlobalValue {
             for (int i = 0; i < arrayLength; i++) {
                 sb.append(baseType);
                 sb.append(" ");
-                int val = getConstValue(i);
+                int val;
+                if (i < constInitVal.getConstLength()) {
+                    val = constInitVal.getConstValue(i);
+                } else {
+                    val = 0;
+                }
                 if (baseType == LLVMType.TypeID.CharTyID) {
                     val = val & 0xFF;
                 }
@@ -103,7 +118,7 @@ public class GlobalVariable extends GlobalValue {
         } else {
             sb.append(baseType);
             sb.append(" ");
-            int val = getConstValue();
+            int val = constInitVal.getConstValue(0);
             if (baseType == LLVMType.TypeID.CharTyID) {
                 val = val & 0xFF;
             }

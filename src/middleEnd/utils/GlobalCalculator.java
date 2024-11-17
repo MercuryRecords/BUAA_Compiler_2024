@@ -2,75 +2,37 @@ package middleEnd.utils;
 
 import frontEnd.ASTNode;
 import frontEnd.LeafASTNode;
-import frontEnd.SymbolTable;
 import frontEnd.Token;
 import frontEnd.lexer.LexType;
 import middleEnd.GlobalVariable;
 
 import java.util.HashMap;
 
-public class ConstCalculator {
-    private final HashMap<Integer, SymbolTable> symbolTables;
-    private final HashMap<Integer, HashMap<String, GlobalVariable>> constMap = new HashMap<>();
-    private int scopeId; // 查找用
-    public ConstCalculator(HashMap<Integer, SymbolTable> symbolTables) {
-        this.symbolTables = symbolTables;
-    }
-
-    private void checkSet(int scopeId) {
-        if (!constMap.containsKey(scopeId)) {
-            constMap.put(scopeId, new HashMap<>());
-        }
-    }
+public class GlobalCalculator {
+    private final HashMap<String, GlobalVariable> globalConstVariableHashMap = new HashMap<>();
 
 
-    public void add(int scopeId, GlobalVariable var) {
-        checkSet(scopeId);
-        constMap.get(scopeId).put(var.name, var);
+    public void add(GlobalVariable var) {
+        globalConstVariableHashMap.put(var.name, var);
     }
 
     private int getConst(String name) {
-        int currScopeId = scopeId;
-        while (currScopeId > 0) {
-            checkSet(scopeId);
-            if (constMap.get(currScopeId).containsKey(name)) {
-                return constMap.get(currScopeId).get(name).getConstValue();
-            }
-
-            SymbolTable table = symbolTables.get(currScopeId).parentTable;
-            if (table == null) {
-                break;
-            }
-            currScopeId = table.id;
+        if (globalConstVariableHashMap.containsKey(name)) {
+            return globalConstVariableHashMap.get(name).getConstValue();
         }
 
         throw new RuntimeException("Const not found: " + name);
     }
 
     private int getConst(String name, int i) {
-        int currScopeId = scopeId;
-        while (currScopeId > 0) {
-            checkSet(scopeId);
-            if (constMap.get(currScopeId).containsKey(name)) {
-                return constMap.get(currScopeId).get(name).getConstValue(i);
-            }
-
-            SymbolTable table = symbolTables.get(currScopeId).parentTable;
-            if (table == null) {
-                break;
-            }
-            currScopeId = table.id;
+        if (globalConstVariableHashMap.containsKey(name)) {
+            return globalConstVariableHashMap.get(name).getConstValue(i);
         }
 
         throw new RuntimeException("Const not found: " + name);
     }
 
-    public int calculateConstExp(int scopeId, ASTNode node) {
-        this.scopeId = scopeId;
-        return calculateConstExp(node);
-    }
-
-    private int calculateConstExp(ASTNode node) {
+    public int calculateConstExp(ASTNode node) {
         return calculateAddExp(node.children.get(0));
     }
 

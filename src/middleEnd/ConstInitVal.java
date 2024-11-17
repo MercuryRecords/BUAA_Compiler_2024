@@ -2,9 +2,9 @@ package middleEnd;
 
 import java.util.ArrayList;
 
-public class InitVal extends Value {
+public class ConstInitVal extends Value {
     private final ArrayList<Integer> constExpList;
-    public InitVal(String StringConst) {
+    public ConstInitVal(String StringConst) {
         super();
         constExpList = new ArrayList<>();
         // 记得转义字符
@@ -35,9 +35,21 @@ public class InitVal extends Value {
         }
     }
 
-    public InitVal() {
+    public ConstInitVal() {
         super();
         constExpList = new ArrayList<>();
+    }
+
+    public ConstInitVal(boolean isArray, int size) {
+        super();
+        constExpList = new ArrayList<>();
+        if (isArray) {
+            for (int i = 0; i < size; i++) {
+                constExpList.add(0);
+            }
+        } else {
+            constExpList.add(0);
+        }
     }
 
     public void addConstExp(int i) {
