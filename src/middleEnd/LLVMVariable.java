@@ -63,7 +63,7 @@ public class LLVMVariable extends Value {
             }
         } else {
             // 数组
-            if (isConst) {
+            if (isConst || initVal instanceof ConstInitVal) {
                 // 常量数组
                 ConstInitVal constInitVal = (ConstInitVal) initVal;
                 AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);

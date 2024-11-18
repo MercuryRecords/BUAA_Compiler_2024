@@ -468,10 +468,10 @@ public class Parser {
     }
 
     private ASTNode parseStringConst() {
-        // <StringConst> ::= <Str>
-        ASTNode node = new ASTNode("StringConst");
-        node.addChild(parseTokenType(LexType.STRCON));
-        return node;
+         // <StringConst> ::= <Str>
+         ASTNode node = new ASTNode("StringConst");
+         node.addChild(parseTokenType(LexType.STRCON));
+         return node;
     }
 
     private ASTNode parseMainFuncDef() {
@@ -793,7 +793,8 @@ public class Parser {
             }
             node.addChild(parseTokenType(LexType.RBRACE));
         } else if (curToken().isType(LexType.STRCON)) {
-            node.addChild(parseTokenType(LexType.STRCON));
+            // node.addChild(parseTokenType(LexType.STRCON));
+            node.addChild(parseStringConst());
         } else {
             node.addChild(parseConstExp());
         }
@@ -848,7 +849,8 @@ public class Parser {
         // <InitVal> ::= <StringConst> | '{' [ <Exp> { ',' <Exp> } ] '}' | <Exp>
         ASTNode node = new ASTNode("InitVal");
         if (curToken().isType(LexType.STRCON)) {
-            node.addChild(parseTokenType(LexType.STRCON));
+            // node.addChild(parseTokenType(LexType.STRCON));
+            node.addChild(parseStringConst());
         } else if (curToken().isType(LexType.LBRACE)) {
             node.addChild(parseTokenType(LexType.LBRACE));
             if (!curToken().isType(LexType.RBRACE)) {

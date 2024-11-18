@@ -118,7 +118,7 @@ public class IRGenerator {
                 ASTNode lastChild = child.children.get(child.children.size() - 1);
                 ConstInitVal constInitVal;
                 if (lastChild.isNode("InitVal") || lastChild.isNode("ConstInitVal")) {
-                    constInitVal = translateConstInitVal(lastChild);
+                    constInitVal = translateConstInitVal(lastChild, arrayLength);
                 } else {
                     constInitVal = new ConstInitVal();
                 }
@@ -131,14 +131,15 @@ public class IRGenerator {
         return values;
     }
 
-    private ConstInitVal translateConstInitVal(ASTNode node) {
+    private ConstInitVal translateConstInitVal(ASTNode node, int arrayLength) {
         // 形式上包括常量初值 ConstInitVal 和变量初值 InitVal，但全局变量的初值表达式必须是常量表达式 ConstExp，故按照 ConstInitVal 翻译
         // ConstInitVal  ::= ConstExp | '{' ConstExp { ',' ConstExp } '}' | StringConst
         // InitVal       ::= Exp | '{' Exp { ',' Exp } '}' | StringConst
         // ConstExp      ::= AddExp
         // Exp           ::= AddExp
         if (node.children.get(0).isNode("StringConst")) {
-            return new ConstInitVal(((LeafASTNode) node.children.get(0)).token.token);
+            LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
+            return new ConstInitVal(leaf.token.token, arrayLength);
         } else {
             ConstInitVal constInitVal = new ConstInitVal();
             for (ASTNode child : node.children) {
@@ -224,7 +225,7 @@ public class IRGenerator {
                 }
                 var = new LLVMVariable(symbol, arrayLength);
                 ASTNode lastChild = child.children.get(child.children.size() - 1);
-                ConstInitVal constInitVal = translateConstInitVal(lastChild);
+                ConstInitVal constInitVal = translateConstInitVal(lastChild, arrayLength);
                 constInitVal.padToLength(arrayLength);
                 var.setInitVal(constInitVal);
                 addLLVMVariable(var);
@@ -236,8 +237,42 @@ public class IRGenerator {
 
     private LinkedList<Instruction> translateVarDecl(ASTNode node) {
         LinkedList<Instruction> list = new LinkedList<>();
-
+        for (ASTNode child : node.children) {
+            if (child.isNode("VarDef")) {
+                LeafASTNode ident = (LeafASTNode) child.children.get(0);
+                Symbol symbol = getOldSymbol(ident);
+                LLVMVariable var;
+                int arrayLength;
+                if (symbol.symbolType.toString().endsWith("Array")) {
+                    arrayLength = calculateConstExp(child.children.get(2));
+                } else {
+                    arrayLength = 0;
+                }
+                var = new LLVMVariable(symbol, arrayLength);
+                ASTNode lastChild = child.children.get(child.children.size() - 1);
+                InitVal initVal;
+                if (lastChild.isNode("InitVal")) {
+                    initVal = translateInitVal(lastChild, arrayLength);
+                } else {
+                    initVal = new InitVal();
+                }
+                // 不必填充
+                var.setInitVal(initVal);
+                addLLVMVariable(var);
+                list.addAll(var.getInstructions(regTrackers.get(scopeId)));
+            }
+        }
         return list;
+    }
+
+    private InitVal translateInitVal(ASTNode node, int arrayLength) {
+        // InitVal       ::= Exp | '{' Exp { ',' Exp } '}' | StringConst
+        if (node.children.get(0).isNode("StringConst")) {
+            LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
+            return new ConstInitVal(leaf.token.token, arrayLength);
+        } else {
+            return new InitVal();
+        }
     }
 
     private LinkedList<Instruction> translateStmt(ASTNode node) {

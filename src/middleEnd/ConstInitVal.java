@@ -12,11 +12,11 @@ public class ConstInitVal extends InitVal {
     }
 
     // 字符串常量
-    public ConstInitVal(String StringConst) {
+    public ConstInitVal(String StringConst, int arrayLength) {
         super();
         // 处理转义字符
         boolean isBackslash = false;
-        for (char c : StringConst.toCharArray()) {
+        for (char c : StringConst.substring(1, StringConst.length() - 1).toCharArray()) {
             if (c == '\\' && !isBackslash) {
                 isBackslash = true;
                 continue;
@@ -40,6 +40,7 @@ public class ConstInitVal extends InitVal {
                 addConstExp(c);
             }
         }
+        padToLength(arrayLength);
     }
 
     public void addConstExp(int i) {
