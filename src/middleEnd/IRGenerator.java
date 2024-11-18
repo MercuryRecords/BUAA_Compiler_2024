@@ -271,13 +271,13 @@ public class IRGenerator {
             LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
             return new ConstInitVal(leaf.token.token, arrayLength);
         } else {
-            InitVal initVal = new InitVal(regTrackers.get(scopeId));
+            InitVal initVal = new InitVal();
             for (ASTNode child : node.children) {
                 if (child.isNode("Exp")) {
-                    initVal.addExp(/* TODO */);
+                    initVal.addExp(translateExp(child));
                 }
             }
-            return new InitVal();
+            return initVal;
         }
     }
 
@@ -350,7 +350,7 @@ public class IRGenerator {
         return translateExp(node.children.get(0)).getInstructions();
     }
 
-    class LLVMExp extends Value implements UsableValue {
+    public class LLVMExp extends Value implements UsableValue {
         LinkedList<Instruction> instructions;
         UsableValue value;
 

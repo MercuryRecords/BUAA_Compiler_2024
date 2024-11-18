@@ -60,7 +60,12 @@ public class LLVMVariable extends Value {
             } else {
                 // 单个变量
                 if (initVal != null) {
-
+                    IRGenerator.LLVMExp llvmExp = initVal.get(0);
+                    LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
+                    instructions.addAll(initValInsts);
+                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    instructions.add(allocaInst);
+                    instructions.add(new StoreInst(llvmExp.value, allocaInst));
                 } else {
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
                     instructions.add(allocaInst);
@@ -82,7 +87,19 @@ public class LLVMVariable extends Value {
             } else {
                 // 变量数组
                 if (initVal != null) {
-
+                    for (int i = 0; i < initVal.size(); i++) {
+                        IRGenerator.LLVMExp llvmExp = initVal.get(i);
+                        LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
+                        instructions.addAll(initValInsts);
+                    }
+                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    instructions.add(allocaInst);
+                    for (int i = 0; i < initVal.size(); i++) {
+                        IRGenerator.LLVMExp llvmExp = initVal.get(i);
+                        GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, i);
+                        instructions.add(getelementptrInst);
+                        instructions.add(new StoreInst(llvmExp.value, getelementptrInst));
+                    }
                 } else {
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
                     instructions.add(allocaInst);
