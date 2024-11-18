@@ -5,6 +5,8 @@ public class LLVMType {
         VoidTyID("void"),
         IntegerTyID("i32"),
         CharTyID("i8"),
+        IntegerPtrTyID("i32*"),
+        CharPtrTyID("i8*"),
         ;
 
         private final String s;
@@ -23,12 +25,21 @@ public class LLVMType {
                 default -> 0;
             };
         }
+
+        public TypeID toPointerType() {
+            return switch (s) {
+                case "i32" -> IntegerPtrTyID;
+                case "i8" -> CharPtrTyID;
+                default -> null;
+            };
+        }
     }
 
     public enum InstType {
-        Alloca("alloca"),
-        Load("load"),
-        Store("store"),
+        LOAD("load"),
+        STORE("store"),
+        ALLOCA("alloca"),
+        GETELEMENTPTR("getelementptr"),
 
         ;
         private final String s;

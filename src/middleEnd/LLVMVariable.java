@@ -2,6 +2,7 @@ package middleEnd;
 
 import frontEnd.Symbol;
 import middleEnd.Insts.AllocaInst;
+import middleEnd.Insts.GetelementptrInst;
 import middleEnd.Insts.StoreInst;
 import middleEnd.utils.RegTracker;
 
@@ -52,11 +53,10 @@ public class LLVMVariable extends Value {
             if (isConst) {
                 // 单个常量
                 int initValAsInt = ((ConstInitVal) initVal).getConstValue(0);
-                AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType);
+                AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
                 instructions.add(allocaInst);
                 LLVMConst llvmConst = new LLVMConst(baseType, initValAsInt);
                 instructions.add(new StoreInst(llvmConst, allocaInst));
-                // TODO STORE
             } else {
                 // 单个变量
 
@@ -65,6 +65,15 @@ public class LLVMVariable extends Value {
             // 数组
             if (isConst) {
                 // 常量数组
+                ConstInitVal constInitVal = (ConstInitVal) initVal;
+                AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                instructions.add(allocaInst);
+                for (int i = 0; i < arrayLength; i++) {
+                    GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, i);
+                    instructions.add(getelementptrInst);
+                    LLVMConst llvmConst = new LLVMConst(baseType, constInitVal.getConstValue(i));
+                    instructions.add(new StoreInst(llvmConst, getelementptrInst));
+                }
             } else {
                 // 变量数组
             }

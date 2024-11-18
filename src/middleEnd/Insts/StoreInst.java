@@ -10,7 +10,7 @@ public class StoreInst extends Instruction {
     private final ValueRepresentation to;
 
     public StoreInst(ValueRepresentation from, ValueRepresentation to) {
-        super(LLVMType.InstType.Store);
+        super(LLVMType.InstType.STORE);
         this.from = from;
         this.to = to;
     }
