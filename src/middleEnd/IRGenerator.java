@@ -347,7 +347,7 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateExpStmt(ASTNode node) {
-        return translateExp(node).getInstructions();
+        return translateExp(node.children.get(0)).getInstructions();
     }
 
     class LLVMExp extends Value implements UsableValue {
@@ -405,7 +405,7 @@ public class IRGenerator {
     }
 
     private LLVMExp translateExp(ASTNode node) {
-        return translateAddExp(node);
+        return translateAddExp(node.children.get(0));
     }
 
     private LLVMExp translateAddExp(ASTNode node) {
@@ -439,19 +439,17 @@ public class IRGenerator {
     private LLVMExp translateUnaryExp(ASTNode node) {
         if (node.children.size() == 1) {
             return translatePrimaryExp(node.children.get(0));
-        } else {
-            LeafASTNode leaf = (LeafASTNode) node.children.get(0);
+        } else if (node.children.get(0).isNode("UnaryOp")) {
+            LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
             LLVMExp unaryExp = translateUnaryExp(node.children.get(1));
-            if (leaf.token.token.equals("+")) {
-                return unaryExp;
-            } else if (leaf.token.token.equals("-")) {
-                return unaryExp.negate();
-            } else if (leaf.token.token.equals("!")) {
-                return unaryExp.logicalNot();
-            } else {
-                // TODO 函数调用
-                return new LLVMExp();
-            }
+            return switch (leaf.token.token) {
+                case "+" -> unaryExp;
+                case "-" -> unaryExp.negate();
+                default -> unaryExp.logicalNot();
+            };
+        } else {
+            // TODO 函数调用
+            return new LLVMExp();
         }
     }
 

@@ -6,7 +6,7 @@ import middleEnd.UsableValue;
 
 public class BinaryInst extends Instruction implements UsableValue {
     protected int regNo;
-    protected LLVMType.TypeID baseType;
+    protected LLVMType.TypeID baseType = LLVMType.TypeID.IntegerTyID;
     protected UsableValue op1;
     protected UsableValue op2;
     public BinaryInst(LLVMType.InstType type, int regNo, UsableValue op1, UsableValue op2) {

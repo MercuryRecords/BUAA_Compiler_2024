@@ -41,7 +41,7 @@ public class LLVMType {
         ALLOCA("alloca"),
         GETELEMENTPTR("getelementptr"),
 
-        ADD("binaryOperate"),
+        ADD("add"),
         SUB("sub"),
         MUL("mul"),
         SDIV("sdiv"),
