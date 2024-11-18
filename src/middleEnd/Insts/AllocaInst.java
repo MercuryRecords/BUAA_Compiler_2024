@@ -21,17 +21,21 @@ public class AllocaInst extends Instruction implements ValueRepresentation {
     }
 
     @Override
-    public LLVMType.TypeID toLLVMType() {
-        return baseType;
+    public String toLLVMType() {
+        if (arrayLength == 0) {
+            return baseType.toString();
+        } else {
+            return String.format("[%s x %s]", arrayLength, baseType.toString());
+        }
+    }
+
+    @Override
+    public int toAlign() {
+        return baseType.toAlign();
     }
 
     @Override
     public String toString() {
-//        return String.format("%s = alloca %s, align %s", toValueIR(), type.toString(), type.toAlign());
-        if (arrayLength == 0) {
-            return String.format("%s = alloca %s, align %s", toValueIR(), baseType.toString(), baseType.toAlign());
-        } else {
-            return String.format("%s = alloca [%s x %s], align %s", toValueIR(), arrayLength, baseType.toString(), baseType.toAlign());
-        }
+        return String.format("%s = alloca %s, align %s", toValueIR(), toLLVMType(), baseType.toAlign());
     }
 }

@@ -17,7 +17,12 @@ public class LLVMConst extends Value implements ValueRepresentation {
     }
 
     @Override
-    public LLVMType.TypeID toLLVMType() {
-        return baseType;
+    public String toLLVMType() {
+        return baseType.toString();
+    }
+
+    @Override
+    public int toAlign() {
+        return baseType.toAlign();
     }
 }
