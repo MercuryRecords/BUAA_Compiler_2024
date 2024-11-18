@@ -2,6 +2,7 @@ package middleEnd;
 
 import frontEnd.Symbol;
 import middleEnd.Insts.AllocaInst;
+import middleEnd.Insts.StoreInst;
 import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
@@ -51,7 +52,10 @@ public class LLVMVariable extends Value {
             if (isConst) {
                 // 单个常量
                 int initValAsInt = ((ConstInitVal) initVal).getConstValue(0);
-                instructions.add(new AllocaInst(tracker.nextRegNo(), baseType));
+                AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType);
+                instructions.add(allocaInst);
+                LLVMConst llvmConst = new LLVMConst(baseType, initValAsInt);
+                instructions.add(new StoreInst(llvmConst, allocaInst));
                 // TODO STORE
             } else {
                 // 单个变量

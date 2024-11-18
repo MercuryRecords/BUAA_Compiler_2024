@@ -187,7 +187,7 @@ public class IRGenerator {
                 block.addInst(translateBlockItem(child));
             }
         }
-        return new Block();
+        return block;
     }
 
     private LinkedList<Instruction> translateBlockItem(ASTNode node) {

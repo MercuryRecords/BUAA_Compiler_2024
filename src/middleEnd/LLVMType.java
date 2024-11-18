@@ -17,21 +17,18 @@ public class LLVMType {
         }
 
         public int toAlign() {
-            switch (s) {
-                case "i32":
-                    return 4;
-                case "i8":
-                    return 1;
-                default:
-                    return 0;
-            }
+            return switch (s) {
+                case "i32" -> 4;
+                case "i8" -> 1;
+                default -> 0;
+            };
         }
     }
 
     public enum InstType {
-        AllocaInst("alloca"),
-        LoadInst("load"),
-        StoreInst("store"),
+        Alloca("alloca"),
+        Load("load"),
+        Store("store"),
 
         ;
         private final String s;
