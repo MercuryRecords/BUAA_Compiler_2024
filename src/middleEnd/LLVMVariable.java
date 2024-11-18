@@ -59,7 +59,12 @@ public class LLVMVariable extends Value {
                 instructions.add(new StoreInst(llvmConst, allocaInst));
             } else {
                 // 单个变量
+                if (initVal != null) {
 
+                } else {
+                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    instructions.add(allocaInst);
+                }
             }
         } else {
             // 数组
@@ -76,6 +81,12 @@ public class LLVMVariable extends Value {
                 }
             } else {
                 // 变量数组
+                if (initVal != null) {
+
+                } else {
+                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    instructions.add(allocaInst);
+                }
             }
         }
         return instructions;

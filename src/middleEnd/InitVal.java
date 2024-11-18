@@ -8,4 +8,13 @@ public class InitVal extends Value {
     public InitVal() {
         super();
     }
+
+    public InitVal(RegTracker tracker) {
+        super();
+        this.tracker = tracker;
+    }
+
+    public void addExp() {
+
+    }
 }

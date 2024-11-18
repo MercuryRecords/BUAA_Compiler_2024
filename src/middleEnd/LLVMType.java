@@ -41,6 +41,14 @@ public class LLVMType {
         ALLOCA("alloca"),
         GETELEMENTPTR("getelementptr"),
 
+        ADD("binaryOperate"),
+        SUB("sub"),
+        MUL("mul"),
+        SDIV("sdiv"),
+        SREM("srem"),
+        AND("and"),
+        OR("or"),
+
         ;
         private final String s;
         InstType(String s) {

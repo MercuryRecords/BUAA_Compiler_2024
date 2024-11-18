@@ -2,14 +2,14 @@ package middleEnd.Insts;
 
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
-import middleEnd.ValueRepresentation;
+import middleEnd.UsableValue;
 
-public class GetelementptrInst extends Instruction implements ValueRepresentation {
+public class GetelementptrInst extends Instruction implements UsableValue {
     private final int regNo;
     private final LLVMType.TypeID baseType;
-    private final ValueRepresentation from;
+    private final UsableValue from;
     private final int offset;
-    public GetelementptrInst(int regNo, LLVMType.TypeID baseType, ValueRepresentation from, int offset) {
+    public GetelementptrInst(int regNo, LLVMType.TypeID baseType, UsableValue from, int offset) {
         super(LLVMType.InstType.GETELEMENTPTR);
         this.regNo = regNo;
         this.baseType = baseType;

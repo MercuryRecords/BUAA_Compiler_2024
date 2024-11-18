@@ -1,6 +1,6 @@
 package middleEnd;
 
-public class LLVMConst extends Value implements ValueRepresentation {
+public class LLVMConst extends Value implements UsableValue {
 
     private final LLVMType.TypeID baseType;
     private final int val;

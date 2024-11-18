@@ -5,6 +5,8 @@ import frontEnd.LeafASTNode;
 import frontEnd.Symbol;
 import frontEnd.SymbolTable;
 import frontEnd.lexer.LexType;
+import middleEnd.Insts.BinaryInst;
+import middleEnd.Insts.SubInst;
 import middleEnd.utils.ConstCalculator;
 import middleEnd.utils.RegTracker;
 
@@ -250,11 +252,9 @@ public class IRGenerator {
                 }
                 var = new LLVMVariable(symbol, arrayLength);
                 ASTNode lastChild = child.children.get(child.children.size() - 1);
-                InitVal initVal;
+                InitVal initVal = null;
                 if (lastChild.isNode("InitVal")) {
                     initVal = translateInitVal(lastChild, arrayLength);
-                } else {
-                    initVal = new InitVal();
                 }
                 // 不必填充
                 var.setInitVal(initVal);
@@ -271,6 +271,12 @@ public class IRGenerator {
             LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
             return new ConstInitVal(leaf.token.token, arrayLength);
         } else {
+            InitVal initVal = new InitVal(regTrackers.get(scopeId));
+            for (ASTNode child : node.children) {
+                if (child.isNode("Exp")) {
+                    initVal.addExp(/* TODO */);
+                }
+            }
             return new InitVal();
         }
     }
@@ -341,6 +347,134 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateExpStmt(ASTNode node) {
-        return new LinkedList<>();
+        return translateExp(node).getInstructions();
+    }
+
+    class LLVMExp extends Value implements UsableValue {
+        LinkedList<Instruction> instructions;
+        UsableValue value;
+
+        public LLVMExp(UsableValue value) {
+            this.instructions = new LinkedList<>();
+            this.value = value;
+        }
+
+        public LLVMExp() {
+
+        }
+
+        @Override
+        public String toValueIR() {
+            return value.toValueIR();
+        }
+
+        @Override
+        public String toLLVMType() {
+            return value.toLLVMType();
+        }
+
+        @Override
+        public int toAlign() {
+            return value.toAlign();
+        }
+
+        public LinkedList<Instruction> getInstructions() {
+            return instructions;
+        }
+
+        public LLVMExp binaryOperate(LLVMType.InstType instType, LLVMExp llvmExp) {
+            instructions.addAll(llvmExp.instructions);
+            UsableValue left = this.value;
+            UsableValue right = llvmExp.value;
+            BinaryInst newInst = new BinaryInst(instType, regTrackers.get(scopeId).nextRegNo(), left, right);
+            instructions.add(newInst);
+            this.value = newInst;
+            return this;
+        }
+
+        public LLVMExp negate() {
+            SubInst newInst = new SubInst(regTrackers.get(scopeId).nextRegNo(), new LLVMConst(LLVMType.TypeID.IntegerTyID, 0), this.value);
+            instructions.add(newInst);
+            this.value = newInst;
+            return this;
+        }
+
+        public LLVMExp logicalNot() {
+            return this; // TODO
+        }
+    }
+
+    private LLVMExp translateExp(ASTNode node) {
+        return translateAddExp(node);
+    }
+
+    private LLVMExp translateAddExp(ASTNode node) {
+        if (node.children.size() == 1) {
+            return translateMulExp(node.children.get(0));
+        } else {
+            LLVMExp left = translateAddExp(node.children.get(0));
+            if (((LeafASTNode) node.children.get(1)).token.token.equals("+")){
+                return left.binaryOperate(LLVMType.InstType.ADD, translateMulExp(node.children.get(2)));
+            } else {
+                return left.binaryOperate(LLVMType.InstType.SUB, translateMulExp(node.children.get(2)));
+            }
+        }
+    }
+
+    private LLVMExp translateMulExp(ASTNode node) {
+        if (node.children.size() == 1) {
+            return translateUnaryExp(node.children.get(0));
+        } else {
+            LLVMExp left = translateMulExp(node.children.get(0));
+            if (((LeafASTNode) node.children.get(1)).token.token.equals("*")) {
+                return left.binaryOperate(LLVMType.InstType.MUL, translateUnaryExp(node.children.get(2)));
+            } else if (((LeafASTNode) node.children.get(1)).token.token.equals("/")) {
+                return left.binaryOperate(LLVMType.InstType.SDIV, translateUnaryExp(node.children.get(2)));
+            } else {
+                return left.binaryOperate(LLVMType.InstType.SREM, translateUnaryExp(node.children.get(2)));
+            }
+        }
+    }
+
+    private LLVMExp translateUnaryExp(ASTNode node) {
+        if (node.children.size() == 1) {
+            return translatePrimaryExp(node.children.get(0));
+        } else {
+            LeafASTNode leaf = (LeafASTNode) node.children.get(0);
+            LLVMExp unaryExp = translateUnaryExp(node.children.get(1));
+            if (leaf.token.token.equals("+")) {
+                return unaryExp;
+            } else if (leaf.token.token.equals("-")) {
+                return unaryExp.negate();
+            } else if (leaf.token.token.equals("!")) {
+                return unaryExp.logicalNot();
+            } else {
+                // TODO 函数调用
+                return new LLVMExp();
+            }
+        }
+    }
+
+    private LLVMExp translatePrimaryExp(ASTNode node) {
+        if (node.children.size() > 1) {
+            return translateExp(node.children.get(1));
+        } else if (node.children.get(0).isNode("LVal")) {
+            return translateLValAsExp(node.children.get(0));
+        } else {
+            int val;
+            String token = ((LeafASTNode) node.children.get(0).children.get(0)).token.token;
+            if (node.children.get(0).isNode("Number")) {
+                val = Integer.parseInt(token);
+            } else {
+                val = token.charAt(1);
+            }
+
+            LLVMConst number = new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
+            return new LLVMExp(number);
+        }
+    }
+
+    private LLVMExp translateLValAsExp(ASTNode node) {
+        return new LLVMExp(); // TODO
     }
 }

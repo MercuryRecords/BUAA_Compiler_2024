@@ -2,9 +2,9 @@ package middleEnd.Insts;
 
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
-import middleEnd.ValueRepresentation;
+import middleEnd.UsableValue;
 
-public class AllocaInst extends Instruction implements ValueRepresentation {
+public class AllocaInst extends Instruction implements UsableValue {
     private final int regNo;
     private final LLVMType.TypeID baseType;
     private final int arrayLength;

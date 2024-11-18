@@ -2,14 +2,14 @@ package middleEnd.Insts;
 
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
-import middleEnd.ValueRepresentation;
+import middleEnd.UsableValue;
 
 public class StoreInst extends Instruction {
 
-    private final ValueRepresentation from;
-    private final ValueRepresentation to;
+    private final UsableValue from;
+    private final UsableValue to;
 
-    public StoreInst(ValueRepresentation from, ValueRepresentation to) {
+    public StoreInst(UsableValue from, UsableValue to) {
         super(LLVMType.InstType.STORE);
         this.from = from;
         this.to = to;
