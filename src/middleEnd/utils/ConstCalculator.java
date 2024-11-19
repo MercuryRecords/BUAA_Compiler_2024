@@ -6,6 +6,7 @@ import frontEnd.Token;
 import frontEnd.lexer.LexType;
 import middleEnd.ConstInitVal;
 import middleEnd.LLVMSymbolTable;
+import middleEnd.LLVMVariable;
 
 import java.util.HashMap;
 
@@ -21,7 +22,7 @@ public class ConstCalculator {
         int currScopeId = scopeId;
         while (currScopeId > 0) {
             if (symbolTables.get(currScopeId).symbols.containsKey(name)) {
-                ConstInitVal constInitVal = (ConstInitVal) symbolTables.get(currScopeId).symbols.get(name).initVal;
+                ConstInitVal constInitVal = (ConstInitVal) ((LLVMVariable) symbolTables.get(currScopeId).symbols.get(name)).initVal;
                 return constInitVal.getConstValue(i);
             }
 

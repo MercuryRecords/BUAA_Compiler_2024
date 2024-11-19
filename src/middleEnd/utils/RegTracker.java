@@ -9,6 +9,6 @@ public class RegTracker {
     }
 
     public int nextRegNo() {
-        return ++regNo;
+        return regNo++;
     }
 }

@@ -5,9 +5,7 @@ import frontEnd.LeafASTNode;
 import frontEnd.Symbol;
 import frontEnd.SymbolTable;
 import frontEnd.lexer.LexType;
-import middleEnd.Insts.BinaryInst;
-import middleEnd.Insts.GetelementptrInst;
-import middleEnd.Insts.SubInst;
+import middleEnd.Insts.*;
 import middleEnd.utils.ConstCalculator;
 import middleEnd.utils.RegTracker;
 
@@ -22,6 +20,7 @@ public class IRGenerator {
     private final Stack<LLVMSymbolTable> symbolTableStack = new Stack<>();
     private final HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
     private final HashMap<Integer, RegTracker> regTrackers = new HashMap<>();
+    private final HashSet<Integer> usedScopeIds = new HashSet<>();
     private int scopeId = 0;
     private final ConstCalculator constCalculator;
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
@@ -57,7 +56,12 @@ public class IRGenerator {
     }
 
     private void enterScope() {
-        LLVMSymbolTable newTable = new LLVMSymbolTable(++scopeId, currTable);
+        do {
+            scopeId++;
+        }
+        while (usedScopeIds.contains(scopeId));
+        usedScopeIds.add(scopeId);
+        LLVMSymbolTable newTable = new LLVMSymbolTable(scopeId, currTable);
         RegTracker tracker = new RegTracker(scopeId);
         symbolTableStack.push(newTable);
         newSymbolTables.put(newTable.id, newTable);
@@ -85,7 +89,7 @@ public class IRGenerator {
         LLVMSymbolTable table = currTable;
         while (table != null) {
             if (table.hasVariable(token)) {
-                return table.get(token);
+                return (LLVMVariable) table.get(token);
             }
             table = table.parentTable;
         }
@@ -95,6 +99,10 @@ public class IRGenerator {
 
     private void addLLVMVariable(LLVMVariable symbol) {
         newSymbolTables.get(scopeId).addVariable(symbol);
+    }
+
+    private void addLLVMFParam(String name, UsableValue value) {
+        newSymbolTables.get(scopeId).symbols.put(name, value);
     }
 
     private Module translateModule(ASTNode root) {
@@ -174,7 +182,10 @@ public class IRGenerator {
     private Function translateMainFuncDef(ASTNode node) {
         Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
         enterScope();
-        main.setBlock(translateBlock(node.children.get(node.children.size() - 1)));
+        regTrackers.get(scopeId).nextRegNo();
+        Block block = new Block();
+        block.addInsts(translateBlock(node.children.get(node.children.size() - 1)));
+        main.setBlock(block);
         exitScope();
         return main;
     }
@@ -186,24 +197,52 @@ public class IRGenerator {
         enterScope();
         for (ASTNode child : node.children) {
             if (child.isNode("FuncFParams")) {
-                // TODO 形参
-                function.setFParams();
+                LinkedList<FuncFParam> params = translateFuncFParams(child);
+                function.setFParams(params);
             }
         }
-        function.setBlock(translateBlock(node.children.get(node.children.size() - 1)));
+        regTrackers.get(scopeId).nextRegNo();
+        Block block = new Block();
+        RegTracker tracker = regTrackers.get(scopeId);
+        for (FuncFParam param : function.params) {
+            AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), param.baseType, 0);
+            block.addInst(allocaInst);
+            block.addInst(new StoreInst(param, allocaInst));
+            LoadInst loadInst = new LoadInst(tracker.nextRegNo(), param.baseType, allocaInst);
+            block.addInst(loadInst);
+            addLLVMFParam(param.name, loadInst);
+        }
+        block.addInsts(translateBlock(node.children.get(node.children.size() - 1)));
+        function.setBlock(block);
         exitScope();
         return function;
     }
 
-    private Block translateBlock(ASTNode node) {
-        // System.out.println("In translateBlock: " + node.print());
-        Block block = new Block();
+    private LinkedList<FuncFParam> translateFuncFParams(ASTNode node) {
+        LinkedList<FuncFParam> params = new LinkedList<>();
         for (ASTNode child : node.children) {
-            if (child.isNode("BlockItem")) {
-                block.addInst(translateBlockItem(child));
+            if (child.isNode("FuncFParam")) {
+                params.add(translateFuncFParam(child));
             }
         }
-        return block;
+        return params;
+    }
+
+    private FuncFParam translateFuncFParam(ASTNode node) {
+        LeafASTNode ident = (LeafASTNode) node.children.get(1);
+        Symbol symbol = getOldSymbol(ident);
+        return new FuncFParam(regTrackers.get(scopeId).nextRegNo(), symbol);
+    }
+
+    private LinkedList<Instruction> translateBlock(ASTNode node) {
+        // System.out.println("In translateBlock: " + node.print());
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        for (ASTNode child : node.children) {
+            if (child.isNode("BlockItem")) {
+                instructions.addAll(translateBlockItem(child));
+            }
+        }
+        return instructions;
     }
 
     private LinkedList<Instruction> translateBlockItem(ASTNode node) {

@@ -5,7 +5,7 @@ import java.util.HashMap;
 public class LLVMSymbolTable {
     public int id;
     public LLVMSymbolTable parentTable;
-    public HashMap<String, LLVMVariable> symbols = new HashMap<>();
+    public HashMap<String, UsableValue> symbols = new HashMap<>();
 
     public LLVMSymbolTable(int scopeId, LLVMSymbolTable parentTable) {
         this.id = scopeId;
@@ -17,7 +17,7 @@ public class LLVMSymbolTable {
         symbols.put(var.name, var);
     }
 
-    public LLVMVariable get(String token) {
+    public UsableValue get(String token) {
         return symbols.get(token);
     }
 

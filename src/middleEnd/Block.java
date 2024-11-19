@@ -1,12 +1,18 @@
 package middleEnd;
 
+import middleEnd.Insts.AllocaInst;
+
 import java.util.LinkedList;
 
 public class Block extends Value {
     private final LinkedList<Instruction> insts = new LinkedList<>();
 
-    public void addInst(LinkedList<Instruction> instructions) {
+    public void addInsts(LinkedList<Instruction> instructions) {
         insts.addAll(instructions);
+    }
+
+    public void addInst(Instruction instruction) {
+        insts.add(instruction);
     }
 
     @Override

@@ -8,7 +8,7 @@ import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
 
-public class LLVMVariable extends Value {
+public class LLVMVariable extends Value implements UsableValue {
     public boolean isConst;
     public String name;
     public int arrayLength; // 为 0 是表示不是数组
@@ -114,5 +114,20 @@ public class LLVMVariable extends Value {
             }
         }
         return instructions;
+    }
+
+    @Override
+    public String toValueIR() {
+        return usableValue.toValueIR();
+    }
+
+    @Override
+    public String toLLVMType() {
+        return usableValue.toLLVMType();
+    }
+
+    @Override
+    public int toAlign() {
+        return usableValue.toAlign();
     }
 }

@@ -22,6 +22,7 @@ public class LLVMType {
             return switch (s) {
                 case "i32" -> 4;
                 case "i8" -> 1;
+                case "i32*", "i8*" -> 8;
                 default -> 0;
             };
         }

@@ -7,7 +7,7 @@ import java.util.LinkedList;
 public class Function extends GlobalValue {
     private LLVMType.TypeID retType;
     private final String name;
-    private final LinkedList<Symbol> params = new LinkedList<>(); // TODO 不应该用 Symbol，应该用 Param
+    public final LinkedList<FuncFParam> params = new LinkedList<>();
     private Block block;
 
     public Function(Symbol symbol) {
@@ -40,7 +40,7 @@ public class Function extends GlobalValue {
         sb.append(name);
         sb.append("(");
         if (!params.isEmpty()) {
-            for (Symbol param : params) {
+            for (FuncFParam param : params) {
                 sb.append(param.toString());
                 sb.append(", ");
             }
@@ -53,7 +53,7 @@ public class Function extends GlobalValue {
         return sb.toString();
     }
 
-    public void setFParams() {
-        // TODO
+    public void setFParams(LinkedList<FuncFParam> params) {
+        this.params.addAll(params);
     }
 }
