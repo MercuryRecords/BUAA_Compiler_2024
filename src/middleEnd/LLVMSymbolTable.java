@@ -16,4 +16,12 @@ public class LLVMSymbolTable {
     public void addVariable(LLVMVariable var) {
         symbols.put(var.name, var);
     }
+
+    public LLVMVariable get(String token) {
+        return symbols.get(token);
+    }
+
+    public boolean hasVariable(String token) {
+        return symbols.containsKey(token);
+    }
 }

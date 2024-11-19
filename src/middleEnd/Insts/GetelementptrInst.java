@@ -8,8 +8,8 @@ public class GetelementptrInst extends Instruction implements UsableValue {
     private final int regNo;
     private final LLVMType.TypeID baseType;
     private final UsableValue from;
-    private final int offset;
-    public GetelementptrInst(int regNo, LLVMType.TypeID baseType, UsableValue from, int offset) {
+    private final String offset;
+    public GetelementptrInst(int regNo, LLVMType.TypeID baseType, UsableValue from, String offset) {
         super(LLVMType.InstType.GETELEMENTPTR);
         this.regNo = regNo;
         this.baseType = baseType;
@@ -34,6 +34,6 @@ public class GetelementptrInst extends Instruction implements UsableValue {
 
     @Override
     public String toString() {
-        return String.format("%s = getelementptr %s, %s* %s, i32 0, i32 %d", toValueIR(), from.toLLVMType(), from.toLLVMType(), from.toValueIR(), offset);
+        return String.format("%s = getelementptr %s, %s* %s, i64 0, i64 %s", toValueIR(), from.toLLVMType(), from.toLLVMType(), from.toValueIR(), offset);
     }
 }

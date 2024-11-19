@@ -14,6 +14,7 @@ public class LLVMVariable extends Value {
     public int arrayLength; // 为 0 是表示不是数组
     public LLVMType.TypeID baseType;
     public InitVal initVal;
+    public UsableValue usableValue;
 
     public LLVMVariable(Symbol symbol, int arrayLength) {
         super();
@@ -54,6 +55,7 @@ public class LLVMVariable extends Value {
                 // 单个常量
                 int initValAsInt = ((ConstInitVal) initVal).getConstValue(0);
                 AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                usableValue = allocaInst;
                 instructions.add(allocaInst);
                 LLVMConst llvmConst = new LLVMConst(baseType, initValAsInt);
                 instructions.add(new StoreInst(llvmConst, allocaInst));
@@ -64,10 +66,12 @@ public class LLVMVariable extends Value {
                     LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
                     instructions.addAll(initValInsts);
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    usableValue = allocaInst;
                     instructions.add(allocaInst);
                     instructions.add(new StoreInst(llvmExp.value, allocaInst));
                 } else {
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    usableValue = allocaInst;
                     instructions.add(allocaInst);
                 }
             }
@@ -77,9 +81,10 @@ public class LLVMVariable extends Value {
                 // 常量数组
                 ConstInitVal constInitVal = (ConstInitVal) initVal;
                 AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                usableValue = allocaInst;
                 instructions.add(allocaInst);
                 for (int i = 0; i < arrayLength; i++) {
-                    GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, i);
+                    GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, String.valueOf(i));
                     instructions.add(getelementptrInst);
                     LLVMConst llvmConst = new LLVMConst(baseType, constInitVal.getConstValue(i));
                     instructions.add(new StoreInst(llvmConst, getelementptrInst));
@@ -93,15 +98,17 @@ public class LLVMVariable extends Value {
                         instructions.addAll(initValInsts);
                     }
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    usableValue = allocaInst;
                     instructions.add(allocaInst);
                     for (int i = 0; i < initVal.size(); i++) {
                         IRGenerator.LLVMExp llvmExp = initVal.get(i);
-                        GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, i);
+                        GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, String.valueOf(i));
                         instructions.add(getelementptrInst);
                         instructions.add(new StoreInst(llvmExp.value, getelementptrInst));
                     }
                 } else {
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    usableValue = allocaInst;
                     instructions.add(allocaInst);
                 }
             }

@@ -6,6 +6,7 @@ import frontEnd.Symbol;
 import frontEnd.SymbolTable;
 import frontEnd.lexer.LexType;
 import middleEnd.Insts.BinaryInst;
+import middleEnd.Insts.GetelementptrInst;
 import middleEnd.Insts.SubInst;
 import middleEnd.utils.ConstCalculator;
 import middleEnd.utils.RegTracker;
@@ -78,6 +79,18 @@ public class IRGenerator {
     private Symbol getOldSymbol(LeafASTNode node) {
         String identName = node.token.token;
         return oldSymbolTables.get(scopeId).getSymbol(identName);
+    }
+
+    private LLVMVariable getLLVMVariable(String token) {
+        LLVMSymbolTable table = currTable;
+        while (table != null) {
+            if (table.hasVariable(token)) {
+                return table.get(token);
+            }
+            table = table.parentTable;
+        }
+
+        throw new RuntimeException("Variable " + token + " not found");
     }
 
     private void addLLVMVariable(LLVMVariable symbol) {
@@ -402,6 +415,12 @@ public class IRGenerator {
         public LLVMExp logicalNot() {
             return this; // TODO
         }
+
+        public void addUsableInstruction(Instruction inst) {
+            assert inst instanceof UsableValue;
+            instructions.add(inst);
+            this.value = (UsableValue) inst;
+        }
     }
 
     private LLVMExp translateExp(ASTNode node) {
@@ -473,6 +492,16 @@ public class IRGenerator {
     }
 
     private LLVMExp translateLValAsExp(ASTNode node) {
-        return new LLVMExp(); // TODO
+        LeafASTNode leaf = (LeafASTNode) node.children.get(0);
+        LLVMVariable var = getLLVMVariable(leaf.token.token);
+        assert var != null;
+        if (node.children.size() > 3) {
+            LLVMExp exp = translateExp(node.children.get(2));
+            String offset = exp.toValueIR();
+            exp.addUsableInstruction(new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), var.baseType, var.usableValue, offset));
+            return exp;
+        } else {
+            return new LLVMExp(new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), var.baseType, var.usableValue, "0"));
+        }
     }
 }
