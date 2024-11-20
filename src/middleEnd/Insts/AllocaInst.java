@@ -23,9 +23,9 @@ public class AllocaInst extends Instruction implements UsableValue {
     @Override
     public String toLLVMType() {
         if (arrayLength == 0) {
-            return baseType.toString();
+            return baseType.toPointerType().toString();
         } else {
-            return String.format("[%d x %s]", arrayLength, baseType.toString());
+            return String.format("[%d x %s]*", arrayLength, baseType.toString());
         }
     }
 
@@ -34,8 +34,16 @@ public class AllocaInst extends Instruction implements UsableValue {
         return baseType.toAlign();
     }
 
+    private String toNoPointerType() {
+        if (arrayLength == 0) {
+            return baseType.toString();
+        } else {
+            return String.format("[%d x %s]", arrayLength, baseType.toString());
+        }
+    }
+
     @Override
     public String toString() {
-        return String.format("%s = alloca %s, align %s", toValueIR(), toLLVMType(), baseType.toAlign());
+        return String.format("%s = alloca %s, align %s", toValueIR(), toNoPointerType(), baseType.toAlign());
     }
 }
