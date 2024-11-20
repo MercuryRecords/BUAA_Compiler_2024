@@ -3,11 +3,13 @@ package middleEnd;
 public class LLVMType {
     public enum TypeID {
         VoidTyID("void"),
-        IntegerTyID("i32"),
-        CharTyID("i8"),
-        IntegerPtrTyID("i32*"),
-        CharPtrTyID("i8*"),
         LongTyID("i64"),
+        IntegerTyID("i32"),
+        IntegerPtrTyID("i32*"),
+        IntegerPtrPtrTyID("i32**"),
+        CharTyID("i8"),
+        CharPtrTyID("i8*"),
+        CharPtrPtrTyID("i8**"),
         ;
 
         private final String s;
@@ -32,7 +34,9 @@ public class LLVMType {
 
         public TypeID toPointerType() {
             return switch (this) {
+                case IntegerPtrTyID -> IntegerPtrPtrTyID;
                 case IntegerTyID -> IntegerPtrTyID;
+                case CharPtrTyID -> CharPtrPtrTyID;
                 case CharTyID -> CharPtrTyID;
                 default -> this;
             };

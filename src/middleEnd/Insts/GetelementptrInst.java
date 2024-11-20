@@ -37,6 +37,7 @@ public class GetelementptrInst extends Instruction implements UsableValue {
     @Override
     public String toString() {
         if (from.toLLVMType().startsWith("[")) {
+            // 唉特判
             return String.format("%s = getelementptr %s, %s* %s, i64 0, i64 %s", toValueIR(), from.toLLVMType(), from.toLLVMType(), from.toValueIR(), offset);
         } else {
             return String.format("%s = getelementptr %s, %s %s, i64 %s", toValueIR(), noPointerBaseType.toString(), from.toLLVMType(), from.toValueIR(), offset);

@@ -210,9 +210,7 @@ public class IRGenerator {
             AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), param.baseType, 0);
             block.addInst(allocaInst);
             block.addInst(new StoreInst(param, allocaInst));
-            LoadInst loadInst = new LoadInst(tracker.nextRegNo(), param.baseType, allocaInst);
-            block.addInst(loadInst);
-            addLLVMFParam(param.name, loadInst);
+            addLLVMFParam(param.name, allocaInst);
         }
         block.addInsts(translateBlock(node.children.get(node.children.size() - 1)));
         function.setBlock(block);
