@@ -23,6 +23,7 @@ public class IRGenerator {
     private final HashSet<Integer> usedScopeIds = new HashSet<>();
     private int scopeId = 0;
     private final ConstCalculator constCalculator;
+    private LLVMType.TypeID funcRetType;
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
         this.root = root;
         this.oldSymbolTables = oldSymbolTables;
@@ -181,6 +182,7 @@ public class IRGenerator {
 
     private Function translateMainFuncDef(ASTNode node) {
         Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
+        funcRetType = main.getReturnType();
         enterScope();
         regTrackers.get(scopeId).nextRegNo();
         Block block = new Block();
@@ -195,6 +197,7 @@ public class IRGenerator {
         Symbol symbol = getOldSymbol(ident);
         Function function = new Function(symbol);
         enterScope();
+        funcRetType = function.getReturnType();
         for (ASTNode child : node.children) {
             if (child.isNode("FuncFParams")) {
                 LinkedList<FuncFParam> params = translateFuncFParams(child);
@@ -367,7 +370,14 @@ public class IRGenerator {
         if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
             LLVMExp exp = translateExp(node.children.get(1));
             instructions.addAll(exp.instructions);
-            instructions.add(new RetInst(exp.value));
+            if (exp.value.toValueIR().startsWith("%") ||
+                exp.value.toValueIR().startsWith("@")) {
+                LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), funcRetType, exp.value);
+                instructions.add(loadInst);
+                instructions.add(new RetInst(loadInst));
+            } else {
+                instructions.add(new RetInst(exp.value));
+            }
         } else {
             instructions.add(new RetInst());
         }
@@ -403,7 +413,14 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateAssignStmt(ASTNode node) {
-        return new LinkedList<>();
+        LLVMExp exp = translateExp(node.children.get(2));
+        LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
+        LLVMExp LVal = translateLValAsExp(node.children.get(0));
+        LinkedList<Instruction> instructions = new LinkedList<>(exp.instructions);
+        instructions.addAll(LVal.instructions);
+        StoreInst storeInst = new StoreInst(exp.value, LVal.value);
+        instructions.add(storeInst);
+        return instructions;
     }
 
     private LinkedList<Instruction> translateExpStmt(ASTNode node) {
@@ -553,8 +570,6 @@ public class IRGenerator {
             }
             GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
             exp.addUsableInstruction(getInst);
-            exp.addUsableInstruction(new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, getInst));
-
             return exp;
         } else {
             return new LLVMExp(var);

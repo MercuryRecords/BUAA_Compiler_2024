@@ -56,4 +56,8 @@ public class Function extends GlobalValue {
     public void setFParams(LinkedList<FuncFParam> params) {
         this.params.addAll(params);
     }
+
+    public LLVMType.TypeID getReturnType() {
+        return retType;
+    }
 }
