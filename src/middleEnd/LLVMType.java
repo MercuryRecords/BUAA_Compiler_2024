@@ -10,9 +10,11 @@ public class LLVMType {
         ;
 
         private final String s;
+
         TypeID(String s) {
             this.s = s;
         }
+
         @Override
         public String toString() {
             return s;

@@ -7,11 +7,11 @@ public class Module {
     private final LinkedList<Value> globalValues = new LinkedList<>();
 
 
-    public void addGlobalValue(Value globalValue) {
+    public void addValue(Value globalValue) {
         globalValues.add(globalValue);
     }
 
-    public void addGlobalValues(LinkedList<Value> values) {
+    public void addValues(LinkedList<Value> values) {
         globalValues.addAll(values);
     }
 

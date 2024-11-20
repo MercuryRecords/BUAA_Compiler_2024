@@ -108,15 +108,14 @@ public class IRGenerator {
 
     private Module translateModule(ASTNode root) {
         Module module = new Module();
-        ArrayList<ASTNode> children = root.children;
         enterScope();
-        for (ASTNode child : children) {
+        for (ASTNode child : root.children) {
             if (child.isNode("Decl")) {
-                module.addGlobalValues(translateGlobalDecl(child));
+                module.addValues(translateGlobalDecl(child));
             } else if (child.isNode("FuncDef")) {
-                module.addGlobalValue(translateFuncDef(child));
+                module.addValue(translateFuncDef(child));
             } else if (child.isNode("MainFuncDef")) {
-                module.addGlobalValue(translateMainFuncDef(child));
+                module.addValue(translateMainFuncDef(child));
             }
         }
         exitScope();
