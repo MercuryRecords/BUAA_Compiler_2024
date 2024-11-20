@@ -60,6 +60,9 @@ public class LLVMType {
         RETURN("ret"),
 
         ZEXT("zext"),
+        TRUNC("trunc"),
+        CALL("call"),
+
         ;
         private final String s;
         InstType(String s) {

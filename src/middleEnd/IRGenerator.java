@@ -21,6 +21,7 @@ public class IRGenerator {
     private final HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
     private final HashMap<Integer, RegTracker> regTrackers = new HashMap<>();
     private final HashSet<Integer> usedScopeIds = new HashSet<>();
+    private final HashMap<String, Function> functions = new HashMap<>();
     private int scopeId = 0;
     private final ConstCalculator constCalculator;
     private LLVMType.TypeID funcRetType;
@@ -195,6 +196,7 @@ public class IRGenerator {
         LeafASTNode ident = (LeafASTNode) node.children.get(1);
         Symbol symbol = getOldSymbol(ident);
         Function function = new Function(symbol);
+        functions.put(symbol.token.token, function);
         enterScope();
         funcRetType = function.getReturnType();
         for (ASTNode child : node.children) {
@@ -403,11 +405,41 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateGetCharStmt(ASTNode node) {
-        return new LinkedList<>();
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        UsableValue lval = translateLVal(node.children.get(0));
+        if (lval instanceof LLVMExp) {
+            instructions.addAll(((LLVMExp) lval).instructions);
+        }
+
+        CallInst callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(), LLVMType.TypeID.IntegerTyID, "getchar");
+        instructions.add(callInst);
+        if (callInst.isDifferentType(lval)) {
+            Instruction fix = callInst.fix(regTrackers.get(scopeId).nextRegNo());
+            instructions.add(fix);
+            instructions.add(new StoreInst((UsableValue) fix, lval));
+        } else {
+            instructions.add(new StoreInst(callInst, lval));
+        }
+        return instructions;
     }
 
     private LinkedList<Instruction> translateGetIntStmt(ASTNode node) {
-        return new LinkedList<>();
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        UsableValue lval = translateLVal(node.children.get(0));
+        if (lval instanceof LLVMExp) {
+            instructions.addAll(((LLVMExp) lval).instructions);
+        }
+
+        CallInst callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(), LLVMType.TypeID.IntegerTyID, "getint");
+        instructions.add(callInst);
+        if (callInst.isDifferentType(lval)) {
+            Instruction fix = callInst.fix(regTrackers.get(scopeId).nextRegNo());
+            instructions.add(fix);
+            instructions.add(new StoreInst((UsableValue) fix, lval));
+        } else {
+            instructions.add(new StoreInst(callInst, lval));
+        }
+        return instructions;
     }
 
     private LinkedList<Instruction> translateAssignStmt(ASTNode node) {
@@ -463,7 +495,8 @@ public class IRGenerator {
         }
 
         public LLVMExp() {
-
+            this.instructions = new LinkedList<>();
+            this.value = null;
         }
 
         public LLVMExp(LLVMExp exp) {
@@ -516,6 +549,10 @@ public class IRGenerator {
             instructions.add(inst);
             this.value = (UsableValue) inst;
         }
+
+        public void addFromExp(LLVMExp exp1) {
+            instructions.addAll(exp1.instructions);
+        }
     }
 
     private LLVMExp translateExp(ASTNode node) {
@@ -562,9 +599,42 @@ public class IRGenerator {
                 default -> unaryExp.logicalNot();
             };
         } else {
-            // TODO 函数调用
-            return new LLVMExp();
+            LLVMExp exp = new LLVMExp();
+            LinkedList<LLVMExp> realParams = new LinkedList<>();
+            LeafASTNode leaf = (LeafASTNode) node.children.get(0);
+            Function toCall = functions.get(leaf.token.token);
+            if (node.children.get(2).isNode("FuncRParams")) {
+                realParams = new LinkedList<>(translateFuncRParams(node.children.get(2)));
+            }
+            for (LLVMExp realParam : realParams) {
+                exp.addFromExp(realParam);
+            }
+            LinkedList<UsableValue> forCall = new LinkedList<>();
+            for (int i = 0; i < toCall.params.size(); i++) {
+                boolean toFix = toCall.params.get(i).isDifferentType(realParams.get(i));
+                if (toFix) {
+                    Instruction fix = toCall.params.get(i).fix(regTrackers.get(scopeId).nextRegNo(),realParams.get(i));
+                    exp.addUsableInstruction(fix);
+                    forCall.add((UsableValue) fix);
+                } else {
+                    forCall.add(realParams.get(i));
+                }
+            }
+            CallInst callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(),
+                    toCall.retType, toCall.name, forCall);
+            exp.addUsableInstruction(callInst);
+            return exp;
         }
+    }
+
+    private LinkedList<LLVMExp> translateFuncRParams(ASTNode node) {
+        LinkedList<LLVMExp> realParams = new LinkedList<>();
+        for (ASTNode child : node.children) {
+            if (child.isNode("Exp")) {
+                realParams.add(translateExp(child));
+            }
+        }
+        return realParams;
     }
 
     private LLVMExp translatePrimaryExp(ASTNode node) {

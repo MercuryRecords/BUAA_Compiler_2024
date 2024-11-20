@@ -1,6 +1,8 @@
 package middleEnd;
 
 import frontEnd.Symbol;
+import middleEnd.Insts.TruncInst;
+import middleEnd.Insts.ZextInst;
 
 public class FuncFParam extends Value implements UsableValue {
     int regNo;
@@ -45,5 +47,21 @@ public class FuncFParam extends Value implements UsableValue {
     @Override
     public String toString() {
         return String.format("%s %s", toLLVMType(), toValueIR());
+    }
+
+    public boolean isDifferentType(UsableValue val) {
+        if (baseType != LLVMType.TypeID.CharTyID && baseType != LLVMType.TypeID.IntegerTyID) {
+            return false;
+        }
+
+        return !val.toLLVMType().equals(baseType.toString());
+    }
+
+    public Instruction fix(int regNo, UsableValue value) {
+        if (baseType == LLVMType.TypeID.IntegerTyID) {
+            return new ZextInst(regNo, value, baseType);
+        } else {
+            return new TruncInst(regNo, value, baseType);
+        }
     }
 }

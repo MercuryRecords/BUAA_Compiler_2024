@@ -5,8 +5,8 @@ import frontEnd.Symbol;
 import java.util.LinkedList;
 
 public class Function extends Value {
-    private LLVMType.TypeID retType;
-    private final String name;
+    public LLVMType.TypeID retType;
+    public final String name;
     public final LinkedList<FuncFParam> params = new LinkedList<>();
     private Block block;
 
