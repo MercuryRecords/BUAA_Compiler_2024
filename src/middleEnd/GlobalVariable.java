@@ -61,9 +61,9 @@ public class GlobalVariable extends LLVMVariable implements UsableValue  {
     @Override
     public String toLLVMType() {
         if (arrayLength == 0) {
-            return baseType.toString();
+            return baseType.toPointerType().toString();
         } else {
-            return String.format("[%d x %s]", arrayLength, baseType.toString());
+            return String.format("[%d x %s]*", arrayLength, baseType.toString());
         }
     }
 
