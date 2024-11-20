@@ -50,6 +50,8 @@ public class LLVMType {
         AND("and"),
         OR("or"),
 
+        RETURN("ret"),
+
         ;
         private final String s;
         InstType(String s) {

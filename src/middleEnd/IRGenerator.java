@@ -85,11 +85,11 @@ public class IRGenerator {
         return oldSymbolTables.get(scopeId).getSymbol(identName);
     }
 
-    private LLVMVariable getLLVMVariable(String token) {
+    private UsableValue getLLVMVariable(String token) {
         LLVMSymbolTable table = currTable;
         while (table != null) {
             if (table.hasVariable(token)) {
-                return (LLVMVariable) table.get(token);
+                return table.get(token);
             }
             table = table.parentTable;
         }
@@ -363,7 +363,15 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateReturnStmt(ASTNode node) {
-        return new LinkedList<>();
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
+            LLVMExp exp = translateExp(node.children.get(1));
+            instructions.addAll(exp.instructions);
+            instructions.add(new RetInst(exp.value));
+        } else {
+            instructions.add(new RetInst());
+        }
+        return instructions;
     }
 
     private LinkedList<Instruction> translateIfStmt(ASTNode node) {
@@ -532,15 +540,24 @@ public class IRGenerator {
 
     private LLVMExp translateLValAsExp(ASTNode node) {
         LeafASTNode leaf = (LeafASTNode) node.children.get(0);
-        LLVMVariable var = getLLVMVariable(leaf.token.token);
+        UsableValue var = getLLVMVariable(leaf.token.token);
         assert var != null;
         if (node.children.size() > 3) {
             LLVMExp exp = translateExp(node.children.get(2));
             String offset = exp.toValueIR();
-            exp.addUsableInstruction(new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), var.baseType, var.usableValue, offset));
+            LLVMType.TypeID baseType;
+            if (var.toLLVMType().contains("i32")) {
+                baseType = LLVMType.TypeID.IntegerTyID;
+            } else {
+                baseType = LLVMType.TypeID.CharTyID;
+            }
+            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
+            exp.addUsableInstruction(getInst);
+            exp.addUsableInstruction(new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, getInst));
+
             return exp;
         } else {
-            return new LLVMExp(new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), var.baseType, var.usableValue, "0"));
+            return new LLVMExp(var);
         }
     }
 }

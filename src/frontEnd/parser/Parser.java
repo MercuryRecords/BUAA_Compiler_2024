@@ -268,7 +268,7 @@ public class Parser {
             if (!curToken().isType(LexType.SEMICN)) {
                 ASTNode expNode = parseExp();
                 if (!isActuallyEmpty(expNode)) {
-                    node.addChild(parseExp());
+                    node.addChild(expNode);
                 }
             }
             checkSemicn();
