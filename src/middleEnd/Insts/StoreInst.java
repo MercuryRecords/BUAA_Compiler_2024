@@ -17,6 +17,6 @@ public class StoreInst extends Instruction {
 
     @Override
     public String toString() {
-        return String.format("store %s %s, %s* %s, align %d", from.toLLVMType(), from.toValueIR(), to.toLLVMType(), to.toValueIR(), to.toAlign());
+        return String.format("store %s %s, %s %s, align %d", from.toLLVMType(), from.toValueIR(), to.toLLVMType(), to.toValueIR(), to.toAlign());
     }
 }

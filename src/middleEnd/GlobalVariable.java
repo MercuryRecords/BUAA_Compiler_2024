@@ -2,7 +2,7 @@ package middleEnd;
 
 import frontEnd.Symbol;
 
-public class GlobalVariable extends LLVMVariable {
+public class GlobalVariable extends LLVMVariable implements UsableValue  {
     public GlobalVariable(Symbol symbol, int arrayLength) {
         super(symbol, arrayLength);
     }
@@ -51,5 +51,24 @@ public class GlobalVariable extends LLVMVariable {
             sb.append(", align 1");
         }
         return sb.toString();
+    }
+
+    @Override
+    public String toValueIR() {
+        return "@" + name;
+    }
+
+    @Override
+    public String toLLVMType() {
+        if (arrayLength == 0) {
+            return baseType.toString();
+        } else {
+            return String.format("[%d x %s]", arrayLength, baseType.toString());
+        }
+    }
+
+    @Override
+    public int toAlign() {
+        return baseType.toAlign();
     }
 }

@@ -25,7 +25,7 @@ public class AllocaInst extends Instruction implements UsableValue {
         if (arrayLength == 0) {
             return baseType.toString();
         } else {
-            return String.format("[%s x %s]", arrayLength, baseType.toString());
+            return String.format("[%d x %s]", arrayLength, baseType.toString());
         }
     }
 

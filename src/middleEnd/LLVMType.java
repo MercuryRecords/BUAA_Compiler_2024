@@ -7,6 +7,7 @@ public class LLVMType {
         CharTyID("i8"),
         IntegerPtrTyID("i32*"),
         CharPtrTyID("i8*"),
+        LongTyID("i64"),
         ;
 
         private final String s;
@@ -24,7 +25,7 @@ public class LLVMType {
             return switch (s) {
                 case "i32" -> 4;
                 case "i8" -> 1;
-                case "i32*", "i8*" -> 8;
+                case "i32*", "i8*", "i64" -> 8;
                 default -> 0;
             };
         }
@@ -54,6 +55,7 @@ public class LLVMType {
 
         RETURN("ret"),
 
+        ZEXT("zext"),
         ;
         private final String s;
         InstType(String s) {

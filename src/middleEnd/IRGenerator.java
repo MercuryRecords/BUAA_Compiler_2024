@@ -417,8 +417,6 @@ public class IRGenerator {
         LLVMExp LVal = translateLValAsExp(node.children.get(0));
         LinkedList<Instruction> instructions = new LinkedList<>(exp.instructions);
         instructions.addAll(LVal.instructions);
-        StoreInst storeInst = new StoreInst(exp.value, LVal.value);
-        instructions.add(storeInst);
         return instructions;
     }
 
@@ -559,16 +557,22 @@ public class IRGenerator {
         UsableValue var = getLLVMVariable(leaf.token.token);
         assert var != null;
         if (node.children.size() > 3) {
-            LLVMExp exp = translateExp(node.children.get(2));
-            String offset = exp.toValueIR();
             LLVMType.TypeID baseType;
             if (var.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
+            LLVMExp exp = translateExp(node.children.get(2));
+            String offset = exp.toValueIR();
+            if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
+                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(),exp.value));
+                offset = exp.toValueIR();
+            }
             GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
             exp.addUsableInstruction(getInst);
+            LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, getInst);
+            exp.addUsableInstruction(loadInst);
             return exp;
         } else {
             return new LLVMExp(var);
