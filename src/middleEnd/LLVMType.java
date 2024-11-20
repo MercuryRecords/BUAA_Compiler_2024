@@ -31,10 +31,10 @@ public class LLVMType {
         }
 
         public TypeID toPointerType() {
-            return switch (s) {
-                case "i32" -> IntegerPtrTyID;
-                case "i8" -> CharPtrTyID;
-                default -> null;
+            return switch (this) {
+                case IntegerTyID -> IntegerPtrTyID;
+                case CharTyID -> CharPtrTyID;
+                default -> this;
             };
         }
     }

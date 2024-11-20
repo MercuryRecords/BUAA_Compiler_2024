@@ -369,14 +369,15 @@ public class IRGenerator {
         if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
             LLVMExp exp = translateExp(node.children.get(1));
             instructions.addAll(exp.instructions);
-            if (exp.value.toValueIR().startsWith("%") ||
-                exp.value.toValueIR().startsWith("@")) {
-                LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), funcRetType, exp.value);
-                instructions.add(loadInst);
-                instructions.add(new RetInst(loadInst));
-            } else {
-                instructions.add(new RetInst(exp.value));
-            }
+//            if (exp.value.toValueIR().startsWith("%") ||
+//                exp.value.toValueIR().startsWith("@")) {
+//                LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), funcRetType, exp.value);
+//                instructions.add(loadInst);
+//                instructions.add(new RetInst(loadInst));
+//            } else {
+//                instructions.add(new RetInst(exp.value));
+//            }
+            instructions.add(new RetInst(exp));
         } else {
             instructions.add(new RetInst());
         }
@@ -413,11 +414,41 @@ public class IRGenerator {
 
     private LinkedList<Instruction> translateAssignStmt(ASTNode node) {
         LLVMExp exp = translateExp(node.children.get(2));
-        LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
-        LLVMExp LVal = translateLValAsExp(node.children.get(0));
         LinkedList<Instruction> instructions = new LinkedList<>(exp.instructions);
-        instructions.addAll(LVal.instructions);
+        UsableValue lval = translateLVal(node.children.get(0));
+        if (lval instanceof LLVMExp) {
+            instructions.addAll(((LLVMExp) lval).instructions);
+        }
+        instructions.add(new StoreInst(exp.value, lval));
+
         return instructions;
+    }
+
+    private UsableValue translateLVal(ASTNode node) {
+        LeafASTNode leaf = (LeafASTNode) node.children.get(0);
+        UsableValue var = getLLVMVariable(leaf.token.token);
+        assert var != null;
+        if (node.children.size() > 3) {
+            LLVMType.TypeID baseType;
+            if (var.toLLVMType().contains("i32")) {
+                baseType = LLVMType.TypeID.IntegerTyID;
+            } else {
+                baseType = LLVMType.TypeID.CharTyID;
+            }
+            LLVMExp exp = translateExp(node.children.get(2));
+            String offset = exp.toValueIR();
+            if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
+                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(),exp.value));
+                offset = exp.toValueIR();
+            }
+            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
+            exp.addUsableInstruction(getInst);
+            // LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, getInst);
+            // exp.addUsableInstruction(loadInst);
+            return exp;
+        } else {
+            return var;
+        }
     }
 
     private LinkedList<Instruction> translateExpStmt(ASTNode node) {
@@ -435,6 +466,11 @@ public class IRGenerator {
 
         public LLVMExp() {
 
+        }
+
+        public LLVMExp(LLVMExp exp) {
+            this.instructions = new LinkedList<>(exp.instructions);
+            this.value = exp.value;
         }
 
         @Override
@@ -553,29 +589,21 @@ public class IRGenerator {
     }
 
     private LLVMExp translateLValAsExp(ASTNode node) {
-        LeafASTNode leaf = (LeafASTNode) node.children.get(0);
-        UsableValue var = getLLVMVariable(leaf.token.token);
-        assert var != null;
-        if (node.children.size() > 3) {
-            LLVMType.TypeID baseType;
-            if (var.toLLVMType().contains("i32")) {
-                baseType = LLVMType.TypeID.IntegerTyID;
-            } else {
-                baseType = LLVMType.TypeID.CharTyID;
-            }
-            LLVMExp exp = translateExp(node.children.get(2));
-            String offset = exp.toValueIR();
-            if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
-                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(),exp.value));
-                offset = exp.toValueIR();
-            }
-            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
-            exp.addUsableInstruction(getInst);
-            LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, getInst);
-            exp.addUsableInstruction(loadInst);
-            return exp;
+        UsableValue lVal = translateLVal(node);
+        LLVMExp ret;
+        if (lVal instanceof LLVMExp exp) {
+            ret = new LLVMExp(exp);
         } else {
-            return new LLVMExp(var);
+            ret = new LLVMExp(lVal);
         }
+        LLVMType.TypeID baseType;
+        if (lVal.toLLVMType().contains("i32")) {
+            baseType = LLVMType.TypeID.IntegerTyID;
+        } else {
+            baseType = LLVMType.TypeID.CharTyID;
+        }
+        LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, lVal);
+        ret.addUsableInstruction(loadInst);
+        return ret;
     }
 }
