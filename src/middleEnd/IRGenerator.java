@@ -469,8 +469,8 @@ public class IRGenerator {
 
                     LLVMExp exp = exps.get(currExpIndex++);
                     LinkedList<UsableValue> params = new LinkedList<>();
-                    if (!exp.toLLVMType().contains("i8")) {
-                        TruncInst zextInst = new TruncInst(regTrackers.get(scopeId).nextRegNo(), exp, LLVMType.TypeID.CharTyID);
+                    if (!exp.toLLVMType().contains("i32")) {
+                        ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp, LLVMType.TypeID.IntegerTyID);
                         instructions.add(zextInst);
                         params.add(zextInst);
                     } else {

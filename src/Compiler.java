@@ -14,11 +14,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Compiler {
-    private static final String forInput = "main.c"; // TODO 提交前换回 testfile.txt
+    private static final String forInput = "testfile.txt";
     private static final String forLexer = "lexer.txt";
     private static final String forParser = "parser.txt";
     private static final String forVisitor = "symbol.txt";
-    private static final String forIR = "llvm_ir.ll";
+    private static final String forIR = "llvm_ir.txt";
 
     public static void main(String[] args) {
         try {
