@@ -1,7 +1,5 @@
 package middleEnd;
 
-import middleEnd.Insts.AllocaInst;
-
 import java.util.LinkedList;
 
 public class Block extends Value {

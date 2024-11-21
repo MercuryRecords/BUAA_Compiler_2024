@@ -8,6 +8,11 @@ public class RegTracker {
         this.scopeId = scopeId;
     }
 
+    public RegTracker() {
+        scopeId = -1;
+        regNo = 1;
+    }
+
     public int nextRegNo() {
         return regNo++;
     }

@@ -25,6 +25,8 @@ public class IRGenerator {
     private int scopeId = 0;
     private final ConstCalculator constCalculator;
     private LLVMType.TypeID funcRetType;
+    private final Module module = new Module();
+    private final RegTracker strNumTracker = new RegTracker();
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
         this.root = root;
         this.oldSymbolTables = oldSymbolTables;
@@ -108,15 +110,14 @@ public class IRGenerator {
     }
 
     private Module translateModule(ASTNode root) {
-        Module module = new Module();
         enterScope();
         for (ASTNode child : root.children) {
             if (child.isNode("Decl")) {
-                module.addValues(translateGlobalDecl(child));
+                module.addGlobalDecls(translateGlobalDecl(child));
             } else if (child.isNode("FuncDef")) {
-                module.addValue(translateFuncDef(child));
+                module.addFunction(translateFuncDef(child));
             } else if (child.isNode("MainFuncDef")) {
-                module.addValue(translateMainFuncDef(child));
+                module.addFunction(translateMainFuncDef(child));
             }
         }
         exitScope();
@@ -402,9 +403,125 @@ public class IRGenerator {
 
     private LinkedList<Instruction> translatePrintfStmt(ASTNode node) {
         LinkedList<Instruction> instructions = new LinkedList<>();
+        LinkedList<LLVMExp> exps = new LinkedList<>();
 
+        for (ASTNode child : node.children) {
+            if (child.isNode("Exp")) {
+                LLVMExp exp = translateExp(child);
+                instructions.addAll(exp.instructions);
+                exps.add(exp);
+            }
+        }
 
+        LeafASTNode str = (LeafASTNode) node.children.get(2).children.get(0);
+        String strVal = str.token.token;
+        // 根据 strVal 拆分出常量字符串与函数调用
+        StringBuilder tmp = new StringBuilder();
+        int tmpLen = 0;
+        boolean hasPercent = false;
+        boolean hasSlash = false;
+        int currExpIndex = 0;
+        for (int i = 1; i < strVal.length() - 1; i++) {
 
+            if (hasSlash) {
+                if (strVal.charAt(i) == 'n') {
+                    tmp.append("\\0A");
+                    tmpLen += 1;
+                } else {
+                    tmp.append('\\');
+                    tmp.append(strVal.charAt(i));
+                    tmpLen += 2;
+                }
+                hasSlash = false;
+                continue;
+            }
+
+            if (hasPercent) {
+                hasPercent = false;
+                if (strVal.charAt(i) == 'd') {
+                    if (!tmp.isEmpty()) {
+                        tmp.append("\\00");
+                        tmpLen += 1;
+                        instructions.addAll(PrintConstStr(tmp.toString(), tmpLen));
+                        tmp = new StringBuilder();
+                        tmpLen = 0;
+                    }
+
+                    LLVMExp exp = exps.get(currExpIndex++);
+                    LinkedList<UsableValue> params = new LinkedList<>();
+                    if (!exp.toLLVMType().contains("i32")) {
+                        ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp, LLVMType.TypeID.IntegerTyID);
+                        instructions.add(zextInst);
+                        params.add(zextInst);
+                    } else {
+                        params.add(exp);
+                    }
+                    CallInst callInst = new CallInst("putint", params);
+                    instructions.add(callInst);
+                } else if (strVal.charAt(i) == 'c') {
+                    if (!tmp.isEmpty()) {
+                        tmp.append("\\00");
+                        tmpLen += 1;
+                        instructions.addAll(PrintConstStr(tmp.toString(), tmpLen));
+                        tmp = new StringBuilder();
+                        tmpLen = 0;
+                    }
+
+                    LLVMExp exp = exps.get(currExpIndex++);
+                    LinkedList<UsableValue> params = new LinkedList<>();
+                    if (!exp.toLLVMType().contains("i8")) {
+                        TruncInst zextInst = new TruncInst(regTrackers.get(scopeId).nextRegNo(), exp, LLVMType.TypeID.CharTyID);
+                        instructions.add(zextInst);
+                        params.add(zextInst);
+                    } else {
+                        params.add(exp);
+                    }
+                    CallInst callInst = new CallInst("putch", params);
+                    instructions.add(callInst);
+                } else {
+                    tmp.append('%');
+                    tmp.append(strVal.charAt(i));
+                    tmpLen += 2;
+                }
+                continue;
+            }
+
+            if (strVal.charAt(i) == '%') {
+                hasPercent = true;
+                continue;
+            }
+
+            if (strVal.charAt(i) == '\\') {
+                hasSlash = true;
+                continue;
+            }
+
+            tmp.append(strVal.charAt(i));
+            tmpLen += 1;
+
+        }
+
+        if (!tmp.isEmpty()) {
+            tmp.append("\\00");
+            tmpLen += 1;
+            instructions.addAll(PrintConstStr(tmp.toString(), tmpLen));
+            tmp = new StringBuilder();
+            tmpLen = 0;
+        }
+
+        return instructions;
+    }
+
+    private LinkedList<Instruction> PrintConstStr(String string, int tmpLen) {
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        GlobalString newStr = new GlobalString(strNumTracker.nextRegNo(), string, tmpLen);
+        module.addStrDecl(newStr);
+        GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), LLVMType.TypeID.CharTyID, newStr, "0");
+        instructions.add(getInst);
+        LinkedList<UsableValue> param = new LinkedList<>();
+        param.add(getInst);
+        CallInst callInst = new CallInst("putstr", param);
+        instructions.add(callInst);
         return instructions;
     }
 

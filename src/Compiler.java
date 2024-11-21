@@ -1,7 +1,7 @@
-import frontEnd.SymbolTable;
-import frontEnd.Token;
 import frontEnd.ASTNode;
 import frontEnd.Reporter;
+import frontEnd.SymbolTable;
+import frontEnd.Token;
 import frontEnd.lexer.Lexer;
 import frontEnd.parser.Parser;
 import frontEnd.visitor.Visitor;

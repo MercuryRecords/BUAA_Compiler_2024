@@ -1,0 +1,33 @@
+package middleEnd;
+
+public class GlobalString extends Value implements UsableValue {
+    private final int no;
+    private final String string;
+    private final String type;
+    public GlobalString(int no, String string, int length) {
+        super();
+        this.no = no;
+        this.string = string;
+        this.type = String.format("[%d x i8]", length);
+    }
+
+    @Override
+    public String toValueIR() {
+        return String.format("@.str%d", no);
+    }
+
+    @Override
+    public String toLLVMType() {
+        return type;
+    }
+
+    @Override
+    public int toAlign() {
+        return 1;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s = private unnamed_addr constant %s c\"%s\", align %d", toValueIR(), type, string, toAlign());
+    }
+}
