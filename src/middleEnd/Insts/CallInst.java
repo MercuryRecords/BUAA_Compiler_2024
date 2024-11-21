@@ -28,6 +28,14 @@ public class CallInst extends Instruction implements UsableValue {
         this.params = new LinkedList<>();
     }
 
+    public CallInst(String funcName, LinkedList<UsableValue> params) {
+        super(LLVMType.InstType.CALL);
+        this.regNo = -1;
+        this.retType = LLVMType.TypeID.VoidTyID;
+        this.funcName = funcName;
+        this.params = params;
+    }
+
     @Override
     public String toValueIR() {
         return String.format("%%%d", regNo);
@@ -46,7 +54,10 @@ public class CallInst extends Instruction implements UsableValue {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("%s = call %s @%s", toValueIR(), toLLVMType(), funcName));
+        if (regNo != -1) {
+            sb.append(String.format("%%%d = ", regNo));
+        }
+        sb.append(String.format("call %s @%s", toLLVMType(), funcName));
         sb.append("(");
         for (int i = 0; i < params.size(); i++) {
             UsableValue param = params.get(i);

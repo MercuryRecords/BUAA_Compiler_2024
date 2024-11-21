@@ -401,7 +401,11 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translatePrintfStmt(ASTNode node) {
-        return new LinkedList<>();
+        LinkedList<Instruction> instructions = new LinkedList<>();
+
+
+
+        return instructions;
     }
 
     private LinkedList<Instruction> translateGetCharStmt(ASTNode node) {
@@ -620,8 +624,13 @@ public class IRGenerator {
                     forCall.add(realParams.get(i));
                 }
             }
-            CallInst callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(),
-                    toCall.retType, toCall.name, forCall);
+            CallInst callInst;
+            if (toCall.retType == LLVMType.TypeID.VoidTyID) {
+                callInst = new CallInst(toCall.name, forCall);
+            } else {
+                callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(),
+                        toCall.retType, toCall.name, forCall);
+            }
             exp.addUsableInstruction(callInst);
             return exp;
         }
