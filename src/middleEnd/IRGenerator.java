@@ -358,8 +358,14 @@ public class IRGenerator {
             } else {
                 instructions.addAll(translateAssignStmt(node));
             }
-        } else {
+        } else if (node.children.get(0).isNode("Exp")) {
             instructions.addAll(translateExpStmt(node));
+        } else {
+            RegTracker tracker = regTrackers.get(scopeId);
+            enterScope();
+            regTrackers.put(scopeId, tracker);
+            instructions.addAll(translateBlock(node.children.get(0)));
+            exitScope();
         }
 
         return instructions;
@@ -370,14 +376,6 @@ public class IRGenerator {
         if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
             LLVMExp exp = translateExp(node.children.get(1));
             instructions.addAll(exp.instructions);
-//            if (exp.value.toValueIR().startsWith("%") ||
-//                exp.value.toValueIR().startsWith("@")) {
-//                LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), funcRetType, exp.value);
-//                instructions.add(loadInst);
-//                instructions.add(new RetInst(loadInst));
-//            } else {
-//                instructions.add(new RetInst(exp.value));
-//            }
             instructions.add(new RetInst(exp));
         } else {
             instructions.add(new RetInst());
@@ -505,8 +503,6 @@ public class IRGenerator {
             tmp.append("\\00");
             tmpLen += 1;
             instructions.addAll(PrintConstStr(tmp.toString(), tmpLen));
-            tmp = new StringBuilder();
-            tmpLen = 0;
         }
 
         return instructions;
@@ -594,8 +590,6 @@ public class IRGenerator {
             }
             GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
             exp.addUsableInstruction(getInst);
-            // LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, getInst);
-            // exp.addUsableInstruction(loadInst);
             return exp;
         } else {
             return var;
