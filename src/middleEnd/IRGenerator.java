@@ -384,6 +384,10 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateIfStmt(ASTNode node) {
+        // 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
+        LinkedList<Instruction> instructions = new LinkedList<>();
+
+
         return new LinkedList<>();
     }
 

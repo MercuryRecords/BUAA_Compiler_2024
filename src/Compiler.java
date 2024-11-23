@@ -6,6 +6,7 @@ import frontEnd.lexer.Lexer;
 import frontEnd.parser.Parser;
 import frontEnd.visitor.Visitor;
 import middleEnd.IRGenerator;
+import frontEnd.Trimmer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,11 +15,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Compiler {
-    private static final String forInput = "testfile.txt";
+    private static final String forInput = "main.c";
     private static final String forLexer = "lexer.txt";
     private static final String forParser = "parser.txt";
     private static final String forVisitor = "symbol.txt";
-    private static final String forIR = "llvm_ir.txt";
+    private static final String forIR = "llvm_ir.ll";
 
     public static void main(String[] args) {
         try {
@@ -29,6 +30,7 @@ public class Compiler {
             ASTNode node = parser.analyze(forParser);
             Visitor visitor = new Visitor(node);
             HashMap<Integer, SymbolTable> symbolTables = visitor.analyze(forVisitor);
+            node = Trimmer.instance.trim(node);
             Reporter.REPORTER.report();
             IRGenerator irGenerator = new IRGenerator(node, symbolTables);
             irGenerator.translate(forIR);
