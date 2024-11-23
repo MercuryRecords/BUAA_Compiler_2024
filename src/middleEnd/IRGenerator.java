@@ -631,6 +631,16 @@ public class IRGenerator {
         if (lval instanceof LLVMExp) {
             instructions.addAll(((LLVMExp) lval).instructions);
         }
+        if (lval.toLLVMType().contains("i32") && !exp.toLLVMType().contains("i32")) {
+            ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.IntegerTyID);
+            exp.addUsableInstruction(zextInst);
+            instructions.add(zextInst);
+        } else if (lval.toLLVMType().contains("i8") && !exp.toLLVMType().contains("i8")) {
+            TruncInst truncInst = new TruncInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.CharTyID);
+            exp.addUsableInstruction(truncInst);
+            instructions.add(truncInst);
+        }
+
         instructions.add(new StoreInst(exp.value, lval));
 
         return instructions;
@@ -812,7 +822,7 @@ public class IRGenerator {
                         toCall.retType, toCall.name, forCall);
             }
             exp.addUsableInstruction(callInst);
-            if (toCall.retType != LLVMType.TypeID.IntegerTyID) {
+            if (toCall.retType == LLVMType.TypeID.CharTyID) {
                 exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(), callInst, LLVMType.TypeID.IntegerTyID));
             }
             return exp;

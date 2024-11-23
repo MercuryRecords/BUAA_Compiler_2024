@@ -4,6 +4,7 @@ import frontEnd.Symbol;
 import middleEnd.Insts.AllocaInst;
 import middleEnd.Insts.GetelementptrInst;
 import middleEnd.Insts.StoreInst;
+import middleEnd.Insts.TruncInst;
 import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
@@ -63,6 +64,9 @@ public class LLVMVariable extends Value implements UsableValue {
                 // 单个变量
                 if (initVal != null) {
                     IRGenerator.LLVMExp llvmExp = initVal.get(0);
+                    if (baseType == LLVMType.TypeID.CharTyID) {
+                        llvmExp.addUsableInstruction(new TruncInst(tracker.nextRegNo(), llvmExp.value, baseType));
+                    }
                     LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
                     instructions.addAll(initValInsts);
                     AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
@@ -102,6 +106,9 @@ public class LLVMVariable extends Value implements UsableValue {
                     instructions.add(allocaInst);
                     for (int i = 0; i < initVal.size(); i++) {
                         IRGenerator.LLVMExp llvmExp = initVal.get(i);
+                        if (baseType == LLVMType.TypeID.CharTyID) {
+                            llvmExp.addUsableInstruction(new TruncInst(tracker.nextRegNo(), llvmExp.value, baseType));
+                        }
                         GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, String.valueOf(i));
                         instructions.add(getelementptrInst);
                         instructions.add(new StoreInst(llvmExp.value, getelementptrInst));
