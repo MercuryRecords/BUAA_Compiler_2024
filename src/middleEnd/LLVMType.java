@@ -63,6 +63,12 @@ public class LLVMType {
         TRUNC("trunc"),
         CALL("call"),
 
+        ICMP_EQ("icmp eq"),
+        ICMP_NE("icmp ne"),
+        ICMP_SGT("icmp sgt"),
+        ICMP_SGE("icmp sge"),
+        ICMP_SLT("icmp slt"),
+        ICMP_SLE("icmp sle"),
         ;
         private final String s;
         InstType(String s) {

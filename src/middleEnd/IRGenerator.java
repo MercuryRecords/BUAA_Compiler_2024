@@ -376,6 +376,15 @@ public class IRGenerator {
         if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
             LLVMExp exp = translateExp(node.children.get(1));
             instructions.addAll(exp.instructions);
+            if (funcRetType == LLVMType.TypeID.CharTyID && !exp.toLLVMType().contains("i8")){
+                TruncInst truncInst = new TruncInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.CharTyID);
+                instructions.add(truncInst);
+                exp.addUsableInstruction(truncInst);
+            } else if (funcRetType == LLVMType.TypeID.IntegerTyID && !exp.toLLVMType().contains("i32")) {
+                ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.IntegerTyID);
+                instructions.add(zextInst);
+                exp.addUsableInstruction(zextInst);
+            }
             instructions.add(new RetInst(exp));
         } else {
             instructions.add(new RetInst());
@@ -383,23 +392,75 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateIfStmt(ASTNode node) {
-        // 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
-        LinkedList<Instruction> instructions = new LinkedList<>();
-
-
-        return new LinkedList<>();
-    }
-
-    private LinkedList<Instruction> translateForStmt(ASTNode node) {
-        return new LinkedList<>();
-    }
-
     private LinkedList<Instruction> translateBreakStmt(ASTNode node) {
         return new LinkedList<>();
     }
 
     private LinkedList<Instruction> translateContinueStmt(ASTNode node) {
+        return new LinkedList<>();
+    }
+
+    private LinkedList<Instruction> translateIfStmt(ASTNode node) {
+        // 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        // LLVMExp cond = translateCond(node.children.get(2));
+
+        return new LinkedList<>();
+    }
+
+    private LLVMExp translateCond(ASTNode node) {
+        return translateLOrExp(node.children.get(0));
+    }
+
+    private LLVMExp translateLOrExp(ASTNode node) {
+        LLVMExp exp = translateLAndExp(node.children.get(0));
+        for (int i = 2; i < node.children.size(); i += 2) {
+            LLVMExp exp2 = translateLAndExp(node.children.get(i));
+            exp.binaryOperate(LLVMType.InstType.OR, exp2);
+        }
+        return exp;
+    }
+
+    private LLVMExp translateLAndExp(ASTNode node) {
+        LLVMExp exp = translateEqExp(node.children.get(0));
+        for (int i = 2; i < node.children.size(); i += 2) {
+            LLVMExp exp2 = translateEqExp(node.children.get(i));
+            exp.binaryOperate(LLVMType.InstType.AND, exp2);
+        }
+        return exp;
+    }
+
+    private LLVMExp translateEqExp(ASTNode node) {
+        if (node.children.size() == 1) {
+            return translateRelExp(node.children.get(0));
+        } else {
+            LLVMExp left = translateEqExp(node.children.get(0));
+            LLVMExp right = translateRelExp(node.children.get(2));
+            switch (((LeafASTNode) node.children.get(1)).token.type) {
+                case EQL -> left.binaryOperate(LLVMType.InstType.ICMP_EQ, right);
+                case NEQ -> left.binaryOperate(LLVMType.InstType.ICMP_NE, right);
+            }
+            return left;
+        }
+    }
+
+    private LLVMExp translateRelExp(ASTNode node) {
+        if (node.children.size() == 1) {
+            return translateAddExp(node.children.get(0));
+        } else {
+            LLVMExp left = translateRelExp(node.children.get(0));
+            LLVMExp right = translateAddExp(node.children.get(2));
+            switch (((LeafASTNode) node.children.get(1)).token.type) {
+                case LSS -> left.binaryOperate(LLVMType.InstType.ICMP_SLT, right);
+                case LEQ -> left.binaryOperate(LLVMType.InstType.ICMP_SLE, right);
+                case GRE -> left.binaryOperate(LLVMType.InstType.ICMP_SGT, right);
+                case GEQ -> left.binaryOperate(LLVMType.InstType.ICMP_SGE, right);
+            }
+            return left;
+        }
+    }
+
+    private LinkedList<Instruction> translateForStmt(ASTNode node) {
         return new LinkedList<>();
     }
 
@@ -601,6 +662,10 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateExpStmt(ASTNode node) {
+        if (node.children.get(0) instanceof LeafASTNode) {
+            return new LinkedList<>();
+        }
+
         return translateExp(node.children.get(0)).getInstructions();
     }
 
@@ -747,6 +812,9 @@ public class IRGenerator {
                         toCall.retType, toCall.name, forCall);
             }
             exp.addUsableInstruction(callInst);
+            if (toCall.retType != LLVMType.TypeID.IntegerTyID) {
+                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(), callInst, LLVMType.TypeID.IntegerTyID));
+            }
             return exp;
         }
     }
@@ -796,6 +864,9 @@ public class IRGenerator {
         }
         LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, lVal);
         ret.addUsableInstruction(loadInst);
+        if (baseType == LLVMType.TypeID.CharTyID) {
+            ret.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(), loadInst, LLVMType.TypeID.IntegerTyID));
+        }
         return ret;
     }
 }
