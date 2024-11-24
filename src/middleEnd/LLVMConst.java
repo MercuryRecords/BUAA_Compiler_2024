@@ -1,9 +1,9 @@
 package middleEnd;
 
-public class LLVMConst extends Value implements UsableValue {
+public class LLVMConst extends LLVMExp implements UsableValue {
 
     private final LLVMType.TypeID baseType;
-    private final int val;
+    public final int val;
 
     public LLVMConst(LLVMType.TypeID baseType, int val) {
         super();
@@ -24,5 +24,21 @@ public class LLVMConst extends Value implements UsableValue {
     @Override
     public int toAlign() {
         return baseType.toAlign();
+    }
+
+    public LLVMConst binaryOperate(LLVMType.InstType instType, LLVMConst right) {
+        LLVMConst left = this;
+        switch (instType) {
+            // TODO
+        }
+        return null;
+    }
+
+    public LLVMConst negate() {
+        return new LLVMConst(baseType, -val);
+    }
+
+    public LLVMConst logicalNot() {
+        return new LLVMConst(baseType, val == 0 ? 1 : 0);
     }
 }

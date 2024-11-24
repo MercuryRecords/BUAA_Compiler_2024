@@ -63,7 +63,7 @@ public class LLVMVariable extends Value implements UsableValue {
             } else {
                 // 单个变量
                 if (initVal != null) {
-                    IRGenerator.LLVMExp llvmExp = initVal.get(0);
+                    LLVMExp llvmExp = initVal.get(0);
                     if (baseType == LLVMType.TypeID.CharTyID) {
                         llvmExp.addUsableInstruction(new TruncInst(tracker.nextRegNo(), llvmExp.value, baseType));
                     }
@@ -97,7 +97,7 @@ public class LLVMVariable extends Value implements UsableValue {
                 // 变量数组
                 if (initVal != null) {
                     for (int i = 0; i < initVal.size(); i++) {
-                        IRGenerator.LLVMExp llvmExp = initVal.get(i);
+                        LLVMExp llvmExp = initVal.get(i);
                         LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
                         instructions.addAll(initValInsts);
                     }
@@ -105,7 +105,7 @@ public class LLVMVariable extends Value implements UsableValue {
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
                     for (int i = 0; i < initVal.size(); i++) {
-                        IRGenerator.LLVMExp llvmExp = initVal.get(i);
+                        LLVMExp llvmExp = initVal.get(i);
                         if (baseType == LLVMType.TypeID.CharTyID) {
                             llvmExp.addUsableInstruction(new TruncInst(tracker.nextRegNo(), llvmExp.value, baseType));
                         }
