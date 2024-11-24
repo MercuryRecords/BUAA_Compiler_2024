@@ -6,16 +6,14 @@ import middleEnd.Insts.SubInst;
 import java.util.LinkedList;
 
 public class LLVMExp extends Value implements UsableValue {
-    LinkedList<Instruction> instructions;
+    LinkedList<Instruction> instructions = new LinkedList<>();
     UsableValue value;
 
     public LLVMExp(UsableValue value) {
-        this.instructions = new LinkedList<>();
         this.value = value;
     }
 
     public LLVMExp() {
-        this.instructions = new LinkedList<>();
         this.value = null;
     }
 

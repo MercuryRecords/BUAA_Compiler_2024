@@ -10,6 +10,7 @@ public class LLVMType {
         CharTyID("i8"),
         CharPtrTyID("i8*"),
         CharPtrPtrTyID("i8**"),
+        I1("i1"),
         ;
 
         private final String s;

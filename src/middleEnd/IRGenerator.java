@@ -401,34 +401,48 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateIfStmt(ASTNode node) {
-        // 'if' '(' <Cond> ')' <Stmt> [ 'else' <Stmt> ]
         LinkedList<Instruction> instructions = new LinkedList<>();
-        // LLVMExp cond = translateCond(node.children.get(2));
+        // TODO 构建跳转链，逐个遍历 LAndExp 和 EqExp
+        // Cond == 1 : to stmt1
+        // Cond == 0 : to stmt2
+        // stmt1 to nextBlock
+        // stmt2 to nextBlock
+        // 对于 LOrExp: 如果 LAndExp 有一个为常值 1，则优化整个 LOrExp 为 1； 如果 LAndExp 结果为 1，则跳转到 stmt1，否则跳转到下一个 LAndExp / stmt2
+        // 对于 LAndExp: 如果 EqExp 有一个为常值 0，则优化整个 LAndExp 为 0； 如果 EqExp 结果为 0，则跳转到下一个 LAndExp，否则跳转到下一个 EqExp
 
         return new LinkedList<>();
     }
 
-    private LLVMExp translateCond(ASTNode node) {
-        return translateLOrExp(node.children.get(0));
-    }
-
-    private LLVMExp translateLOrExp(ASTNode node) {
-        LLVMExp exp = translateLAndExp(node.children.get(0));
-        for (int i = 2; i < node.children.size(); i += 2) {
-            LLVMExp exp2 = translateLAndExp(node.children.get(i));
-            exp.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.OR, exp2);
-        }
-        return exp;
-    }
-
-    private LLVMExp translateLAndExp(ASTNode node) {
-        LLVMExp exp = translateEqExp(node.children.get(0));
-        for (int i = 2; i < node.children.size(); i += 2) {
-            LLVMExp exp2 = translateEqExp(node.children.get(i));
-            exp.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.AND, exp2);
-        }
-        return exp;
-    }
+//    private LLVMExp translateCond(ASTNode node) {
+//        return translateLOrExp(node.children.get(0));
+//    }
+//
+//    private LLVMExp translateLOrExp(ASTNode node) {
+//        LLVMExp exp = translateLAndExp(node.children.get(0));
+//        for (int i = 2; i < node.children.size(); i += 2) {
+//            LLVMExp exp2 = translateLAndExp(node.children.get(i));
+//            exp.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.OR, exp2);
+//        }
+//        return exp;
+//    }
+//
+//    private LLVMExp translateLAndExp(ASTNode node) {
+//        LLVMExp exp = translateEqExp(node.children.get(0));
+//        for (int i = 2; i < node.children.size(); i += 2) {
+//            if (exp instanceof LLVMConst constExp) {
+//                if (constExp.constValue == 0) {
+//                    return constExp;
+//                }
+//            }
+//            LLVMExp exp2 = translateEqExp(node.children.get(i));
+//            if (exp instanceof LLVMConst constExp && exp2 instanceof LLVMConst constExp2) {
+//                exp = constExp.binaryOperate(LLVMType.InstType.AND, constExp2);
+//                continue;
+//            }
+//            exp.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.AND, exp2);
+//        }
+//        return exp;
+//    }
 
     private LLVMExp translateEqExp(ASTNode node) {
         if (node.children.size() == 1) {
@@ -436,7 +450,21 @@ public class IRGenerator {
         } else {
             LLVMExp left = translateEqExp(node.children.get(0));
             LLVMExp right = translateRelExp(node.children.get(2));
-            switch (((LeafASTNode) node.children.get(1)).token.type) {
+            LexType lexType = ((LeafASTNode) node.children.get(1)).token.type;
+            if (left instanceof LLVMConst constLeft && right instanceof LLVMConst constRight) {
+                switch (lexType) {
+                    case EQL -> {
+                        return constLeft.binaryOperate(LLVMType.InstType.ICMP_EQ, constRight);
+                    }
+
+                    case NEQ -> {
+                        return constLeft.binaryOperate(LLVMType.InstType.ICMP_NE, constRight);
+                    }
+                }
+            } else if (left instanceof LLVMConst constLeft) {
+                left = new LLVMExp(constLeft);
+            }
+            switch (lexType) {
                 case EQL -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_EQ, right);
                 case NEQ -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_NE, right);
             }
@@ -450,7 +478,26 @@ public class IRGenerator {
         } else {
             LLVMExp left = translateRelExp(node.children.get(0));
             LLVMExp right = translateAddExp(node.children.get(2));
-            switch (((LeafASTNode) node.children.get(1)).token.type) {
+            LexType lexType = ((LeafASTNode) node.children.get(1)).token.type;
+            if (left instanceof LLVMConst constLeft && right instanceof LLVMConst constRight) {
+                switch (lexType) {
+                    case LSS -> {
+                        return constLeft.binaryOperate(LLVMType.InstType.ICMP_SLT, constRight);
+                    }
+                    case LEQ -> {
+                        return constLeft.binaryOperate(LLVMType.InstType.ICMP_SLE, constRight);
+                    }
+                    case GRE -> {
+                        return constLeft.binaryOperate(LLVMType.InstType.ICMP_SGT, constRight);
+                    }
+                    case GEQ -> {
+                        return constLeft.binaryOperate(LLVMType.InstType.ICMP_SGE, constRight);
+                    }
+                }
+            } else if (left instanceof LLVMConst constLeft) {
+                left = new LLVMExp(constLeft);
+            }
+            switch (lexType) {
                 case LSS -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SLT, right);
                 case LEQ -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SLE, right);
                 case GRE -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SGT, right);
@@ -689,10 +736,21 @@ public class IRGenerator {
             return translateMulExp(node.children.get(0));
         } else {
             LLVMExp left = translateAddExp(node.children.get(0));
-            if (((LeafASTNode) node.children.get(1)).token.token.equals("+")){
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ADD, translateMulExp(node.children.get(2)));
+            LLVMExp right = translateMulExp(node.children.get(2));
+            String token = ((LeafASTNode) node.children.get(1)).token.token;
+            if (left instanceof LLVMConst constLeft && right instanceof LLVMConst constRight) {
+                if (token.equals("+")) {
+                    return constLeft.binaryOperate(LLVMType.InstType.ADD, constRight);
+                } else {
+                    return constLeft.binaryOperate(LLVMType.InstType.SUB, constRight);
+                }
+            } else if (left instanceof LLVMConst constLeft) {
+                left = new LLVMExp(constLeft);
+            }
+            if (token.equals("+")){
+                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ADD, right);
             } else {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SUB, translateMulExp(node.children.get(2)));
+                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SUB, right);
             }
         }
     }
@@ -702,12 +760,26 @@ public class IRGenerator {
             return translateUnaryExp(node.children.get(0));
         } else {
             LLVMExp left = translateMulExp(node.children.get(0));
+            LLVMExp right = translateUnaryExp(node.children.get(2));
+            String token = ((LeafASTNode) node.children.get(1)).token.token;
+            if (left instanceof LLVMConst constLeft && right instanceof LLVMConst constRight) {
+                if (token.equals("*")) {
+                    return constLeft.binaryOperate(LLVMType.InstType.MUL, constRight);
+                } else if (token.equals("/")) {
+                    return constLeft.binaryOperate(LLVMType.InstType.SDIV, constRight);
+                } else {
+                    return constLeft.binaryOperate(LLVMType.InstType.SREM, constRight);
+
+                }
+            } else if (left instanceof LLVMConst constLeft) {
+                left = new LLVMExp(constLeft);
+            }
             if (((LeafASTNode) node.children.get(1)).token.token.equals("*")) {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.MUL, translateUnaryExp(node.children.get(2)));
+                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.MUL, right);
             } else if (((LeafASTNode) node.children.get(1)).token.token.equals("/")) {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SDIV, translateUnaryExp(node.children.get(2)));
+                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SDIV, right);
             } else {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SREM, translateUnaryExp(node.children.get(2)));
+                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SREM, right);
             }
         }
     }
@@ -718,11 +790,19 @@ public class IRGenerator {
         } else if (node.children.get(0).isNode("UnaryOp")) {
             LeafASTNode leaf = (LeafASTNode) node.children.get(0).children.get(0);
             LLVMExp unaryExp = translateUnaryExp(node.children.get(1));
-            return switch (leaf.token.token) {
-                case "+" -> unaryExp;
-                case "-" -> unaryExp.negate(regTrackers.get(scopeId).nextRegNo());
-                default -> unaryExp.logicalNot();
-            };
+            if (unaryExp instanceof LLVMConst constExp) {
+                return switch (leaf.token.token) {
+                    case "+" -> constExp;
+                    case "-" -> constExp.negate();
+                    default -> constExp.logicalNot();
+                };
+            } else {
+                return switch (leaf.token.token) {
+                    case "+" -> unaryExp;
+                    case "-" -> unaryExp.negate(regTrackers.get(scopeId).nextRegNo());
+                    default -> unaryExp.logicalNot();
+                };
+            }
         } else {
             LLVMExp exp = new LLVMExp();
             LinkedList<LLVMExp> realParams = new LinkedList<>();
@@ -783,9 +863,7 @@ public class IRGenerator {
             } else {
                 val = token.charAt(1);
             }
-
-            LLVMConst number = new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
-            return new LLVMExp(number);
+            return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
         }
     }
 
@@ -797,7 +875,7 @@ public class IRGenerator {
         if (node.children.size() > 3) {
             indexExp = translateExp(node.children.get(2));
             if (indexExp instanceof LLVMConst constIndex) {
-                indexVal = constIndex.val;
+                indexVal = constIndex.constValue;
             }
         } else {
             indexVal = 0;

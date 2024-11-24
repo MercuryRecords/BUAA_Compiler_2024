@@ -2,18 +2,18 @@ package middleEnd;
 
 public class LLVMConst extends LLVMExp implements UsableValue {
 
-    private final LLVMType.TypeID baseType;
-    public final int val;
+    private LLVMType.TypeID baseType;
+    public int constValue;
 
-    public LLVMConst(LLVMType.TypeID baseType, int val) {
+    public LLVMConst(LLVMType.TypeID baseType, int constValue) {
         super();
         this.baseType = baseType;
-        this.val = val;
+        this.constValue = constValue;
     }
 
     @Override
     public String toValueIR() {
-        return String.valueOf(val);
+        return String.valueOf(constValue);
     }
 
     @Override
@@ -29,16 +29,42 @@ public class LLVMConst extends LLVMExp implements UsableValue {
     public LLVMConst binaryOperate(LLVMType.InstType instType, LLVMConst right) {
         LLVMConst left = this;
         switch (instType) {
-            // TODO
+            case MUL  -> constValue *= right.constValue;
+            case SDIV -> constValue /= right.constValue;
+            case SREM -> constValue %= right.constValue;
+            case ADD  -> constValue += right.constValue;
+            case SUB  -> constValue -= right.constValue;
+            case ICMP_SLT -> {
+                constValue = left.constValue < right.constValue ? 1 : 0;
+                baseType = LLVMType.TypeID.I1;
+            }
+            case ICMP_SLE -> {
+                constValue = left.constValue <= right.constValue ? 1 : 0;
+                baseType = LLVMType.TypeID.I1;
+            }
+            case ICMP_SGT -> {
+                constValue = left.constValue > right.constValue ? 1 : 0;
+                baseType = LLVMType.TypeID.I1;
+            }
+            case ICMP_SGE -> {
+                constValue = left.constValue >= right.constValue ? 1 : 0;
+                baseType = LLVMType.TypeID.I1;
+            }
         }
-        return null;
+        return left;
     }
 
     public LLVMConst negate() {
-        return new LLVMConst(baseType, -val);
+        constValue = -constValue;
+        return this;
     }
 
     public LLVMConst logicalNot() {
-        return new LLVMConst(baseType, val == 0 ? 1 : 0);
+        if (constValue == 0) {
+            constValue = 1;
+        } else {
+            constValue = 0;
+        }
+        return this;
     }
 }
