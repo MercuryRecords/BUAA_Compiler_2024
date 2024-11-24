@@ -1,0 +1,71 @@
+package middleEnd;
+
+import middleEnd.Insts.BinaryInst;
+import middleEnd.Insts.SubInst;
+
+import java.util.LinkedList;
+
+public class LLVMExp extends Value implements UsableValue {
+    LinkedList<Instruction> instructions;
+    UsableValue value;
+
+    public LLVMExp(UsableValue value) {
+        this.instructions = new LinkedList<>();
+        this.value = value;
+    }
+
+    public LLVMExp() {
+        this.instructions = new LinkedList<>();
+        this.value = null;
+    }
+
+    @Override
+    public String toValueIR() {
+        return value.toValueIR();
+    }
+
+    @Override
+    public String toLLVMType() {
+        return value.toLLVMType();
+    }
+
+    @Override
+    public int toAlign() {
+        return value.toAlign();
+    }
+
+    public LinkedList<Instruction> getInstructions() {
+        return instructions;
+    }
+
+    public LLVMExp binaryOperate(int regNo, LLVMType.InstType instType, LLVMExp llvmExp) {
+        instructions.addAll(llvmExp.instructions);
+        UsableValue left = this.value;
+        UsableValue right = llvmExp.value;
+        BinaryInst newInst = new BinaryInst(instType, regNo, left, right);
+        instructions.add(newInst);
+        this.value = newInst;
+        return this;
+    }
+
+    public LLVMExp negate(int regNo) {
+        SubInst newInst = new SubInst(regNo, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0), this.value);
+        instructions.add(newInst);
+        this.value = newInst;
+        return this;
+    }
+
+    public LLVMExp logicalNot() {
+        return this; // TODO
+    }
+
+    public void addUsableInstruction(Instruction inst) {
+        assert inst instanceof UsableValue;
+        instructions.add(inst);
+        this.value = (UsableValue) inst;
+    }
+
+    public void addFromExp(LLVMExp exp1) {
+        instructions.addAll(exp1.instructions);
+    }
+}
