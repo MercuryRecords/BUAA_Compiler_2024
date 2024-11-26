@@ -349,12 +349,12 @@ public class IRGenerator {
         LinkedList<Instruction> instructions = new LinkedList<>();
         if (node.children.get(0) instanceof LeafASTNode child) {
             switch (child.token.type) {
-                case RETURNTK   -> instructions.addAll(translateReturnStmt(node));
                 case IFTK       -> instructions.addAll(translateIfStmt(node));
                 case FORTK      -> instructions.addAll(translateForStmt(node));
                 case BREAKTK    -> instructions.addAll(translateBreakStmt(node));
-                case CONTINUETK -> instructions.addAll(translateContinueStmt(node));
                 case PRINTFTK   -> instructions.addAll(translatePrintfStmt(node));
+                case RETURNTK   -> instructions.addAll(translateReturnStmt(node));
+                case CONTINUETK -> instructions.addAll(translateContinueStmt(node));
             }
         } else if (node.children.get(0).isNode("LVal")) {
             if (node.children.size() > 2 && node.children.get(2).isNode("LEAF")) {
@@ -407,44 +407,29 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateBreakStmt(ASTNode node) {
+        // TODO
         return new LinkedList<>();
     }
 
     private LinkedList<Instruction> translateContinueStmt(ASTNode node) {
+        // TODO
         return new LinkedList<>();
     }
 
-    private LinkedList<Instruction> translateIfStmt(ASTNode node) {
-        // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
-        // Cond == 1 : to stmt1
-        // Cond == 0 : to stmt2
-        // stmt1 to nextBlock
-        // stmt2 to nextBlock
-        // 对于 LOrExp: 如果 LAndExp 有一个为常值 1，则优化整个 LOrExp 为 1； 如果 LAndExp 结果为 1，则跳转到 stmt1，否则跳转到下一个 LAndExp / stmt2
-        // 对于 LAndExp: 如果 EqExp 有一个为常值 0，则优化整个 LAndExp 为 0； 如果 EqExp 结果为 0，则跳转到下一个 LAndExp，否则跳转到下一个 EqExp
+    private LinkedList<Instruction> translateFromCond(ASTNode condNode, LLVMLabel trueLabel, LLVMLabel falseLabel) {
+        assert condNode.isNode("Cond");
 
         LinkedList<Instruction> instructions = new LinkedList<>();
-        ASTNode LOrExpNode = node.children.get(2).children.get(0);
-        LLVMLabel condIsTrue = new LLVMLabel();
-        LinkedList<Instruction> stmt1Instructions = translateStmt(node.children.get(4));
-        LLVMLabel afterIfStmt = new LLVMLabel();
-        LLVMLabel condIsFalse;
-        LLVMLabel stmt2Label = null;
-        if (node.children.size() > 5) {
-            // 有 else 语句
-            stmt2Label = new LLVMLabel();
-            condIsFalse = stmt2Label;
-        } else {
-            // 没有 else 语句
-            condIsFalse = afterIfStmt;
-        }
+        ASTNode LOrExpNode = condNode.children.get(0);
+
+
         boolean condAlwaysFalse = true;
         for (int i = 0; i < LOrExpNode.children.size(); i += 2) {
             ASTNode LAndExpNode = LOrExpNode.children.get(i);
             if (LAndExpNode.isNode("LAndExp")) {
                 LLVMLabel LAndExpIsFalse;
                 if (i == LOrExpNode.children.size() - 1) {
-                    LAndExpIsFalse = condIsFalse;
+                    LAndExpIsFalse = falseLabel;
                 } else {
                     LAndExpIsFalse = new LLVMLabel();
                 }
@@ -480,7 +465,8 @@ public class IRGenerator {
                 }
                 if (!hasLLVMExp && eqExp != null) {
                     // 整个条件可短路为 1
-                    instructions = translateStmt(node.children.get(4));
+                    instructions = new LinkedList<>();
+                    instructions.add(new BranchInst(trueLabel));
                     return instructions;
                 }
 
@@ -490,7 +476,7 @@ public class IRGenerator {
                     condAlwaysFalse = false;
                 }
                 instructions.addAll(LAndExpInstructions);
-                BranchInst branchInst = new BranchInst(eqExp, condIsTrue, LAndExpIsFalse);
+                BranchInst branchInst = new BranchInst(eqExp, trueLabel, LAndExpIsFalse);
                 instructions.add(branchInst);
                 if (i != LOrExpNode.children.size() - 1) {
                     instructions.add(LAndExpIsFalse);
@@ -501,12 +487,49 @@ public class IRGenerator {
         if (condAlwaysFalse) {
             // 整个条件可短路为 0
             instructions = new LinkedList<>();
-            if (stmt2Label != null) {
+            instructions.add(new BranchInst(falseLabel));
+            return instructions;
+        }
+        return instructions;
+    }
+
+    private LinkedList<Instruction> translateIfStmt(ASTNode node) {
+        // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
+        // Cond == 1 : to stmt1
+        // Cond == 0 : to stmt2
+        // stmt1 to nextBlock
+        // stmt2 to nextBlock
+        // 对于 LOrExp: 如果 LAndExp 有一个为常值 1，则优化整个 LOrExp 为 1； 如果 LAndExp 结果为 1，则跳转到 stmt1，否则跳转到下一个 LAndExp / stmt2
+        // 对于 LAndExp: 如果 EqExp 有一个为常值 0，则优化整个 LAndExp 为 0； 如果 EqExp 结果为 0，则跳转到下一个 LAndExp，否则跳转到下一个 EqExp
+
+        LinkedList<Instruction> instructions = new LinkedList<>();
+
+        LLVMLabel condIsTrue = new LLVMLabel();
+        LinkedList<Instruction> stmt1Instructions = translateStmt(node.children.get(4));
+
+        LLVMLabel condIsFalse;
+        LLVMLabel afterIfStmt = new LLVMLabel();
+        LLVMLabel stmt2Label = null;
+        if (node.children.size() > 5) {
+            // 有 else 语句
+            stmt2Label = new LLVMLabel();
+            condIsFalse = stmt2Label;
+        } else {
+            // 没有 else 语句
+            condIsFalse = afterIfStmt;
+        }
+
+        LinkedList<Instruction> condInsts = translateFromCond(node.children.get(2), condIsTrue, condIsFalse);
+        if (condInsts.size() == 1 && condInsts.get(0) instanceof BranchInst branchInst) {
+            if (condIsTrue.equals(branchInst.dest)) {
+                instructions.addAll(translateStmt(node.children.get(4)));
+            } else if (stmt2Label != null && stmt2Label.equals(branchInst.dest)) {
                 instructions.addAll(translateStmt(node.children.get(6)));
             }
             return instructions;
         }
 
+        instructions.addAll(condInsts);
         instructions.add(condIsTrue);
         instructions.addAll(stmt1Instructions);
         instructions.add(new BranchInst(afterIfStmt));
@@ -583,6 +606,7 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateForStmt(ASTNode node) {
+        // TODO
         return new LinkedList<>();
     }
 

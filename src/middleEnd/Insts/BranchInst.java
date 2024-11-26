@@ -10,7 +10,7 @@ public class BranchInst extends Instruction {
     private UsableValue val = null;
     private LLVMLabel isTrue = null;
     private LLVMLabel isFalse = null;
-    private LLVMLabel dest = null;
+    public LLVMLabel dest = null;
 
     public BranchInst(LLVMLabel dest) {
         super(BRANCH);
