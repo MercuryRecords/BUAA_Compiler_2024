@@ -36,6 +36,9 @@ public class IRGenerator {
     public void translate(String forOutput) {
         translateModule(root);
         for (RegTracker tracker : regTrackers.values()) {
+            if (tracker.getRegNo() > 0) {
+                continue;
+            }
             tracker.setRegNo();
         }
 
@@ -188,9 +191,9 @@ public class IRGenerator {
         enterScope();
         Block block = new Block();
         LinkedList<Instruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
-        regTrackers.get(scopeId).addInstructions(instructions);
         block.addInsts(instructions);
         main.setBlock(block);
+        regTrackers.get(scopeId).addInstructions(block.getInstructions());
         exitScope();
         return main;
     }
@@ -216,9 +219,9 @@ public class IRGenerator {
             addLLVMFParam(param.name, allocaInst);
         }
         LinkedList<Instruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
-        regTrackers.get(scopeId).addInstructions(instructions);
         block.addInsts(instructions);
         function.setBlock(block);
+        regTrackers.get(scopeId).addInstructions(block.getInstructions());
         exitScope();
         return function;
     }
@@ -381,6 +384,12 @@ public class IRGenerator {
         LinkedList<Instruction> instructions = new LinkedList<>();
         if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
             LLVMExp exp = translateExp(node.children.get(1));
+            if (exp instanceof LLVMConst llvmConst) {
+                llvmConst.changeType(funcRetType);
+                instructions.add(new RetInst(llvmConst));
+                return instructions;
+            }
+            // TODO 常量
             instructions.addAll(exp.instructions);
             if (funcRetType == LLVMType.TypeID.CharTyID && !exp.toLLVMType().contains("i8")){
                 TruncInst truncInst = new TruncInst(exp.value, LLVMType.TypeID.CharTyID);

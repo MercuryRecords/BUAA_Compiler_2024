@@ -73,4 +73,8 @@ public class LLVMConst extends LLVMExp implements UsableValue {
         }
         return this;
     }
+
+    public void changeType(LLVMType.TypeID type) {
+        baseType = type;
+    }
 }

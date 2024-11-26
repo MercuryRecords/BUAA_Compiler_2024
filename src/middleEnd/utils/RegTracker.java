@@ -2,6 +2,7 @@ package middleEnd.utils;
 
 import middleEnd.FuncFParam;
 import middleEnd.Instruction;
+import middleEnd.Insts.CallInst;
 import middleEnd.UsableValue;
 
 import java.util.LinkedList;
@@ -30,9 +31,14 @@ public class RegTracker {
     public void setRegNo() {
         boolean FParamsIsEnd = false;
         for (UsableValue value : usableValues) {
-            if (!(value instanceof FuncFParam) && ! FParamsIsEnd) {
+            if (!(value instanceof FuncFParam) && !FParamsIsEnd) {
                 FParamsIsEnd = true;
                 regNo++;
+            }
+            if (value instanceof CallInst callInst) {
+                if (callInst.isVoid()) {
+                    continue;
+                }
             }
             value.setRegNo(regNo++);
         }
@@ -41,5 +47,9 @@ public class RegTracker {
     @Override
     public String toString() {
         return String.format("RegTracker<%d>:%d", scopeId, regNo);
+    }
+
+    public int getRegNo() {
+        return regNo;
     }
 }

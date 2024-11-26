@@ -23,4 +23,8 @@ public class Block extends Value {
         block.append("\n}");
         return block.toString();
     }
+
+    public LinkedList<Instruction> getInstructions() {
+        return insts;
+    }
 }

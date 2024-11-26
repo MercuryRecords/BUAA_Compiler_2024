@@ -28,7 +28,6 @@ public class CallInst extends Instruction implements UsableValue {
 
     public CallInst(String funcName, LinkedList<UsableValue> params) {
         super(LLVMType.InstType.CALL);
-        this.regNo = -1;
         this.retType = LLVMType.TypeID.VoidTyID;
         this.funcName = funcName;
         this.params = params;
@@ -57,7 +56,7 @@ public class CallInst extends Instruction implements UsableValue {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        if (regNo != -1) {
+        if (this.retType != LLVMType.TypeID.VoidTyID) {
             sb.append(String.format("%%%d = ", regNo));
         }
         sb.append(String.format("call %s @%s", toLLVMType(), funcName));
@@ -89,5 +88,9 @@ public class CallInst extends Instruction implements UsableValue {
         } else {
             return new TruncInst(this, LLVMType.TypeID.CharTyID);
         }
+    }
+
+    public boolean isVoid() {
+        return this.retType == LLVMType.TypeID.VoidTyID;
     }
 }
