@@ -71,4 +71,9 @@ public class GlobalVariable extends LLVMVariable implements UsableValue  {
     public int toAlign() {
         return baseType.toAlign();
     }
+
+    @Override
+    public void setRegNo(int regNo) {
+        throw new RuntimeException("GlobalVariable cannot be assigned a register");
+    }
 }

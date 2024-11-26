@@ -3,6 +3,7 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
+import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
 
@@ -10,19 +11,19 @@ public class CallInst extends Instruction implements UsableValue {
     private final LLVMType.TypeID retType;
     private final String funcName;
     private final LinkedList<UsableValue> params;
-    private final int regNo;
+    private int regNo;
 
-    public CallInst(int regNo, LLVMType.TypeID retType, String func, LinkedList<UsableValue> params) {
+    public CallInst(RegTracker regTracker, LLVMType.TypeID retType, String func, LinkedList<UsableValue> params) {
         super(LLVMType.InstType.CALL);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.retType = retType;
         this.funcName = func;
         this.params = params;
     }
 
-    public CallInst(int regNo, LLVMType.TypeID retType, String func) {
+    public CallInst(RegTracker regTracker, LLVMType.TypeID retType, String func) {
         super(LLVMType.InstType.CALL);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.retType = retType;
         this.funcName = func;
         this.params = new LinkedList<>();
@@ -49,6 +50,11 @@ public class CallInst extends Instruction implements UsableValue {
     @Override
     public int toAlign() {
         return retType.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        this.regNo = regNo;
     }
 
     @Override
@@ -80,11 +86,11 @@ public class CallInst extends Instruction implements UsableValue {
         return !val.toLLVMType().equals(retType.toPointerType().toString());
     }
 
-    public Instruction fix(int regNo) {
+    public Instruction fix(RegTracker regTracker) {
         if (retType == LLVMType.TypeID.CharTyID) {
-            return new ZextInst(regNo, this, LLVMType.TypeID.IntegerTyID);
+            return new ZextInst(regTracker, this, LLVMType.TypeID.IntegerTyID);
         } else {
-            return new TruncInst(regNo, this, LLVMType.TypeID.CharTyID);
+            return new TruncInst(regTracker, this, LLVMType.TypeID.CharTyID);
         }
     }
 }

@@ -27,6 +27,11 @@ public class GlobalString extends Value implements UsableValue {
     }
 
     @Override
+    public void setRegNo(int regNo) {
+        throw new RuntimeException("GlobalString cannot be assigned a register");
+    }
+
+    @Override
     public String toString() {
         return String.format("%s = private unnamed_addr constant %s c\"%s\", align %d", toValueIR(), type, string, toAlign());
     }

@@ -26,7 +26,7 @@ public class IRGenerator {
     private final ConstCalculator constCalculator;
     private LLVMType.TypeID funcRetType;
     private final Module module = new Module();
-    private final RegTracker strNumTracker = new RegTracker();
+    private int strNum = 1;
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
         this.root = root;
         this.oldSymbolTables = oldSymbolTables;
@@ -35,6 +35,9 @@ public class IRGenerator {
 
     public void translate(String forOutput) {
         Module module = translateModule(root);
+        for (RegTracker tracker : regTrackers.values()) {
+            tracker.setRegNo();
+        }
 
         try (FileWriter writer = new FileWriter(forOutput)) {
 
@@ -185,7 +188,7 @@ public class IRGenerator {
         Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
         funcRetType = main.getReturnType();
         enterScope();
-        regTrackers.get(scopeId).nextRegNo();
+        regTrackers.get(scopeId);
         Block block = new Block();
         block.addInsts(translateBlock(node.children.get(node.children.size() - 1)));
         main.setBlock(block);
@@ -206,11 +209,11 @@ public class IRGenerator {
                 function.setFParams(params);
             }
         }
-        regTrackers.get(scopeId).nextRegNo();
+        regTrackers.get(scopeId);
         Block block = new Block();
         RegTracker tracker = regTrackers.get(scopeId);
         for (FuncFParam param : function.params) {
-            AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), param.baseType, 0);
+            AllocaInst allocaInst = new AllocaInst(tracker, param.baseType, 0);
             block.addInst(allocaInst);
             block.addInst(new StoreInst(param, allocaInst));
             addLLVMFParam(param.name, allocaInst);
@@ -234,7 +237,7 @@ public class IRGenerator {
     private FuncFParam translateFuncFParam(ASTNode node) {
         LeafASTNode ident = (LeafASTNode) node.children.get(1);
         Symbol symbol = getOldSymbol(ident);
-        return new FuncFParam(regTrackers.get(scopeId).nextRegNo(), symbol);
+        return new FuncFParam(regTrackers.get(scopeId), symbol);
     }
 
     private LinkedList<Instruction> translateBlock(ASTNode node) {
@@ -377,11 +380,11 @@ public class IRGenerator {
             LLVMExp exp = translateExp(node.children.get(1));
             instructions.addAll(exp.instructions);
             if (funcRetType == LLVMType.TypeID.CharTyID && !exp.toLLVMType().contains("i8")){
-                TruncInst truncInst = new TruncInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.CharTyID);
+                TruncInst truncInst = new TruncInst(regTrackers.get(scopeId), exp.value, LLVMType.TypeID.CharTyID);
                 instructions.add(truncInst);
                 exp.addUsableInstruction(truncInst);
             } else if (funcRetType == LLVMType.TypeID.IntegerTyID && !exp.toLLVMType().contains("i32")) {
-                ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.IntegerTyID);
+                ZextInst zextInst = new ZextInst(regTrackers.get(scopeId), exp.value, LLVMType.TypeID.IntegerTyID);
                 instructions.add(zextInst);
                 exp.addUsableInstruction(zextInst);
             }
@@ -402,6 +405,33 @@ public class IRGenerator {
 
     private LinkedList<Instruction> translateIfStmt(ASTNode node) {
         LinkedList<Instruction> instructions = new LinkedList<>();
+        ASTNode LOrExpNode = node.children.get(2).children.get(0);
+
+        if (node.children.size() > 5) {
+            // 有 else 语句
+            LLVMLabel Label = new LLVMLabel();
+        }
+
+        for (ASTNode LAndExpNode : LOrExpNode.children) {
+            if (LAndExpNode.isNode("LAndExp")) {
+                for (ASTNode EqExpNode : LAndExpNode.children) {
+                    if (EqExpNode.isNode("EqExp")) {
+                        LLVMExp eqExp = translateEqExp(EqExpNode);
+                        if (eqExp instanceof LLVMConst constEqExp) {
+                            if (constEqExp.constValue == 0) {
+
+                            } else {
+                                eqExp = new LLVMExp(eqExp);
+                            }
+                        }
+                        if (!eqExp.toLLVMType().contains("i1")) {
+                            eqExp.addUsableInstruction(new TruncInst(regTrackers.get(scopeId), eqExp.value, LLVMType.TypeID.I1));
+                        }
+
+                    }
+                }
+            }
+        }
         // TODO 构建跳转链，逐个遍历 LAndExp 和 EqExp
         // Cond == 1 : to stmt1
         // Cond == 0 : to stmt2
@@ -421,7 +451,7 @@ public class IRGenerator {
 //        LLVMExp exp = translateLAndExp(node.children.get(0));
 //        for (int i = 2; i < node.children.size(); i += 2) {
 //            LLVMExp exp2 = translateLAndExp(node.children.get(i));
-//            exp.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.OR, exp2);
+//            exp.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.OR, exp2);
 //        }
 //        return exp;
 //    }
@@ -439,7 +469,7 @@ public class IRGenerator {
 //                exp = constExp.binaryOperate(LLVMType.InstType.AND, constExp2);
 //                continue;
 //            }
-//            exp.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.AND, exp2);
+//            exp.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.AND, exp2);
 //        }
 //        return exp;
 //    }
@@ -465,8 +495,8 @@ public class IRGenerator {
                 left = new LLVMExp(constLeft);
             }
             switch (lexType) {
-                case EQL -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_EQ, right);
-                case NEQ -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_NE, right);
+                case EQL -> left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ICMP_EQ, right);
+                case NEQ -> left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ICMP_NE, right);
             }
             return left;
         }
@@ -498,10 +528,10 @@ public class IRGenerator {
                 left = new LLVMExp(constLeft);
             }
             switch (lexType) {
-                case LSS -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SLT, right);
-                case LEQ -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SLE, right);
-                case GRE -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SGT, right);
-                case GEQ -> left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ICMP_SGE, right);
+                case LSS -> left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ICMP_SLT, right);
+                case LEQ -> left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ICMP_SLE, right);
+                case GRE -> left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ICMP_SGT, right);
+                case GEQ -> left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ICMP_SGE, right);
             }
             return left;
         }
@@ -560,7 +590,7 @@ public class IRGenerator {
                     LLVMExp exp = exps.get(currExpIndex++);
                     LinkedList<UsableValue> params = new LinkedList<>();
                     if (!exp.toLLVMType().contains("i32")) {
-                        ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp, LLVMType.TypeID.IntegerTyID);
+                        ZextInst zextInst = new ZextInst(regTrackers.get(scopeId), exp, LLVMType.TypeID.IntegerTyID);
                         instructions.add(zextInst);
                         params.add(zextInst);
                     } else {
@@ -580,7 +610,7 @@ public class IRGenerator {
                     LLVMExp exp = exps.get(currExpIndex++);
                     LinkedList<UsableValue> params = new LinkedList<>();
                     if (!exp.toLLVMType().contains("i32")) {
-                        ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp, LLVMType.TypeID.IntegerTyID);
+                        ZextInst zextInst = new ZextInst(regTrackers.get(scopeId), exp, LLVMType.TypeID.IntegerTyID);
                         instructions.add(zextInst);
                         params.add(zextInst);
                     } else {
@@ -622,9 +652,9 @@ public class IRGenerator {
 
     private LinkedList<Instruction> PrintConstStr(String string, int tmpLen) {
         LinkedList<Instruction> instructions = new LinkedList<>();
-        GlobalString newStr = new GlobalString(strNumTracker.nextRegNo(), string, tmpLen);
+        GlobalString newStr = new GlobalString(strNum++, string, tmpLen);
         module.addStrDecl(newStr);
-        GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), LLVMType.TypeID.CharTyID, newStr, "0");
+        GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId), LLVMType.TypeID.CharTyID, newStr, "0");
         instructions.add(getInst);
         LinkedList<UsableValue> param = new LinkedList<>();
         param.add(getInst);
@@ -640,10 +670,10 @@ public class IRGenerator {
             instructions.addAll(((LLVMExp) lval).instructions);
         }
 
-        CallInst callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(), LLVMType.TypeID.IntegerTyID, "getchar");
+        CallInst callInst = new CallInst(regTrackers.get(scopeId), LLVMType.TypeID.IntegerTyID, "getchar");
         instructions.add(callInst);
         if (callInst.isDifferentType(lval)) {
-            Instruction fix = callInst.fix(regTrackers.get(scopeId).nextRegNo());
+            Instruction fix = callInst.fix(regTrackers.get(scopeId));
             instructions.add(fix);
             instructions.add(new StoreInst((UsableValue) fix, lval));
         } else {
@@ -659,10 +689,10 @@ public class IRGenerator {
             instructions.addAll(((LLVMExp) lval).instructions);
         }
 
-        CallInst callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(), LLVMType.TypeID.IntegerTyID, "getint");
+        CallInst callInst = new CallInst(regTrackers.get(scopeId), LLVMType.TypeID.IntegerTyID, "getint");
         instructions.add(callInst);
         if (callInst.isDifferentType(lval)) {
-            Instruction fix = callInst.fix(regTrackers.get(scopeId).nextRegNo());
+            Instruction fix = callInst.fix(regTrackers.get(scopeId));
             instructions.add(fix);
             instructions.add(new StoreInst((UsableValue) fix, lval));
         } else {
@@ -679,11 +709,11 @@ public class IRGenerator {
             instructions.addAll(((LLVMExp) lval).instructions);
         }
         if (lval.toLLVMType().contains("i32") && !exp.toLLVMType().contains("i32")) {
-            ZextInst zextInst = new ZextInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.IntegerTyID);
+            ZextInst zextInst = new ZextInst(regTrackers.get(scopeId), exp.value, LLVMType.TypeID.IntegerTyID);
             exp.addUsableInstruction(zextInst);
             instructions.add(zextInst);
         } else if (lval.toLLVMType().contains("i8") && !exp.toLLVMType().contains("i8")) {
-            TruncInst truncInst = new TruncInst(regTrackers.get(scopeId).nextRegNo(), exp.value, LLVMType.TypeID.CharTyID);
+            TruncInst truncInst = new TruncInst(regTrackers.get(scopeId), exp.value, LLVMType.TypeID.CharTyID);
             exp.addUsableInstruction(truncInst);
             instructions.add(truncInst);
         }
@@ -707,10 +737,10 @@ public class IRGenerator {
             LLVMExp exp = translateExp(node.children.get(2));
             String offset = exp.toValueIR();
             if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
-                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(),exp.value));
+                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId),exp.value));
                 offset = exp.toValueIR();
             }
-            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, var, offset);
+            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId), baseType, var, offset);
             exp.addUsableInstruction(getInst);
             return exp;
         } else {
@@ -748,9 +778,9 @@ public class IRGenerator {
                 left = new LLVMExp(constLeft);
             }
             if (token.equals("+")){
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.ADD, right);
+                return left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.ADD, right);
             } else {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SUB, right);
+                return left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.SUB, right);
             }
         }
     }
@@ -775,11 +805,11 @@ public class IRGenerator {
                 left = new LLVMExp(constLeft);
             }
             if (((LeafASTNode) node.children.get(1)).token.token.equals("*")) {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.MUL, right);
+                return left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.MUL, right);
             } else if (((LeafASTNode) node.children.get(1)).token.token.equals("/")) {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SDIV, right);
+                return left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.SDIV, right);
             } else {
-                return left.binaryOperate(regTrackers.get(scopeId).nextRegNo(), LLVMType.InstType.SREM, right);
+                return left.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.SREM, right);
             }
         }
     }
@@ -799,7 +829,7 @@ public class IRGenerator {
             } else {
                 return switch (leaf.token.token) {
                     case "+" -> unaryExp;
-                    case "-" -> unaryExp.negate(regTrackers.get(scopeId).nextRegNo());
+                    case "-" -> unaryExp.negate(regTrackers.get(scopeId));
                     default -> unaryExp.logicalNot();
                 };
             }
@@ -818,7 +848,7 @@ public class IRGenerator {
             for (int i = 0; i < toCall.params.size(); i++) {
                 boolean toFix = toCall.params.get(i).isDifferentType(realParams.get(i));
                 if (toFix) {
-                    Instruction fix = toCall.params.get(i).fix(regTrackers.get(scopeId).nextRegNo(),realParams.get(i));
+                    Instruction fix = toCall.params.get(i).fix(regTrackers.get(scopeId),realParams.get(i));
                     exp.addUsableInstruction(fix);
                     forCall.add((UsableValue) fix);
                 } else {
@@ -829,12 +859,12 @@ public class IRGenerator {
             if (toCall.retType == LLVMType.TypeID.VoidTyID) {
                 callInst = new CallInst(toCall.name, forCall);
             } else {
-                callInst = new CallInst(regTrackers.get(scopeId).nextRegNo(),
+                callInst = new CallInst(regTrackers.get(scopeId),
                         toCall.retType, toCall.name, forCall);
             }
             exp.addUsableInstruction(callInst);
             if (toCall.retType == LLVMType.TypeID.CharTyID) {
-                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(), callInst, LLVMType.TypeID.IntegerTyID));
+                exp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId), callInst, LLVMType.TypeID.IntegerTyID));
             }
             return exp;
         }
@@ -900,15 +930,15 @@ public class IRGenerator {
             }
             String offset = indexExp.toValueIR();
             if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
-                indexExp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(),indexExp.value));
+                indexExp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId),indexExp.value));
                 offset = indexExp.toValueIR();
             }
-            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId).nextRegNo(), baseType, value, offset);
+            GetelementptrInst getInst = new GetelementptrInst(regTrackers.get(scopeId), baseType, value, offset);
             indexExp.addUsableInstruction(getInst);
-            LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, indexExp.value);
+            LoadInst loadInst = new LoadInst(regTrackers.get(scopeId), baseType, indexExp.value);
             indexExp.addUsableInstruction(loadInst);
             if (baseType == LLVMType.TypeID.CharTyID) {
-                indexExp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(), loadInst, LLVMType.TypeID.IntegerTyID));
+                indexExp.addUsableInstruction(new ZextInst(regTrackers.get(scopeId), loadInst, LLVMType.TypeID.IntegerTyID));
             }
             return indexExp;
         } else {
@@ -919,10 +949,10 @@ public class IRGenerator {
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
-            LoadInst loadInst = new LoadInst(regTrackers.get(scopeId).nextRegNo(), baseType, lVal);
+            LoadInst loadInst = new LoadInst(regTrackers.get(scopeId), baseType, lVal);
             lVal.addUsableInstruction(loadInst);
             if (baseType == LLVMType.TypeID.CharTyID) {
-                lVal.addUsableInstruction(new ZextInst(regTrackers.get(scopeId).nextRegNo(), loadInst, LLVMType.TypeID.IntegerTyID));
+                lVal.addUsableInstruction(new ZextInst(regTrackers.get(scopeId), loadInst, LLVMType.TypeID.IntegerTyID));
             }
             return lVal;
         }

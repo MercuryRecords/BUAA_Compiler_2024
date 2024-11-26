@@ -3,22 +3,23 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
+import middleEnd.utils.RegTracker;
 
 public class ZextInst extends Instruction implements UsableValue {
-    private final int regNo;
+    private int regNo;
     private final LLVMType.TypeID baseType;
     private final UsableValue from;
 
-    public ZextInst(int regNo, UsableValue from) {
+    public ZextInst(RegTracker regTracker, UsableValue from) {
         super(LLVMType.InstType.ZEXT);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.baseType = LLVMType.TypeID.LongTyID;
         this.from = from;
     }
 
-    public ZextInst(int regNo, UsableValue from, LLVMType.TypeID baseType) {
+    public ZextInst(RegTracker regTracker, UsableValue from, LLVMType.TypeID baseType) {
         super(LLVMType.InstType.ZEXT);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.baseType = baseType;
         this.from = from;
     }
@@ -36,6 +37,11 @@ public class ZextInst extends Instruction implements UsableValue {
     @Override
     public int toAlign() {
         return baseType.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        this.regNo = regNo;
     }
 
     @Override

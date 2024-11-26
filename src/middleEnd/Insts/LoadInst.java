@@ -3,14 +3,15 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
+import middleEnd.utils.RegTracker;
 
 public class LoadInst extends Instruction implements UsableValue {
     int regNo;
     LLVMType.TypeID baseType;
     UsableValue from;
-    public LoadInst(int regNo, LLVMType.TypeID baseType, UsableValue from) {
+    public LoadInst(RegTracker regTracker, LLVMType.TypeID baseType, UsableValue from) {
         super(LLVMType.InstType.LOAD);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.baseType = baseType;
         this.from = from;
     }
@@ -28,6 +29,11 @@ public class LoadInst extends Instruction implements UsableValue {
     @Override
     public int toAlign() {
         return baseType.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        this.regNo = regNo;
     }
 
     @Override

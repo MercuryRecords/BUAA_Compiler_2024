@@ -55,7 +55,7 @@ public class LLVMVariable extends Value implements UsableValue {
             if (isConst) {
                 // 单个常量
                 int initValAsInt = ((ConstInitVal) initVal).getConstValue(0);
-                AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                AllocaInst allocaInst = new AllocaInst(tracker, baseType, arrayLength);
                 usableValue = allocaInst;
                 instructions.add(allocaInst);
                 LLVMConst llvmConst = new LLVMConst(baseType, initValAsInt);
@@ -65,16 +65,16 @@ public class LLVMVariable extends Value implements UsableValue {
                 if (initVal != null) {
                     LLVMExp llvmExp = initVal.get(0);
                     if (baseType == LLVMType.TypeID.CharTyID) {
-                        llvmExp.addUsableInstruction(new TruncInst(tracker.nextRegNo(), llvmExp.value, baseType));
+                        llvmExp.addUsableInstruction(new TruncInst(tracker, llvmExp.value, baseType));
                     }
                     LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
                     instructions.addAll(initValInsts);
-                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    AllocaInst allocaInst = new AllocaInst(tracker, baseType, arrayLength);
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
                     instructions.add(new StoreInst(llvmExp.value, allocaInst));
                 } else {
-                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    AllocaInst allocaInst = new AllocaInst(tracker, baseType, arrayLength);
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
                 }
@@ -84,11 +84,11 @@ public class LLVMVariable extends Value implements UsableValue {
             if (isConst || initVal instanceof ConstInitVal) {
                 // 常量数组
                 ConstInitVal constInitVal = (ConstInitVal) initVal;
-                AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                AllocaInst allocaInst = new AllocaInst(tracker, baseType, arrayLength);
                 usableValue = allocaInst;
                 instructions.add(allocaInst);
                 for (int i = 0; i < arrayLength; i++) {
-                    GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, String.valueOf(i));
+                    GetelementptrInst getelementptrInst = new GetelementptrInst(tracker, baseType, allocaInst, String.valueOf(i));
                     instructions.add(getelementptrInst);
                     LLVMConst llvmConst = new LLVMConst(baseType, constInitVal.getConstValue(i));
                     instructions.add(new StoreInst(llvmConst, getelementptrInst));
@@ -101,20 +101,20 @@ public class LLVMVariable extends Value implements UsableValue {
                         LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
                         instructions.addAll(initValInsts);
                     }
-                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    AllocaInst allocaInst = new AllocaInst(tracker, baseType, arrayLength);
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
                     for (int i = 0; i < initVal.size(); i++) {
                         LLVMExp llvmExp = initVal.get(i);
                         if (baseType == LLVMType.TypeID.CharTyID) {
-                            llvmExp.addUsableInstruction(new TruncInst(tracker.nextRegNo(), llvmExp.value, baseType));
+                            llvmExp.addUsableInstruction(new TruncInst(tracker, llvmExp.value, baseType));
                         }
-                        GetelementptrInst getelementptrInst = new GetelementptrInst(tracker.nextRegNo(), baseType, allocaInst, String.valueOf(i));
+                        GetelementptrInst getelementptrInst = new GetelementptrInst(tracker, baseType, allocaInst, String.valueOf(i));
                         instructions.add(getelementptrInst);
                         instructions.add(new StoreInst(llvmExp.value, getelementptrInst));
                     }
                 } else {
-                    AllocaInst allocaInst = new AllocaInst(tracker.nextRegNo(), baseType, arrayLength);
+                    AllocaInst allocaInst = new AllocaInst(tracker, baseType, arrayLength);
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
                 }
@@ -136,5 +136,10 @@ public class LLVMVariable extends Value implements UsableValue {
     @Override
     public int toAlign() {
         return usableValue.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        usableValue.setRegNo(regNo);
     }
 }

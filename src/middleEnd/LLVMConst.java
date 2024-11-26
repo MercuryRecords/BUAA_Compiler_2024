@@ -9,6 +9,7 @@ public class LLVMConst extends LLVMExp implements UsableValue {
         super();
         this.baseType = baseType;
         this.constValue = constValue;
+        this.value = this;
     }
 
     @Override
@@ -24,6 +25,11 @@ public class LLVMConst extends LLVMExp implements UsableValue {
     @Override
     public int toAlign() {
         return baseType.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        throw new RuntimeException("Const can't have regNo");
     }
 
     public LLVMConst binaryOperate(LLVMType.InstType instType, LLVMConst right) {

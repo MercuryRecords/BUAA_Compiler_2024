@@ -1,7 +1,7 @@
 package middleEnd;
 
 import middleEnd.Insts.BinaryInst;
-import middleEnd.Insts.SubInst;
+import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
 
@@ -32,22 +32,27 @@ public class LLVMExp extends Value implements UsableValue {
         return value.toAlign();
     }
 
+    @Override
+    public void setRegNo(int regNo) {
+        throw new RuntimeException("Cannot set regNo for LLVMExp");
+    }
+
     public LinkedList<Instruction> getInstructions() {
         return instructions;
     }
 
-    public LLVMExp binaryOperate(int regNo, LLVMType.InstType instType, LLVMExp llvmExp) {
+    public LLVMExp binaryOperate(RegTracker regTracker, LLVMType.InstType instType, LLVMExp llvmExp) {
         instructions.addAll(llvmExp.instructions);
         UsableValue left = this.value;
         UsableValue right = llvmExp.value;
-        BinaryInst newInst = new BinaryInst(instType, regNo, left, right);
+        BinaryInst newInst = new BinaryInst(instType, regTracker, left, right);
         instructions.add(newInst);
         this.value = newInst;
         return this;
     }
 
-    public LLVMExp negate(int regNo) {
-        SubInst newInst = new SubInst(regNo, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0), this.value);
+    public LLVMExp negate(RegTracker regTracker) {
+        BinaryInst newInst = new BinaryInst(LLVMType.InstType.SUB, regTracker, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0), this.value);
         instructions.add(newInst);
         this.value = newInst;
         return this;

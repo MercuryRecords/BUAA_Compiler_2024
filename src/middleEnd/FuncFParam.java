@@ -3,13 +3,14 @@ package middleEnd;
 import frontEnd.Symbol;
 import middleEnd.Insts.TruncInst;
 import middleEnd.Insts.ZextInst;
+import middleEnd.utils.RegTracker;
 
 public class FuncFParam extends Value implements UsableValue {
     int regNo;
     String name;
     LLVMType.TypeID baseType;
-    public FuncFParam(int regNo, Symbol symbol) {
-        this.regNo = regNo;
+    public FuncFParam(RegTracker regTracker, Symbol symbol) {
+        regTracker.addValue(this);
         name = symbol.token.token;
         switch (symbol.symbolType) {
             case Int:
@@ -45,6 +46,11 @@ public class FuncFParam extends Value implements UsableValue {
     }
 
     @Override
+    public void setRegNo(int regNo) {
+        this.regNo = regNo;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s %s", toLLVMType(), toValueIR());
     }
@@ -57,11 +63,11 @@ public class FuncFParam extends Value implements UsableValue {
         return !val.toLLVMType().equals(baseType.toString());
     }
 
-    public Instruction fix(int regNo, UsableValue value) {
+    public Instruction fix(RegTracker regTracker, UsableValue value) {
         if (baseType == LLVMType.TypeID.IntegerTyID) {
-            return new ZextInst(regNo, value, baseType);
+            return new ZextInst(regTracker, value, baseType);
         } else {
-            return new TruncInst(regNo, value, baseType);
+            return new TruncInst(regTracker, value, baseType);
         }
     }
 }

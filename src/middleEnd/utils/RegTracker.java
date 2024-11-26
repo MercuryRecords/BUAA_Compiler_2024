@@ -1,19 +1,36 @@
 package middleEnd.utils;
 
+import middleEnd.FuncFParam;
+import middleEnd.UsableValue;
+
+import java.util.LinkedList;
+
 public class RegTracker {
     private final int scopeId;
+    private final LinkedList<UsableValue> usableValues = new LinkedList<>();
     private int regNo = 0; // 已经用过的编号
 
     public RegTracker(int scopeId) {
         this.scopeId = scopeId;
     }
 
-    public RegTracker() {
-        scopeId = -1;
-        regNo = 1;
+    public void addValue(UsableValue inst) {
+        usableValues.add(inst);
     }
 
-    public int nextRegNo() {
-        return regNo++;
+    public void setRegNo() {
+        boolean FParamsIsEnd = false;
+        for (UsableValue value : usableValues) {
+            if (!(value instanceof FuncFParam) && ! FParamsIsEnd) {
+                FParamsIsEnd = true;
+                regNo++;
+            }
+            value.setRegNo(regNo++);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RegTracker<%d>:%d", scopeId, regNo);
     }
 }

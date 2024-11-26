@@ -3,16 +3,17 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
+import middleEnd.utils.RegTracker;
 
 public class GetelementptrInst extends Instruction implements UsableValue {
-    private final int regNo;
+    private int regNo;
     private final LLVMType.TypeID baseType;
     private final LLVMType.TypeID noPointerBaseType;
     private final UsableValue from;
     private final String offset;
-    public GetelementptrInst(int regNo, LLVMType.TypeID baseType, UsableValue from, String offset) {
+    public GetelementptrInst(RegTracker regTracker, LLVMType.TypeID baseType, UsableValue from, String offset) {
         super(LLVMType.InstType.GETELEMENTPTR);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.noPointerBaseType = baseType;
         this.baseType = baseType.toPointerType();
         this.from = from;
@@ -32,6 +33,11 @@ public class GetelementptrInst extends Instruction implements UsableValue {
     @Override
     public int toAlign() {
         return baseType.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        this.regNo = regNo;
     }
 
     @Override

@@ -3,15 +3,16 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
+import middleEnd.utils.RegTracker;
 
 public class BinaryInst extends Instruction implements UsableValue {
     protected int regNo;
     protected LLVMType.TypeID baseType;
     protected UsableValue op1;
     protected UsableValue op2;
-    public BinaryInst(LLVMType.InstType type, int regNo, UsableValue op1, UsableValue op2) {
+    public BinaryInst(LLVMType.InstType type, RegTracker regTracker, UsableValue op1, UsableValue op2) {
         super(type);
-        this.regNo = regNo;
+        regTracker.addValue(this);
         this.op1 = op1;
         this.op2 = op2;
         switch (type) {
@@ -31,6 +32,11 @@ public class BinaryInst extends Instruction implements UsableValue {
     @Override
     public int toAlign() {
         return baseType.toAlign();
+    }
+
+    @Override
+    public void setRegNo(int regNo) {
+        this.regNo = regNo;
     }
 
     @Override
