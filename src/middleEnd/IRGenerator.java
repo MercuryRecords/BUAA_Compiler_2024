@@ -22,7 +22,8 @@ public class IRGenerator {
     private final HashMap<Integer, RegTracker> regTrackers = new HashMap<>();
     private final HashSet<Integer> usedScopeIds = new HashSet<>();
     private final HashMap<String, Function> functions = new HashMap<>();
-    private int scopeId = 0;
+    private int scopeId = 1;
+    private int scopeCnt = 1;
     private final ConstCalculator constCalculator;
     private LLVMType.TypeID funcRetType;
     private final Module module = new Module();
@@ -68,17 +69,14 @@ public class IRGenerator {
     }
 
     private void enterScope() {
-        do {
-            scopeId++;
-        }
-        while (usedScopeIds.contains(scopeId));
-        usedScopeIds.add(scopeId);
-        LLVMSymbolTable newTable = new LLVMSymbolTable(scopeId, currTable);
-        RegTracker tracker = new RegTracker(scopeId);
+        LLVMSymbolTable newTable = new LLVMSymbolTable(scopeCnt++, currTable);
+        scopeId = scopeCnt - 1;
         symbolTableStack.push(newTable);
         newSymbolTables.put(newTable.id, newTable);
-        regTrackers.put(scopeId, tracker);
         currTable = newTable;
+
+        RegTracker tracker = new RegTracker(scopeId);
+        regTrackers.put(scopeId, tracker);
     }
 
     private void exitScope() {
@@ -88,7 +86,6 @@ public class IRGenerator {
             scopeId = currTable.id;
         } catch (EmptyStackException e) {
             currTable = null;
-            scopeId = 0;
         }
     }
 
@@ -526,7 +523,7 @@ public class IRGenerator {
         LinkedList<Instruction> condInsts = translateFromCond(node.children.get(2), condIsTrue, condIsFalse);
         if (condInsts.size() == 1 && condInsts.get(0) instanceof BranchInst branchInst) {
             if (condIsTrue.equals(branchInst.dest)) {
-                instructions.addAll(translateStmt(node.children.get(4)));
+                instructions.addAll(stmt1Instructions);
             } else if (stmt2Label != null && stmt2Label.equals(branchInst.dest)) {
                 instructions.addAll(translateStmt(node.children.get(6)));
             }
@@ -639,11 +636,11 @@ public class IRGenerator {
         } else {
             toUpdate = toCond;
         }
-        LinkedList<Instruction> bodyInstructions = translateStmt(node.children.get(node.children.size() - 1));
 
         forBreakLabels.push(condIsFalse);
         forContinueLabels.push(toUpdate);
 
+        LinkedList<Instruction> bodyInstructions = translateStmt(node.children.get(node.children.size() - 1));
         LinkedList<Instruction> instructions = new LinkedList<>(initInstructions);
         instructions.add(new BranchInst(toCond));
         instructions.add(toCond);
