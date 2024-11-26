@@ -389,7 +389,6 @@ public class IRGenerator {
                 instructions.add(new RetInst(llvmConst));
                 return instructions;
             }
-            // TODO 常量
             instructions.addAll(exp.instructions);
             if (funcRetType == LLVMType.TypeID.CharTyID && !exp.toLLVMType().contains("i8")){
                 TruncInst truncInst = new TruncInst(exp.value, LLVMType.TypeID.CharTyID);
@@ -416,36 +415,7 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateIfStmt(ASTNode node) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
-        ASTNode LOrExpNode = node.children.get(2).children.get(0);
-
-        if (node.children.size() > 5) {
-            // 有 else 语句
-            LLVMLabel Label = new LLVMLabel();
-        }
-
-        for (ASTNode LAndExpNode : LOrExpNode.children) {
-            if (LAndExpNode.isNode("LAndExp")) {
-                for (ASTNode EqExpNode : LAndExpNode.children) {
-                    if (EqExpNode.isNode("EqExp")) {
-                        LLVMExp eqExp = translateEqExp(EqExpNode);
-                        if (eqExp instanceof LLVMConst constEqExp) {
-                            if (constEqExp.constValue == 0) {
-
-                            } else {
-                                eqExp = new LLVMExp(eqExp);
-                            }
-                        }
-                        if (!eqExp.toLLVMType().contains("i1")) {
-                            TruncInst truncInst = new TruncInst(eqExp.value, LLVMType.TypeID.I1);
-                            eqExp.addUsableInstruction(truncInst);
-                        }
-
-                    }
-                }
-            }
-        }
-        // TODO 构建跳转链，逐个遍历 LAndExp 和 EqExp
+        // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
         // Cond == 1 : to stmt1
         // Cond == 0 : to stmt2
         // stmt1 to nextBlock
@@ -453,39 +423,101 @@ public class IRGenerator {
         // 对于 LOrExp: 如果 LAndExp 有一个为常值 1，则优化整个 LOrExp 为 1； 如果 LAndExp 结果为 1，则跳转到 stmt1，否则跳转到下一个 LAndExp / stmt2
         // 对于 LAndExp: 如果 EqExp 有一个为常值 0，则优化整个 LAndExp 为 0； 如果 EqExp 结果为 0，则跳转到下一个 LAndExp，否则跳转到下一个 EqExp
 
-        return new LinkedList<>();
-    }
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        ASTNode LOrExpNode = node.children.get(2).children.get(0);
+        LLVMLabel condIsTrue = new LLVMLabel();
+        LinkedList<Instruction> stmt1Instructions = translateStmt(node.children.get(4));
+        LLVMLabel afterIfStmt = new LLVMLabel();
+        LLVMLabel condIsFalse;
+        LLVMLabel stmt2Label = null;
+        if (node.children.size() > 5) {
+            // 有 else 语句
+            stmt2Label = new LLVMLabel();
+            condIsFalse = stmt2Label;
+        } else {
+            // 没有 else 语句
+            condIsFalse = afterIfStmt;
+        }
+        boolean condAlwaysFalse = true;
+        for (int i = 0; i < LOrExpNode.children.size(); i += 2) {
+            ASTNode LAndExpNode = LOrExpNode.children.get(i);
+            if (LAndExpNode.isNode("LAndExp")) {
+                LLVMLabel LAndExpIsFalse;
+                if (i == LOrExpNode.children.size() - 1) {
+                    LAndExpIsFalse = condIsFalse;
+                } else {
+                    LAndExpIsFalse = new LLVMLabel();
+                }
+                LinkedList<Instruction> LAndExpInstructions = new LinkedList<>();
+                LLVMExp eqExp = null;
+                boolean hasLLVMExp = false;
+                for (int j = 0; j < LAndExpNode.children.size(); j += 2) {
+                    ASTNode EqExpNode = LAndExpNode.children.get(j);
+                    if (EqExpNode.isNode("EqExp")) {
+                        LLVMLabel EqExpIsTrue = new LLVMLabel();
+                        eqExp = translateEqExp(EqExpNode);
+                        if (eqExp instanceof LLVMConst constEqExp) {
+                            if (constEqExp.constValue == 0) {
+                                eqExp = null;
+                                break;
+                            } else {
+                                eqExp = new LLVMExp(eqExp);
+                            }
+                        } else {
+                            hasLLVMExp = true;
+                        }
+                        if (!eqExp.toLLVMType().contains("i1")) {
+                            TruncInst truncInst = new TruncInst(eqExp.value, LLVMType.TypeID.I1);
+                            eqExp.addUsableInstruction(truncInst);
+                        }
+                        LAndExpInstructions.addAll(eqExp.instructions);
+                        if (j != LAndExpNode.children.size() - 1) {
+                            BranchInst branchInst = new BranchInst(eqExp, EqExpIsTrue, LAndExpIsFalse);
+                            LAndExpInstructions.add(branchInst);
+                            LAndExpInstructions.add(EqExpIsTrue);
+                        }
+                    }
+                }
+                if (!hasLLVMExp && eqExp != null) {
+                    // 整个条件可短路为 1
+                    instructions = translateStmt(node.children.get(4));
+                    return instructions;
+                }
 
-//    private LLVMExp translateCond(ASTNode node) {
-//        return translateLOrExp(node.children.get(0));
-//    }
-//
-//    private LLVMExp translateLOrExp(ASTNode node) {
-//        LLVMExp exp = translateLAndExp(node.children.get(0));
-//        for (int i = 2; i < node.children.size(); i += 2) {
-//            LLVMExp exp2 = translateLAndExp(node.children.get(i));
-//            exp.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.OR, exp2);
-//        }
-//        return exp;
-//    }
-//
-//    private LLVMExp translateLAndExp(ASTNode node) {
-//        LLVMExp exp = translateEqExp(node.children.get(0));
-//        for (int i = 2; i < node.children.size(); i += 2) {
-//            if (exp instanceof LLVMConst constExp) {
-//                if (constExp.constValue == 0) {
-//                    return constExp;
-//                }
-//            }
-//            LLVMExp exp2 = translateEqExp(node.children.get(i));
-//            if (exp instanceof LLVMConst constExp && exp2 instanceof LLVMConst constExp2) {
-//                exp = constExp.binaryOperate(LLVMType.InstType.AND, constExp2);
-//                continue;
-//            }
-//            exp.binaryOperate(regTrackers.get(scopeId), LLVMType.InstType.AND, exp2);
-//        }
-//        return exp;
-//    }
+                if (eqExp == null) {
+                    continue;
+                } else {
+                    condAlwaysFalse = false;
+                }
+                instructions.addAll(LAndExpInstructions);
+                BranchInst branchInst = new BranchInst(eqExp, condIsTrue, LAndExpIsFalse);
+                instructions.add(branchInst);
+                if (i != LOrExpNode.children.size() - 1) {
+                    instructions.add(LAndExpIsFalse);
+                }
+            }
+        }
+
+        if (condAlwaysFalse) {
+            // 整个条件可短路为 0
+            instructions = new LinkedList<>();
+            if (stmt2Label != null) {
+                instructions.addAll(translateStmt(node.children.get(6)));
+            }
+            return instructions;
+        }
+
+        instructions.add(condIsTrue);
+        instructions.addAll(stmt1Instructions);
+        instructions.add(new BranchInst(afterIfStmt));
+        if (stmt2Label != null) {
+            instructions.add(stmt2Label);
+            instructions.addAll(translateStmt(node.children.get(6)));
+            instructions.add(new BranchInst(afterIfStmt));
+        }
+        instructions.add(afterIfStmt);
+        return instructions;
+    }
 
     private LLVMExp translateEqExp(ASTNode node) {
         if (node.children.size() == 1) {

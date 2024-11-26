@@ -39,6 +39,6 @@ public class BinaryInst extends Instruction implements UsableValue {
 
     @Override
     public String toString() {
-        return String.format("%s = %s %s %s, %s", toValueIR(), type.toString(), toLLVMType(), op1.toValueIR(), op2.toValueIR());
+        return String.format("%s = %s %s %s, %s", toValueIR(), type.toString(), op1.toLLVMType(), op1.toValueIR(), op2.toValueIR());
     }
 }

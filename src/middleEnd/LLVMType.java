@@ -72,6 +72,8 @@ public class LLVMType {
         ICMP_SLE("icmp sle"),
 
         LABEL("label"),
+
+        BRANCH("br"),
         ;
         private final String s;
         InstType(String s) {
