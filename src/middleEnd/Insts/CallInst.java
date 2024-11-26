@@ -13,17 +13,15 @@ public class CallInst extends Instruction implements UsableValue {
     private final LinkedList<UsableValue> params;
     private int regNo;
 
-    public CallInst(RegTracker regTracker, LLVMType.TypeID retType, String func, LinkedList<UsableValue> params) {
+    public CallInst(LLVMType.TypeID retType, String func, LinkedList<UsableValue> params) {
         super(LLVMType.InstType.CALL);
-        regTracker.addValue(this);
         this.retType = retType;
         this.funcName = func;
         this.params = params;
     }
 
-    public CallInst(RegTracker regTracker, LLVMType.TypeID retType, String func) {
+    public CallInst(LLVMType.TypeID retType, String func) {
         super(LLVMType.InstType.CALL);
-        regTracker.addValue(this);
         this.retType = retType;
         this.funcName = func;
         this.params = new LinkedList<>();
@@ -86,11 +84,11 @@ public class CallInst extends Instruction implements UsableValue {
         return !val.toLLVMType().equals(retType.toPointerType().toString());
     }
 
-    public Instruction fix(RegTracker regTracker) {
+    public Instruction fix() {
         if (retType == LLVMType.TypeID.CharTyID) {
-            return new ZextInst(regTracker, this, LLVMType.TypeID.IntegerTyID);
+            return new ZextInst(this, LLVMType.TypeID.IntegerTyID);
         } else {
-            return new TruncInst(regTracker, this, LLVMType.TypeID.CharTyID);
+            return new TruncInst(this, LLVMType.TypeID.CharTyID);
         }
     }
 }

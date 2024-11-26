@@ -16,7 +16,7 @@ public class Module {
     }
 
 
-    public void addFunction(Value globalValue) {
+    public void addFunction(Function globalValue) {
         functions.add(globalValue);
     }
 

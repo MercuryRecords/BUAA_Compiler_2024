@@ -1,6 +1,7 @@
 package middleEnd.utils;
 
 import middleEnd.FuncFParam;
+import middleEnd.Instruction;
 import middleEnd.UsableValue;
 
 import java.util.LinkedList;
@@ -16,6 +17,14 @@ public class RegTracker {
 
     public void addValue(UsableValue inst) {
         usableValues.add(inst);
+    }
+
+    public void addInstructions(LinkedList<Instruction> instructions) {
+        for (Instruction inst : instructions) {
+            if (inst instanceof UsableValue) {
+                usableValues.add((UsableValue) inst);
+            }
+        }
     }
 
     public void setRegNo() {

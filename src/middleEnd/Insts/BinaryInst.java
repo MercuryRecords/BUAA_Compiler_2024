@@ -10,9 +10,8 @@ public class BinaryInst extends Instruction implements UsableValue {
     protected LLVMType.TypeID baseType;
     protected UsableValue op1;
     protected UsableValue op2;
-    public BinaryInst(LLVMType.InstType type, RegTracker regTracker, UsableValue op1, UsableValue op2) {
+    public BinaryInst(LLVMType.InstType type, UsableValue op1, UsableValue op2) {
         super(type);
-        regTracker.addValue(this);
         this.op1 = op1;
         this.op2 = op2;
         switch (type) {

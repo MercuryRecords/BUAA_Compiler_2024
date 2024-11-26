@@ -9,8 +9,7 @@ public class FuncFParam extends Value implements UsableValue {
     int regNo;
     String name;
     LLVMType.TypeID baseType;
-    public FuncFParam(RegTracker regTracker, Symbol symbol) {
-        regTracker.addValue(this);
+    public FuncFParam(Symbol symbol) {
         name = symbol.token.token;
         switch (symbol.symbolType) {
             case Int:
@@ -63,11 +62,11 @@ public class FuncFParam extends Value implements UsableValue {
         return !val.toLLVMType().equals(baseType.toString());
     }
 
-    public Instruction fix(RegTracker regTracker, UsableValue value) {
+    public Instruction fix(UsableValue value) {
         if (baseType == LLVMType.TypeID.IntegerTyID) {
-            return new ZextInst(regTracker, value, baseType);
+            return new ZextInst(value, baseType);
         } else {
-            return new TruncInst(regTracker, value, baseType);
+            return new TruncInst(value, baseType);
         }
     }
 }

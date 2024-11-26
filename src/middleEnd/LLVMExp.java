@@ -41,18 +41,18 @@ public class LLVMExp extends Value implements UsableValue {
         return instructions;
     }
 
-    public LLVMExp binaryOperate(RegTracker regTracker, LLVMType.InstType instType, LLVMExp llvmExp) {
+    public LLVMExp binaryOperate(LLVMType.InstType instType, LLVMExp llvmExp) {
         instructions.addAll(llvmExp.instructions);
         UsableValue left = this.value;
         UsableValue right = llvmExp.value;
-        BinaryInst newInst = new BinaryInst(instType, regTracker, left, right);
+        BinaryInst newInst = new BinaryInst(instType, left, right);
         instructions.add(newInst);
         this.value = newInst;
         return this;
     }
 
-    public LLVMExp negate(RegTracker regTracker) {
-        BinaryInst newInst = new BinaryInst(LLVMType.InstType.SUB, regTracker, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0), this.value);
+    public LLVMExp negate() {
+        BinaryInst newInst = new BinaryInst(LLVMType.InstType.SUB, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0), this.value);
         instructions.add(newInst);
         this.value = newInst;
         return this;

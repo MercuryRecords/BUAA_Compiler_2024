@@ -10,9 +10,8 @@ public class TruncInst extends Instruction implements UsableValue {
     private final LLVMType.TypeID baseType;
     private final UsableValue from;
 
-    public TruncInst(RegTracker regTracker, UsableValue from, LLVMType.TypeID baseType) {
+    public TruncInst(UsableValue from, LLVMType.TypeID baseType) {
         super(LLVMType.InstType.TRUNC);
-        regTracker.addValue(this);
         this.baseType = baseType;
         this.from = from;
     }

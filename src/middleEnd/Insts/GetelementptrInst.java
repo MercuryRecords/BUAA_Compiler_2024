@@ -11,9 +11,8 @@ public class GetelementptrInst extends Instruction implements UsableValue {
     private final LLVMType.TypeID noPointerBaseType;
     private final UsableValue from;
     private final String offset;
-    public GetelementptrInst(RegTracker regTracker, LLVMType.TypeID baseType, UsableValue from, String offset) {
+    public GetelementptrInst(LLVMType.TypeID baseType, UsableValue from, String offset) {
         super(LLVMType.InstType.GETELEMENTPTR);
-        regTracker.addValue(this);
         this.noPointerBaseType = baseType;
         this.baseType = baseType.toPointerType();
         this.from = from;

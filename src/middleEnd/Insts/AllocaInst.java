@@ -3,15 +3,13 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
-import middleEnd.utils.RegTracker;
 
 public class AllocaInst extends Instruction implements UsableValue {
     private int regNo;
     private final LLVMType.TypeID baseType;
     private final int arrayLength;
-    public AllocaInst(RegTracker regTracker, LLVMType.TypeID baseType, int arrayLength) {
+    public AllocaInst(LLVMType.TypeID baseType, int arrayLength) {
         super(LLVMType.InstType.ALLOCA);
-        regTracker.addValue(this);
         this.baseType = baseType;
         this.arrayLength = arrayLength;
     }

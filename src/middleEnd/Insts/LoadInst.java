@@ -9,9 +9,8 @@ public class LoadInst extends Instruction implements UsableValue {
     int regNo;
     LLVMType.TypeID baseType;
     UsableValue from;
-    public LoadInst(RegTracker regTracker, LLVMType.TypeID baseType, UsableValue from) {
+    public LoadInst(LLVMType.TypeID baseType, UsableValue from) {
         super(LLVMType.InstType.LOAD);
-        regTracker.addValue(this);
         this.baseType = baseType;
         this.from = from;
     }
