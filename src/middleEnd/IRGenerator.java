@@ -27,6 +27,8 @@ public class IRGenerator {
     private LLVMType.TypeID funcRetType;
     private final Module module = new Module();
     private int strNum = 1;
+    private final Stack<LLVMLabel> forBreakLabels = new Stack<>();
+    private final Stack<LLVMLabel> forContinueLabels = new Stack<>();
     public IRGenerator(ASTNode root, HashMap<Integer, SymbolTable> oldSymbolTables) {
         this.root = root;
         this.oldSymbolTables = oldSymbolTables;
@@ -351,10 +353,10 @@ public class IRGenerator {
             switch (child.token.type) {
                 case IFTK       -> instructions.addAll(translateIfStmt(node));
                 case FORTK      -> instructions.addAll(translateForStmt(node));
-                case BREAKTK    -> instructions.addAll(translateBreakStmt(node));
+                case BREAKTK    -> instructions.addAll(translateBreakStmt());
                 case PRINTFTK   -> instructions.addAll(translatePrintfStmt(node));
                 case RETURNTK   -> instructions.addAll(translateReturnStmt(node));
-                case CONTINUETK -> instructions.addAll(translateContinueStmt(node));
+                case CONTINUETK -> instructions.addAll(translateContinueStmt());
             }
         } else if (node.children.get(0).isNode("LVal")) {
             if (node.children.size() > 2 && node.children.get(2).isNode("LEAF")) {
@@ -406,14 +408,16 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateBreakStmt(ASTNode node) {
-        // TODO
-        return new LinkedList<>();
+    private LinkedList<Instruction> translateBreakStmt() {
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        instructions.add(new BranchInst(forBreakLabels.peek()));
+        return instructions;
     }
 
-    private LinkedList<Instruction> translateContinueStmt(ASTNode node) {
-        // TODO
-        return new LinkedList<>();
+    private LinkedList<Instruction> translateContinueStmt() {
+        LinkedList<Instruction> instructions = new LinkedList<>();
+        instructions.add(new BranchInst(forContinueLabels.peek()));
+        return instructions;
     }
 
     private LinkedList<Instruction> translateFromCond(ASTNode condNode, LLVMLabel trueLabel, LLVMLabel falseLabel) {
@@ -606,8 +610,61 @@ public class IRGenerator {
     }
 
     private LinkedList<Instruction> translateForStmt(ASTNode node) {
-        // TODO
-        return new LinkedList<>();
+        // 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
+        LinkedList<Instruction> initInstructions = new LinkedList<>();
+        int index;
+        if (node.children.get(2).isNode("ForStmt")) {
+            initInstructions = translateAssignStmt(node.children.get(2));
+            index = 4;
+        } else {
+            index = 3;
+        }
+        LLVMLabel condIsTrue = new LLVMLabel();
+        LLVMLabel condIsFalse = new LLVMLabel();
+        LLVMLabel toCond = new LLVMLabel();
+        LLVMLabel toUpdate = new LLVMLabel();
+        LinkedList<Instruction> condInstructions = new LinkedList<>();
+        if (node.children.get(index).isNode("Cond")) {
+            ASTNode condNode = node.children.get(index);
+            condInstructions = translateFromCond(condNode, condIsTrue, condIsFalse);
+            index += 2;
+        } else {
+            // 无条件循环
+            toCond = condIsTrue;
+            index += 1;
+        }
+        LinkedList<Instruction> updateInstructions = new LinkedList<>();
+        if (node.children.get(index).isNode("ForStmt")) {
+            updateInstructions = translateAssignStmt(node.children.get(index));
+        } else {
+            toUpdate = toCond;
+        }
+        LinkedList<Instruction> bodyInstructions = translateStmt(node.children.get(node.children.size() - 1));
+
+        forBreakLabels.push(condIsFalse);
+        forContinueLabels.push(toUpdate);
+
+        LinkedList<Instruction> instructions = new LinkedList<>(initInstructions);
+        instructions.add(new BranchInst(toCond));
+        instructions.add(toCond);
+        if (!condInstructions.isEmpty()) {
+            instructions.addAll(condInstructions);
+            instructions.add(condIsTrue);
+        }
+        if (!bodyInstructions.isEmpty()) {
+            instructions.addAll(bodyInstructions);
+            instructions.add(new BranchInst(toUpdate));
+        }
+        if (!updateInstructions.isEmpty()) {
+            instructions.add(toUpdate);
+            instructions.addAll(updateInstructions);
+            instructions.add(new BranchInst(toCond));
+        }
+        instructions.add(condIsFalse);
+
+        forBreakLabels.pop();
+        forContinueLabels.pop();
+        return instructions;
     }
 
     private LinkedList<Instruction> translatePrintfStmt(ASTNode node) {
