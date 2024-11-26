@@ -5,7 +5,6 @@ import middleEnd.Insts.AllocaInst;
 import middleEnd.Insts.GetelementptrInst;
 import middleEnd.Insts.StoreInst;
 import middleEnd.Insts.TruncInst;
-import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
 

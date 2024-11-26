@@ -1,7 +1,6 @@
 package middleEnd;
 
 import middleEnd.Insts.BinaryInst;
-import middleEnd.utils.RegTracker;
 
 import java.util.LinkedList;
 

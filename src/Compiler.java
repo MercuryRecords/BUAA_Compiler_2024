@@ -1,12 +1,8 @@
-import frontEnd.ASTNode;
-import frontEnd.Reporter;
-import frontEnd.SymbolTable;
-import frontEnd.Token;
+import frontEnd.*;
 import frontEnd.lexer.Lexer;
 import frontEnd.parser.Parser;
 import frontEnd.visitor.Visitor;
 import middleEnd.IRGenerator;
-import frontEnd.Trimmer;
 
 import java.io.IOException;
 import java.nio.file.Files;

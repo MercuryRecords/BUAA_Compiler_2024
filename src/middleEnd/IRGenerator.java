@@ -952,7 +952,7 @@ public class IRGenerator {
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
-            LoadInst loadInst = new LoadInst(baseType, lVal);
+            LoadInst loadInst = new LoadInst(baseType, lVal.value);
             lVal.addUsableInstruction(loadInst);
             if (baseType == LLVMType.TypeID.CharTyID) {
                 lVal.addUsableInstruction(new ZextInst(loadInst, LLVMType.TypeID.IntegerTyID));

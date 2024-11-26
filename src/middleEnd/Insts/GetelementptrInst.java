@@ -3,7 +3,6 @@ package middleEnd.Insts;
 import middleEnd.Instruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
-import middleEnd.utils.RegTracker;
 
 public class GetelementptrInst extends Instruction implements UsableValue {
     private int regNo;

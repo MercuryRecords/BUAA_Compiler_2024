@@ -3,7 +3,6 @@ package middleEnd;
 import frontEnd.Symbol;
 import middleEnd.Insts.TruncInst;
 import middleEnd.Insts.ZextInst;
-import middleEnd.utils.RegTracker;
 
 public class FuncFParam extends Value implements UsableValue {
     int regNo;
