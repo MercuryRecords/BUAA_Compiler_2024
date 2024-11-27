@@ -521,39 +521,39 @@ public class IRGenerator {
         LinkedList<Instruction> instructions = new LinkedList<>();
 
         LLVMLabel condIsTrue = new LLVMLabel();
-        LinkedList<Instruction> stmt1Instructions = translateStmt(node.children.get(4));
-
-        LLVMLabel condIsFalse;
+        LLVMLabel condIsFalse = new LLVMLabel();
         LLVMLabel afterIfStmt = new LLVMLabel();
-        LLVMLabel stmt2Label = null;
-        if (node.children.size() > 5) {
+        // LLVMLabel stmt2Label = new LLVMLabel();
+        // if (node.children.size() > 5) {
             // 有 else 语句
-            stmt2Label = new LLVMLabel();
-            condIsFalse = stmt2Label;
-        } else {
+            // stmt2Label = new LLVMLabel();
+            // condIsFalse = stmt2Label;
+        // } else {
             // 没有 else 语句
-            condIsFalse = afterIfStmt;
-        }
+            // condIsFalse = afterIfStmt;
+        // }
 
         LinkedList<Instruction> condInsts = translateFromCond(node.children.get(2), condIsTrue, condIsFalse);
-        if (condInsts.size() == 1 && condInsts.get(0) instanceof BranchInst branchInst) {
-            if (condIsTrue.equals(branchInst.dest)) {
-                instructions.addAll(stmt1Instructions);
-            } else if (stmt2Label != null && stmt2Label.equals(branchInst.dest)) {
-                instructions.addAll(translateStmt(node.children.get(6)));
-            }
-            return instructions;
-        }
+        // if (condInsts.size() == 1 && condInsts.get(0) instanceof BranchInst branchInst) {
+        //     if (condIsTrue.equals(branchInst.dest)) {
+        //         instructions.addAll(stmt1Instructions);
+        //     } else if (stmt2Label != null && stmt2Label.equals(branchInst.dest)) {
+        //         instructions.addAll(translateStmt(node.children.get(6)));
+        //     }
+        //     return instructions;
+        // }
 
         instructions.addAll(condInsts);
         instructions.add(condIsTrue);
-        instructions.addAll(stmt1Instructions);
+        instructions.addAll(translateStmt(node.children.get(4)));
         instructions.add(new BranchInst(afterIfStmt));
-        if (stmt2Label != null) {
-            instructions.add(stmt2Label);
+        // if (stmt2Label != null) {
+        instructions.add(condIsFalse);
+        if (node.children.size() > 5) {
             instructions.addAll(translateStmt(node.children.get(6)));
-            instructions.add(new BranchInst(afterIfStmt));
         }
+        instructions.add(new BranchInst(afterIfStmt));
+        // }
         instructions.add(afterIfStmt);
         return instructions;
     }
@@ -642,15 +642,15 @@ public class IRGenerator {
             index += 2;
         } else {
             // 无条件循环
-            toCond = condIsTrue;
+            // toCond = condIsTrue;
             index += 1;
         }
         LinkedList<Instruction> updateInstructions = new LinkedList<>();
         if (node.children.get(index).isNode("ForStmt")) {
             updateInstructions = translateAssignStmt(node.children.get(index));
-        } else {
-            toUpdate = toCond;
-        }
+        }   //  else {
+            // toUpdate = toCond;
+        // }
 
         forBreakLabels.push(condIsFalse);
         forContinueLabels.push(toUpdate);
@@ -659,19 +659,23 @@ public class IRGenerator {
         LinkedList<Instruction> instructions = new LinkedList<>(initInstructions);
         instructions.add(new BranchInst(toCond));
         instructions.add(toCond);
+        // if (!condInstructions.isEmpty()) {
         if (!condInstructions.isEmpty()) {
             instructions.addAll(condInstructions);
-            instructions.add(condIsTrue);
+        } else {
+            instructions.add(new BranchInst(condIsTrue));
         }
-        if (!bodyInstructions.isEmpty()) {
-            instructions.addAll(bodyInstructions);
-            instructions.add(new BranchInst(toUpdate));
-        }
-        if (!updateInstructions.isEmpty()) {
-            instructions.add(toUpdate);
-            instructions.addAll(updateInstructions);
-            instructions.add(new BranchInst(toCond));
-        }
+        instructions.add(condIsTrue);
+        // }
+        // if (!bodyInstructions.isEmpty()) {
+        instructions.addAll(bodyInstructions);
+        instructions.add(new BranchInst(toUpdate));
+        // }
+        // if (!updateInstructions.isEmpty()) {
+        instructions.add(toUpdate);
+        instructions.addAll(updateInstructions);
+        instructions.add(new BranchInst(toCond));
+        // }
         instructions.add(condIsFalse);
 
         forBreakLabels.pop();
