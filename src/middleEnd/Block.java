@@ -20,7 +20,7 @@ public class Block extends Value {
         for (Instruction inst : insts) {
             block.append("\t").append(inst.toString()).append("\n");
         }
-        block.append("\n}");
+        block.append("}");
         return block.toString();
     }
 

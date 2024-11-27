@@ -87,7 +87,7 @@ public class LLVMVariable extends Value implements UsableValue {
                 usableValue = allocaInst;
                 instructions.add(allocaInst);
                 for (int i = 0; i < arrayLength; i++) {
-                    GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, String.valueOf(i));
+                    GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, new LLVMConst(LLVMType.TypeID.IntegerTyID, i));
                     instructions.add(getelementptrInst);
                     LLVMConst llvmConst = new LLVMConst(baseType, constInitVal.getConstValue(i));
                     instructions.add(new StoreInst(llvmConst, getelementptrInst));
@@ -108,7 +108,7 @@ public class LLVMVariable extends Value implements UsableValue {
                         if (baseType == LLVMType.TypeID.CharTyID) {
                             llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
                         }
-                        GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, String.valueOf(i));
+                        GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, new LLVMConst(LLVMType.TypeID.IntegerTyID, i));
                         instructions.add(getelementptrInst);
                         instructions.add(new StoreInst(llvmExp.value, getelementptrInst));
                     }

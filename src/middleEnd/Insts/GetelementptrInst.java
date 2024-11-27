@@ -7,12 +7,10 @@ import middleEnd.UsableValue;
 public class GetelementptrInst extends Instruction implements UsableValue {
     private int regNo;
     private final LLVMType.TypeID baseType;
-    private final LLVMType.TypeID noPointerBaseType;
     private final UsableValue from;
-    private final String offset;
-    public GetelementptrInst(LLVMType.TypeID baseType, UsableValue from, String offset) {
+    private final UsableValue offset;
+    public GetelementptrInst(LLVMType.TypeID baseType, UsableValue from, UsableValue offset) {
         super(LLVMType.InstType.GETELEMENTPTR);
-        this.noPointerBaseType = baseType;
         this.baseType = baseType.toPointerType();
         this.from = from;
         this.offset = offset;
@@ -40,11 +38,7 @@ public class GetelementptrInst extends Instruction implements UsableValue {
 
     @Override
     public String toString() {
-        if (from.toLLVMType().startsWith("[")) {
-            // 唉特判
-            return String.format("%s = getelementptr %s, %s* %s, i64 0, i64 %s", toValueIR(), from.toLLVMType(), from.toLLVMType(), from.toValueIR(), offset);
-        } else {
-            return String.format("%s = getelementptr %s, %s %s, i64 %s", toValueIR(), noPointerBaseType.toString(), from.toLLVMType(), from.toValueIR(), offset);
-        }
+        int tmpLen = from.toLLVMType().length() - 1;
+        return String.format("%s = getelementptr %s, %s %s, i32 0, i32 %s", toValueIR(), from.toLLVMType().substring(0, tmpLen), from.toLLVMType(), from.toValueIR(), offset.toValueIR());
     }
 }

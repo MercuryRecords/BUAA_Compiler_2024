@@ -18,7 +18,7 @@ public class GlobalString extends Value implements UsableValue {
 
     @Override
     public String toLLVMType() {
-        return type;
+        return type + "*";
     }
 
     @Override

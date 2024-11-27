@@ -20,7 +20,6 @@ public class IRGenerator {
     private final Stack<LLVMSymbolTable> symbolTableStack = new Stack<>();
     private final HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
     private final HashMap<Integer, RegTracker> regTrackers = new HashMap<>();
-    private final HashSet<Integer> usedScopeIds = new HashSet<>();
     private final HashMap<String, Function> functions = new HashMap<>();
     private int scopeId = 1;
     private int scopeCnt = 1;
@@ -190,6 +189,11 @@ public class IRGenerator {
         enterScope();
         Block block = new Block();
         LinkedList<Instruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
+        for (int i = 0; i < instructions.size() - 1; i++) {
+            if (instructions.get(i) instanceof RetInst && !(instructions.get(i + 1) instanceof LLVMLabel)) {
+                instructions.add(i + 1, new LLVMLabel());
+            }
+        }
         block.addInsts(instructions);
         main.setBlock(block);
         regTrackers.get(scopeId).addInstructions(block.getInstructions());
@@ -218,7 +222,16 @@ public class IRGenerator {
             addLLVMFParam(param.name, allocaInst);
         }
         LinkedList<Instruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
+        for (int i = 0; i < instructions.size() - 1; i++) {
+            if (instructions.get(i) instanceof RetInst && !(instructions.get(i + 1) instanceof LLVMLabel)) {
+                instructions.add(i + 1, new LLVMLabel());
+            }
+        }
         block.addInsts(instructions);
+        // 检查 instructions 最后一句是不是 ret，不是的话加指令
+        if (instructions.isEmpty() || !(instructions.getLast() instanceof RetInst)) {
+            block.addInst(new RetInst());
+        }
         function.setBlock(block);
         regTrackers.get(scopeId).addInstructions(block.getInstructions());
         exitScope();
@@ -408,12 +421,14 @@ public class IRGenerator {
     private LinkedList<Instruction> translateBreakStmt() {
         LinkedList<Instruction> instructions = new LinkedList<>();
         instructions.add(new BranchInst(forBreakLabels.peek()));
+        instructions.add(new LLVMLabel());
         return instructions;
     }
 
     private LinkedList<Instruction> translateContinueStmt() {
         LinkedList<Instruction> instructions = new LinkedList<>();
         instructions.add(new BranchInst(forContinueLabels.peek()));
+        instructions.add(new LLVMLabel());
         return instructions;
     }
 
@@ -777,7 +792,7 @@ public class IRGenerator {
         LinkedList<Instruction> instructions = new LinkedList<>();
         GlobalString newStr = new GlobalString(strNum++, string, tmpLen);
         module.addStrDecl(newStr);
-        GetelementptrInst getInst = new GetelementptrInst(LLVMType.TypeID.CharTyID, newStr, "0");
+        GetelementptrInst getInst = new GetelementptrInst(LLVMType.TypeID.CharTyID, newStr, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
         instructions.add(getInst);
         LinkedList<UsableValue> param = new LinkedList<>();
         param.add(getInst);
@@ -858,12 +873,7 @@ public class IRGenerator {
                 baseType = LLVMType.TypeID.CharTyID;
             }
             LLVMExp exp = translateExp(node.children.get(2));
-            String offset = exp.toValueIR();
-            if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
-                exp.addUsableInstruction(new ZextInst(exp.value));
-                offset = exp.toValueIR();
-            }
-            GetelementptrInst getInst = new GetelementptrInst(baseType, var, offset);
+            GetelementptrInst getInst = new GetelementptrInst(baseType, var, exp.value);
             exp.addUsableInstruction(getInst);
             return exp;
         } else {
@@ -1050,12 +1060,7 @@ public class IRGenerator {
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
-            String offset = indexExp.toValueIR();
-            if (offset.charAt(0) == '@' || offset.charAt(0) == '%') {
-                indexExp.addUsableInstruction(new ZextInst(indexExp.value));
-                offset = indexExp.toValueIR();
-            }
-            GetelementptrInst getInst = new GetelementptrInst(baseType, value, offset);
+            GetelementptrInst getInst = new GetelementptrInst(baseType, value, indexExp.value);
             indexExp.addUsableInstruction(getInst);
             LoadInst loadInst = new LoadInst(baseType, indexExp.value);
             indexExp.addUsableInstruction(loadInst);
