@@ -55,9 +55,10 @@ public class LLVMType {
         MUL("mul"),
         SDIV("sdiv"),
         SREM("srem"),
-        AND("and"),
-        OR("or"),
+        XOR("xor"),
 
+        LABEL("label"),
+        BRANCH("br"),
         RETURN("ret"),
 
         ZEXT("zext"),
@@ -71,9 +72,6 @@ public class LLVMType {
         ICMP_SLT("icmp slt"),
         ICMP_SLE("icmp sle"),
 
-        LABEL("label"),
-
-        BRANCH("br"),
         ;
         private final String s;
         InstType(String s) {
