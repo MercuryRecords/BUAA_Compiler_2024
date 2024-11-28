@@ -1150,7 +1150,23 @@ public class IRGenerator {
             if (node.children.get(0).isNode("Number")) {
                 val = Integer.parseInt(token);
             } else {
-                val = token.charAt(1);
+                if (token.charAt(1) == '\\') {
+                    val = switch (token.charAt(2)) {
+                        case '0' -> 0;
+                        case 'a' -> 7;
+                        case 'b' -> 8;
+                        case 't' -> 9;
+                        case 'n' -> 10;
+                        case 'v' -> 11;
+                        case 'f' -> 12;
+                        case '\"' -> 34;
+                        case '\'' -> 39;
+                        case '\\' -> 92;
+                        default -> throw new RuntimeException("Unknown escape sequence");
+                    };
+                } else {
+                    val = token.charAt(1);
+                }
             }
             return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
         }

@@ -36,6 +36,6 @@ public class LoadInst extends Instruction implements UsableValue {
 
     @Override
     public String toString() {
-        return String.format("%s = load %s, %s* %s, align %d", toValueIR(), toLLVMType(), toLLVMType(), from.toValueIR(), toAlign());
+        return String.format("%s = load %s, %s* %s", toValueIR(), toLLVMType(), toLLVMType(), from.toValueIR());
     }
 }
