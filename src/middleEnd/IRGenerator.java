@@ -468,8 +468,9 @@ public class IRGenerator {
                             hasLLVMExp = true;
                         }
                         if (!eqExp.toLLVMType().contains("i1")) {
-                            TruncInst truncInst = new TruncInst(eqExp.value, LLVMType.TypeID.I1);
-                            eqExp.addUsableInstruction(truncInst);
+                            eqExp.logical();
+//                            TruncInst truncInst = new TruncInst(eqExp.value, LLVMType.TypeID.I1);
+//                            eqExp.addUsableInstruction(truncInst);
                         }
                         LAndExpInstructions.addAll(eqExp.instructions);
                         if (j != LAndExpNode.children.size() - 1) {

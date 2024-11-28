@@ -73,4 +73,11 @@ public class LLVMExp extends Value implements UsableValue {
     public void addFromExp(LLVMExp exp1) {
         instructions.addAll(exp1.instructions);
     }
+
+    public LLVMExp logical() {
+        BinaryInst newInst = new BinaryInst(LLVMType.InstType.ICMP_NE, this.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
+        instructions.add(newInst);
+        this.value = newInst;
+        return this;
+    }
 }
