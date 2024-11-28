@@ -469,8 +469,6 @@ public class IRGenerator {
                         }
                         if (!eqExp.toLLVMType().contains("i1")) {
                             eqExp.logical();
-//                            TruncInst truncInst = new TruncInst(eqExp.value, LLVMType.TypeID.I1);
-//                            eqExp.addUsableInstruction(truncInst);
                         }
                         LAndExpInstructions.addAll(eqExp.instructions);
                         if (j != LAndExpNode.children.size() - 1) {
@@ -846,6 +844,9 @@ public class IRGenerator {
 
     private LinkedList<Instruction> translateAssignStmt(ASTNode node) {
         LLVMExp exp = translateExp(node.children.get(2));
+        if (exp instanceof LLVMConst) {
+            exp = new LLVMExp(exp);
+        }
         LinkedList<Instruction> instructions = new LinkedList<>(exp.instructions);
         UsableValue lval = translateLVal(node.children.get(0));
         if (lval instanceof LLVMExp) {
@@ -873,6 +874,9 @@ public class IRGenerator {
         if (node.children.size() > 3) {
             LLVMType.TypeID baseType;
             LLVMExp exp = translateExp(node.children.get(2));
+            if (exp instanceof LLVMConst) {
+                exp = new LLVMExp(exp);
+            }
             if (var.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;
             } else {
@@ -1066,6 +1070,9 @@ public class IRGenerator {
             }
         }
         if (node.children.size() > 3) {
+            if (indexExp instanceof LLVMConst) {
+                indexExp = new LLVMExp(indexExp);
+            }
             LLVMType.TypeID baseType;
             if (value.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;

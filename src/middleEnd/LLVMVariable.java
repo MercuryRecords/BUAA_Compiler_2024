@@ -63,6 +63,9 @@ public class LLVMVariable extends Value implements UsableValue {
                 // 单个变量
                 if (initVal != null) {
                     LLVMExp llvmExp = initVal.get(0);
+                    if (llvmExp instanceof LLVMConst) {
+                        llvmExp = new LLVMExp(llvmExp);
+                    }
                     if (baseType == LLVMType.TypeID.CharTyID) {
                         llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
                     }

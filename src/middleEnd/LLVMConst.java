@@ -86,6 +86,10 @@ public class LLVMConst extends LLVMExp implements UsableValue {
 
     public void changeType(LLVMType.TypeID type) {
         baseType = type;
+    }
 
+    @Override
+    public void addUsableInstruction(Instruction inst) {
+        throw new RuntimeException("Const can't have usable instruction");
     }
 }
