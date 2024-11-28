@@ -432,79 +432,154 @@ public class IRGenerator {
         return instructions;
     }
 
+//    private LinkedList<Instruction> translateFromCond(ASTNode condNode, LLVMLabel trueLabel, LLVMLabel falseLabel) {
+//        assert condNode.isNode("Cond");
+//
+//        LinkedList<Instruction> instructions = new LinkedList<>();
+//        ASTNode LOrExpNode = condNode.children.get(0);
+//
+//
+//        boolean condAlwaysFalse = true;
+//        for (int i = 0; i < LOrExpNode.children.size(); i += 2) {
+//            ASTNode LAndExpNode = LOrExpNode.children.get(i);
+//            if (LAndExpNode.isNode("LAndExp")) {
+//                LLVMLabel LAndExpIsFalse;
+//                if (i == LOrExpNode.children.size() - 1) {
+//                    LAndExpIsFalse = falseLabel;
+//                } else {
+//                    LAndExpIsFalse = new LLVMLabel();
+//                }
+//                LinkedList<Instruction> LAndExpInstructions = new LinkedList<>();
+//                LLVMExp eqExp = null;
+//                boolean hasLLVMExp = false;
+//                for (int j = 0; j < LAndExpNode.children.size(); j += 2) {
+//                    ASTNode EqExpNode = LAndExpNode.children.get(j);
+//                    if (EqExpNode.isNode("EqExp")) {
+//                        LLVMLabel EqExpIsTrue = new LLVMLabel();
+//                        eqExp = translateEqExp(EqExpNode);
+//                        if (eqExp instanceof LLVMConst constEqExp) {
+//                            if (constEqExp.constValue == 0) {
+//                                eqExp = null;
+//                                break;
+//                            } else {
+//                                eqExp = new LLVMExp(eqExp);
+//                            }
+//                        } else {
+//                            hasLLVMExp = true;
+//                        }
+//                        if (!eqExp.toLLVMType().contains("i1")) {
+//                            eqExp.logical();
+//                        }
+//                        LAndExpInstructions.addAll(eqExp.instructions);
+//                        if (j != LAndExpNode.children.size() - 1) {
+//                            BranchInst branchInst = new BranchInst(eqExp, EqExpIsTrue, LAndExpIsFalse);
+//                            LAndExpInstructions.add(branchInst);
+//                            LAndExpInstructions.add(EqExpIsTrue);
+//                        }
+//                    }
+//                }
+//                if (!hasLLVMExp && eqExp != null) {
+//                    // 整个条件可短路为 1
+//                    instructions = new LinkedList<>();
+//                    instructions.add(new BranchInst(trueLabel));
+//                    return instructions;
+//                }
+//
+//                if (eqExp == null) {
+//                    continue;
+//                } else {
+//                    condAlwaysFalse = false;
+//                }
+//                instructions.addAll(LAndExpInstructions);
+//                BranchInst branchInst = new BranchInst(eqExp, trueLabel, LAndExpIsFalse);
+//                instructions.add(branchInst);
+//                if (i != LOrExpNode.children.size() - 1) {
+//                    instructions.add(LAndExpIsFalse);
+//                }
+//            }
+//        }
+//
+//        if (condAlwaysFalse) {
+//            // 整个条件可短路为 0
+//            instructions = new LinkedList<>();
+//            instructions.add(new BranchInst(falseLabel));
+//            return instructions;
+//        }
+//        return instructions;
+//    }
+
     private LinkedList<Instruction> translateFromCond(ASTNode condNode, LLVMLabel trueLabel, LLVMLabel falseLabel) {
         assert condNode.isNode("Cond");
 
         LinkedList<Instruction> instructions = new LinkedList<>();
         ASTNode LOrExpNode = condNode.children.get(0);
 
-
-        boolean condAlwaysFalse = true;
+//        boolean condAlwaysFalse = true;
         for (int i = 0; i < LOrExpNode.children.size(); i += 2) {
             ASTNode LAndExpNode = LOrExpNode.children.get(i);
             if (LAndExpNode.isNode("LAndExp")) {
-                LLVMLabel LAndExpIsFalse;
-                if (i == LOrExpNode.children.size() - 1) {
-                    LAndExpIsFalse = falseLabel;
+                LLVMLabel nextLAndExp;
+                if (i != LOrExpNode.children.size() - 1) {
+                    nextLAndExp = new LLVMLabel();
                 } else {
-                    LAndExpIsFalse = new LLVMLabel();
+                    nextLAndExp = falseLabel;
                 }
-                LinkedList<Instruction> LAndExpInstructions = new LinkedList<>();
-                LLVMExp eqExp = null;
-                boolean hasLLVMExp = false;
+//                boolean hasLLVMExp = false;
+                LLVMExp eqExp;
                 for (int j = 0; j < LAndExpNode.children.size(); j += 2) {
                     ASTNode EqExpNode = LAndExpNode.children.get(j);
                     if (EqExpNode.isNode("EqExp")) {
-                        LLVMLabel EqExpIsTrue = new LLVMLabel();
+                        LLVMLabel nextEqExp;
+                        if (j != LAndExpNode.children.size() - 1) {
+                            nextEqExp = new LLVMLabel();
+                        } else {
+                            nextEqExp = trueLabel;
+                        }
                         eqExp = translateEqExp(EqExpNode);
                         if (eqExp instanceof LLVMConst constEqExp) {
-                            if (constEqExp.constValue == 0) {
-                                eqExp = null;
-                                break;
-                            } else {
-                                eqExp = new LLVMExp(eqExp);
-                            }
+//                            if (constEqExp.constValue != 0) {
+//                                continue;
+//                            }
+                            constEqExp.changeType(LLVMType.TypeID.I1);
                         } else {
-                            hasLLVMExp = true;
+//                            hasLLVMExp = true;
+                            if (!eqExp.toLLVMType().contains("i1")) {
+                                eqExp.logical();
+                            }
+                            instructions.addAll(eqExp.instructions);
                         }
-                        if (!eqExp.toLLVMType().contains("i1")) {
-                            eqExp.logical();
-                        }
-                        LAndExpInstructions.addAll(eqExp.instructions);
+                        instructions.add(new BranchInst(eqExp, nextEqExp, nextLAndExp));
                         if (j != LAndExpNode.children.size() - 1) {
-                            BranchInst branchInst = new BranchInst(eqExp, EqExpIsTrue, LAndExpIsFalse);
-                            LAndExpInstructions.add(branchInst);
-                            LAndExpInstructions.add(EqExpIsTrue);
+                            instructions.add(nextEqExp);
                         }
                     }
                 }
-                if (!hasLLVMExp && eqExp != null) {
-                    // 整个条件可短路为 1
-                    instructions = new LinkedList<>();
-                    instructions.add(new BranchInst(trueLabel));
-                    return instructions;
-                }
 
-                if (eqExp == null) {
-                    continue;
-                } else {
-                    condAlwaysFalse = false;
-                }
-                instructions.addAll(LAndExpInstructions);
-                BranchInst branchInst = new BranchInst(eqExp, trueLabel, LAndExpIsFalse);
-                instructions.add(branchInst);
+//                if (!hasLLVMExp && eqExp != null) {
+//                    // 整个条件可短路为 1
+//                    instructions.add(new BranchInst(trueLabel));
+//                    return instructions;
+//                }
+
+//                if (eqExp == null) {
+//                    continue;
+//                } else {
+//                    condAlwaysFalse = false;
+//                }
+
+//                instructions.add(new BranchInst(eqExp, trueLabel, nextLAndExp));
+
                 if (i != LOrExpNode.children.size() - 1) {
-                    instructions.add(LAndExpIsFalse);
+                    instructions.add(nextLAndExp);
                 }
             }
         }
 
-        if (condAlwaysFalse) {
-            // 整个条件可短路为 0
-            instructions = new LinkedList<>();
-            instructions.add(new BranchInst(falseLabel));
-            return instructions;
-        }
+//        if (condAlwaysFalse) {
+//            instructions.add(new BranchInst(falseLabel));
+//            return instructions;
+//        }
+
         return instructions;
     }
 
