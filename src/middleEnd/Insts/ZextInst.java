@@ -9,12 +9,6 @@ public class ZextInst extends Instruction implements UsableValue {
     private final LLVMType.TypeID baseType;
     private final UsableValue from;
 
-    public ZextInst(UsableValue from) {
-        super(LLVMType.InstType.ZEXT);
-        this.baseType = LLVMType.TypeID.LongTyID;
-        this.from = from;
-    }
-
     public ZextInst(UsableValue from, LLVMType.TypeID baseType) {
         super(LLVMType.InstType.ZEXT);
         this.baseType = baseType;
