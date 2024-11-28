@@ -540,14 +540,12 @@ public class IRGenerator {
 //                            if (constEqExp.constValue != 0) {
 //                                continue;
 //                            }
-                            constEqExp.changeType(LLVMType.TypeID.I1);
-                        } else {
-//                            hasLLVMExp = true;
-                            if (!eqExp.toLLVMType().contains("i1")) {
-                                eqExp.logical();
-                            }
-                            instructions.addAll(eqExp.instructions);
+                            eqExp = new LLVMExp(constEqExp);
                         }
+                        if (!eqExp.toLLVMType().contains("i1")) {
+                            eqExp.logical();
+                        }
+                        instructions.addAll(eqExp.instructions);
                         instructions.add(new BranchInst(eqExp, nextEqExp, nextLAndExp));
                         if (j != LAndExpNode.children.size() - 1) {
                             instructions.add(nextEqExp);
@@ -592,8 +590,6 @@ public class IRGenerator {
         // 对于 LOrExp: 如果 LAndExp 有一个为常值 1，则优化整个 LOrExp 为 1； 如果 LAndExp 结果为 1，则跳转到 stmt1，否则跳转到下一个 LAndExp / stmt2
         // 对于 LAndExp: 如果 EqExp 有一个为常值 0，则优化整个 LAndExp 为 0； 如果 EqExp 结果为 0，则跳转到下一个 LAndExp，否则跳转到下一个 EqExp
 
-        LinkedList<Instruction> instructions = new LinkedList<>();
-
         LLVMLabel condIsTrue = new LLVMLabel();
         LLVMLabel condIsFalse = new LLVMLabel();
         LLVMLabel afterIfStmt = new LLVMLabel();
@@ -617,7 +613,7 @@ public class IRGenerator {
         //     return instructions;
         // }
 
-        instructions.addAll(condInsts);
+        LinkedList<Instruction> instructions = new LinkedList<>(condInsts);
         instructions.add(condIsTrue);
         instructions.addAll(translateStmt(node.children.get(4)));
         instructions.add(new BranchInst(afterIfStmt));
