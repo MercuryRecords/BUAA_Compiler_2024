@@ -577,6 +577,15 @@ public class IRGenerator {
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
+            if (!left.toLLVMType().equals("i32")) {
+                left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
+            }
+            if (!right.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst) {
+                    right = new LLVMExp(right);
+                }
+                right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
+            }
             switch (lexType) {
                 case EQL -> left.binaryOperate(LLVMType.InstType.ICMP_EQ, right);
                 case NEQ -> left.binaryOperate(LLVMType.InstType.ICMP_NE, right);
@@ -609,6 +618,15 @@ public class IRGenerator {
                 }
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
+            }
+            if (!left.toLLVMType().equals("i32")) {
+                left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
+            }
+            if (!right.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst) {
+                    right = new LLVMExp(right);
+                }
+                right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
             switch (lexType) {
                 case LSS -> left.binaryOperate(LLVMType.InstType.ICMP_SLT, right);
@@ -926,6 +944,15 @@ public class IRGenerator {
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
+            if (!left.toLLVMType().equals("i32")) {
+                left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
+            }
+            if (!right.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst) {
+                    right = new LLVMExp(right);
+                }
+                right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
+            }
             if (token.equals("+")){
                 return left.binaryOperate(LLVMType.InstType.ADD, right);
             } else {
@@ -952,6 +979,15 @@ public class IRGenerator {
                 }
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
+            }
+            if (!left.toLLVMType().equals("i32")) {
+                left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
+            }
+            if (!right.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst) {
+                    right = new LLVMExp(right);
+                }
+                right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
             if (((LeafASTNode) node.children.get(1)).token.token.equals("*")) {
                 return left.binaryOperate(LLVMType.InstType.MUL, right);

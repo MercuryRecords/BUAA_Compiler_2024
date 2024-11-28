@@ -35,11 +35,26 @@ public class LLVMConst extends LLVMExp implements UsableValue {
     public LLVMConst binaryOperate(LLVMType.InstType instType, LLVMConst right) {
         LLVMConst left = this;
         switch (instType) {
-            case MUL  -> constValue *= right.constValue;
-            case SDIV -> constValue /= right.constValue;
-            case SREM -> constValue %= right.constValue;
-            case ADD  -> constValue += right.constValue;
-            case SUB  -> constValue -= right.constValue;
+            case MUL  -> {
+                constValue *= right.constValue;
+                baseType = LLVMType.TypeID.IntegerTyID;
+            }
+            case SDIV -> {
+                constValue /= right.constValue;
+                baseType = LLVMType.TypeID.IntegerTyID;
+            }
+            case SREM -> {
+                constValue %= right.constValue;
+                baseType = LLVMType.TypeID.IntegerTyID;
+            }
+            case ADD  -> {
+                constValue += right.constValue;
+                baseType = LLVMType.TypeID.IntegerTyID;
+            }
+            case SUB  -> {
+                constValue -= right.constValue;
+                baseType = LLVMType.TypeID.IntegerTyID;
+            }
             case ICMP_SLT -> {
                 constValue = left.constValue < right.constValue ? 1 : 0;
                 baseType = LLVMType.TypeID.I1;
