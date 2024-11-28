@@ -1159,31 +1159,27 @@ public class IRGenerator {
     private LLVMExp translateLValAsExp(ASTNode node) {
         LeafASTNode leaf = (LeafASTNode) node.children.get(0);
         UsableValue value = getLLVMVariable(leaf.token.token);
-        LLVMExp indexExp = null;
+        LLVMExp indexExp;
         int indexVal = -1;
         if (node.children.size() > 3) {
             indexExp = translateExp(node.children.get(2));
             if (indexExp instanceof LLVMConst constIndex) {
                 indexVal = constIndex.constValue;
             }
-        } else {
-            indexVal = 0;
-        }
-        boolean isConst = false;
-        if (value instanceof LLVMVariable var) {
-            isConst = var.isConst;
-        }
-        if (isConst) {
-            ConstInitVal constInitVal = (ConstInitVal) ((LLVMVariable) value).initVal;
-            if (indexVal != -1) {
-                int val = constInitVal.getConstValue(indexVal);
-                return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
+            boolean isConst = false;
+            if (value instanceof LLVMVariable var) {
+                isConst = var.isConst;
             }
-        }
-        if (node.children.size() > 3) {
-            if (indexExp instanceof LLVMConst) {
-                indexExp = new LLVMExp(indexExp);
+            if (isConst) {
+                ConstInitVal constInitVal = (ConstInitVal) ((LLVMVariable) value).initVal;
+                if (indexVal != -1) {
+                    int val = constInitVal.getConstValue(indexVal);
+                    return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
+                }
             }
+             if (indexExp instanceof LLVMConst) {
+                 indexExp = new LLVMExp(indexExp);
+             }
             LLVMType.TypeID baseType;
             if (value.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;
@@ -1206,6 +1202,16 @@ public class IRGenerator {
             }
             return indexExp;
         } else {
+//            indexVal = 0;
+//            boolean isConst = false;
+//            if (value instanceof LLVMVariable var) {
+//                isConst = var.isConst;
+//            }
+//            if (isConst) {
+//                ConstInitVal constInitVal = (ConstInitVal) ((LLVMVariable) value).initVal;
+//                int val = constInitVal.getConstValue(indexVal);
+//                return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
+//            }
             LLVMExp lVal = new LLVMExp(value);
             LLVMType.TypeID baseType;
             if (lVal.toLLVMType().contains("i32")) {
@@ -1221,6 +1227,13 @@ public class IRGenerator {
                 LoadInst loadInst = new LoadInst(baseType.toPointerType(), lVal.value);
                 lVal.addUsableInstruction(loadInst);
                 return lVal;
+            } else if (value instanceof LLVMVariable var) {
+                // 不是数组，有可能是个常量
+                if (var.isConst) {
+                    ConstInitVal constInitVal = (ConstInitVal) ((LLVMVariable) value).initVal;
+                    int val = constInitVal.getConstValue(0);
+                    return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
+                }
             }
             LoadInst loadInst = new LoadInst(baseType, lVal.value);
             lVal.addUsableInstruction(loadInst);
