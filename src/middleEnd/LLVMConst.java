@@ -56,6 +56,14 @@ public class LLVMConst extends LLVMExp implements UsableValue {
                 constValue = left.constValue >= right.constValue ? 1 : 0;
                 baseType = LLVMType.TypeID.I1;
             }
+            case ICMP_EQ -> {
+                constValue = left.constValue == right.constValue ? 1 : 0;
+                baseType = LLVMType.TypeID.I1;
+            }
+            case ICMP_NE -> {
+                constValue = left.constValue != right.constValue ? 1 : 0;
+                baseType = LLVMType.TypeID.I1;
+            }
         }
         return left;
     }
