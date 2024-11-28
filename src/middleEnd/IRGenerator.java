@@ -872,13 +872,20 @@ public class IRGenerator {
         assert var != null;
         if (node.children.size() > 3) {
             LLVMType.TypeID baseType;
+            LLVMExp exp = translateExp(node.children.get(2));
             if (var.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
-            LLVMExp exp = translateExp(node.children.get(2));
-            GetelementptrInst getInst = new GetelementptrInst(baseType, var, exp.value);
+            GetelementptrInst getInst;
+            if (var.toLLVMType().contains("**")) {
+                LoadInst loadInst = new LoadInst(baseType.toPointerType(), var);
+                getInst = new GetelementptrInst(baseType, loadInst, exp.value);
+                exp.addUsableInstruction(loadInst);
+            } else {
+                getInst = new GetelementptrInst(baseType, var, exp.value);
+            }
             exp.addUsableInstruction(getInst);
             return exp;
         } else {
@@ -1065,7 +1072,14 @@ public class IRGenerator {
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
-            GetelementptrInst getInst = new GetelementptrInst(baseType, value, indexExp.value);
+            GetelementptrInst getInst;
+            if (value.toLLVMType().contains("**")) {
+                LoadInst loadInst = new LoadInst(baseType.toPointerType(), value);
+                getInst = new GetelementptrInst(baseType, loadInst, indexExp.value);
+                indexExp.addUsableInstruction(loadInst);
+            } else {
+                getInst = new GetelementptrInst(baseType, value, indexExp.value);
+            }
             indexExp.addUsableInstruction(getInst);
             LoadInst loadInst = new LoadInst(baseType, indexExp.value);
             indexExp.addUsableInstruction(loadInst);
@@ -1080,6 +1094,15 @@ public class IRGenerator {
                 baseType = LLVMType.TypeID.IntegerTyID;
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
+            }
+            if (lVal.toLLVMType().charAt(0) == '[') {
+                GetelementptrInst getInst = new GetelementptrInst(baseType, lVal.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
+                lVal.addUsableInstruction(getInst);
+                return lVal;
+            } else if (lVal.toLLVMType().contains("**")) {
+                LoadInst loadInst = new LoadInst(baseType.toPointerType(), lVal.value);
+                lVal.addUsableInstruction(loadInst);
+                return lVal;
             }
             LoadInst loadInst = new LoadInst(baseType, lVal.value);
             lVal.addUsableInstruction(loadInst);
