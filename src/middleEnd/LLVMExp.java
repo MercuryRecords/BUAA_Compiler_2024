@@ -58,7 +58,7 @@ public class LLVMExp extends Value implements UsableValue {
     }
 
     public LLVMExp logicalNot() {
-        BinaryInst newInst = new BinaryInst(LLVMType.InstType.XOR, this.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, -1));
+        BinaryInst newInst = new BinaryInst(LLVMType.InstType.ICMP_EQ, this.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
         instructions.add(newInst);
         this.value = newInst;
         return this;

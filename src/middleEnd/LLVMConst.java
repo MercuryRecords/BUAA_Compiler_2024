@@ -60,11 +60,21 @@ public class LLVMConst extends LLVMExp implements UsableValue {
         return left;
     }
 
+    @Override
     public LLVMConst negate() {
         constValue = -constValue;
         return this;
     }
 
+    @Override
+    public LLVMExp logical() {
+        if (constValue != 0) {
+            constValue = 1;
+        }
+        return this;
+    }
+
+    @Override
     public LLVMConst logicalNot() {
         if (constValue == 0) {
             constValue = 1;
@@ -76,12 +86,6 @@ public class LLVMConst extends LLVMExp implements UsableValue {
 
     public void changeType(LLVMType.TypeID type) {
         baseType = type;
-    }
 
-    public LLVMExp logical() {
-        if (constValue != 0) {
-            constValue = 1;
-        }
-        return this;
     }
 }
