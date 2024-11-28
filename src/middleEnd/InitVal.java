@@ -20,4 +20,10 @@ public class InitVal extends Value {
     public int size() {
         return exps.size();
     }
+
+    public void padToLength(int arrayLength, LLVMType.TypeID type) {
+        while (exps.size() < arrayLength) {
+            exps.add(new LLVMConst(type, 0));
+        }
+    }
 }

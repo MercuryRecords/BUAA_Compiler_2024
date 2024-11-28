@@ -98,11 +98,11 @@ public class LLVMVariable extends Value implements UsableValue {
             } else {
                 // 变量数组
                 if (initVal != null) {
-                    for (int i = 0; i < initVal.size(); i++) {
-                        LLVMExp llvmExp = initVal.get(i);
-                        LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
-                        instructions.addAll(initValInsts);
-                    }
+//                    for (int i = 0; i < initVal.size(); i++) {
+//                        LLVMExp llvmExp = initVal.get(i);
+//                        LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
+//                        instructions.addAll(initValInsts);
+//                    }
                     AllocaInst allocaInst = new AllocaInst(baseType, arrayLength);
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
@@ -114,6 +114,8 @@ public class LLVMVariable extends Value implements UsableValue {
                         if (baseType == LLVMType.TypeID.CharTyID) {
                             llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
                         }
+                        LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
+                        instructions.addAll(initValInsts);
                         GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, new LLVMConst(LLVMType.TypeID.IntegerTyID, i));
                         instructions.add(getelementptrInst);
                         instructions.add(new StoreInst(llvmExp.value, getelementptrInst));

@@ -331,6 +331,9 @@ public class IRGenerator {
                 if (lastChild.isNode("InitVal")) {
                     initVal = translateInitVal(lastChild, arrayLength);
                 }
+                if (initVal != null && symbol.symbolType.toString().contains("Char")) {
+                    initVal.padToLength(arrayLength, LLVMType.TypeID.CharTyID);
+                }
                 // 不必填充
                 var.setInitVal(initVal);
                 addLLVMVariable(var);
