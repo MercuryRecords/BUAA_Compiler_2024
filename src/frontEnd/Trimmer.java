@@ -42,10 +42,10 @@ public class Trimmer {
     private ASTNode trimBlock(ASTNode node) {
         ASTNode ret = new ASTNode(node.name);
         for (ASTNode child : node.children) {
-            if (!child.isNode("BlockItem")) {
-                ret.addChild(child);
-            } else {
+            if (child.isNode("BlockItem")) {
                 ret.addChild(trimBlockItem(child));
+            } else {
+                ret.addChild(child);
             }
         }
         return ret;
@@ -69,6 +69,10 @@ public class Trimmer {
         for (ASTNode child : node.children) {
             if (child.isNode("Cond")) {
                 ret.addChild(trimCond(child));
+            } else if (child.isNode("Block")) {
+                ret.addChild(trimBlock(child));
+            } else if (child.isNode("Stmt")) {
+                ret.addChild(trimStmt(child));
             } else {
                 ret.addChild(child);
             }
