@@ -91,7 +91,13 @@ public class ConstCalculator {
             } else if (token.equals("-")) {
                 return -1 * calculateUnaryExp(node.children.get(1));
             } else {
-                throw new RuntimeException("In ConstCalculator, Found UnaryOp ::= '!'");
+                int ret = calculateUnaryExp(node.children.get(1));
+                if (ret == 0) {
+                    ret = 1;
+                } else {
+                    ret = 0;
+                }
+                return ret;
             }
         }
     }
@@ -114,8 +120,31 @@ public class ConstCalculator {
             if (token.isType(LexType.INTCON)) {
                 return Integer.parseInt(token.token);
             } else {
-                return token.token.charAt(1);
+                return getVal(token);
             }
         }
+    }
+
+    private static int getVal(Token token) {
+        String str = token.token;
+        int val;
+        if (str.charAt(1) == '\\') {
+            val = switch (str.charAt(2)) {
+                case '0' -> 0;
+                case 'a' -> 7;
+                case 'b' -> 8;
+                case 't' -> 9;
+                case 'n' -> 10;
+                case 'v' -> 11;
+                case 'f' -> 12;
+                case '\"' -> 34;
+                case '\'' -> 39;
+                case '\\' -> 92;
+                default -> throw new RuntimeException("Unknown escape sequence");
+            };
+        } else {
+            val = str.charAt(1);
+        }
+        return val;
     }
 }
