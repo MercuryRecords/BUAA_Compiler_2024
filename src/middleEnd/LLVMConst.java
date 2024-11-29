@@ -2,7 +2,7 @@ package middleEnd;
 
 public class LLVMConst extends LLVMExp implements UsableValue {
 
-    private LLVMType.TypeID baseType;
+    public LLVMType.TypeID baseType;
     public int constValue;
 
     public LLVMConst(LLVMType.TypeID baseType, int constValue) {

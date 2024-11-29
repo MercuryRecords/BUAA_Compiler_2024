@@ -108,8 +108,15 @@ public class LLVMVariable extends Value implements UsableValue {
                     instructions.add(allocaInst);
                     for (int i = 0; i < initVal.size(); i++) {
                         LLVMExp llvmExp = initVal.get(i);
-                        if (llvmExp instanceof LLVMConst) {
-                            llvmExp = new LLVMExp(llvmExp);
+                        if (llvmExp instanceof LLVMConst constExp) {
+                            if (baseType == LLVMType.TypeID.CharTyID) {
+                                constExp.constValue = constExp.constValue & 0xFF;
+                                constExp.baseType = LLVMType.TypeID.CharTyID;
+                            }
+                            GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, new LLVMConst(LLVMType.TypeID.IntegerTyID, i));
+                            instructions.add(getelementptrInst);
+                            instructions.add(new StoreInst(constExp, getelementptrInst));
+                            continue;
                         }
                         if (baseType == LLVMType.TypeID.CharTyID) {
                             llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
