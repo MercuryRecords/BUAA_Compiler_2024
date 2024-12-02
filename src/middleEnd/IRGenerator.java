@@ -35,7 +35,7 @@ public class IRGenerator {
         this.constCalculator = new ConstCalculator(newSymbolTables);
     }
 
-    public void translate(String forOutput) {
+    public Module translate(String forOutput) {
         translateModule(root);
         for (RegTracker tracker : regTrackers.values()) {
             if (tracker.getRegNo() > 0) {
@@ -65,6 +65,7 @@ public class IRGenerator {
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }
+        return module;
     }
 
     private void enterScope() {

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 public class ConstInitVal extends InitVal {
     private final ArrayList<Integer> constExpList = new ArrayList<>();
+    public boolean isAllZero = true;
 
 
     // 无初值
@@ -44,6 +45,9 @@ public class ConstInitVal extends InitVal {
     }
 
     public void addConstExp(int i) {
+        if (i != 0) {
+            isAllZero = false;
+        }
         constExpList.add(i);
     }
 

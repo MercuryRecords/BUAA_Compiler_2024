@@ -22,20 +22,25 @@ public class GlobalVariable extends LLVMVariable implements UsableValue  {
             sb.append(arrayLength);
             sb.append(" x ");
             sb.append(baseType);
-            sb.append("] [");
-            for (int i = 0; i < arrayLength; i++) {
-                sb.append(baseType);
-                sb.append(" ");
-                int val = constInitVal.getConstValue(i);
-                if (baseType == LLVMType.TypeID.CharTyID) {
-                    val = val & 0xFF;
+            sb.append("] ");
+            if (constInitVal.isAllZero) {
+                sb.append("zeroinitializer");
+            } else {
+                sb.append("[");
+                for (int i = 0; i < arrayLength; i++) {
+                    sb.append(baseType);
+                    sb.append(" ");
+                    int val = constInitVal.getConstValue(i);
+                    if (baseType == LLVMType.TypeID.CharTyID) {
+                        val = val & 0xFF;
+                    }
+                    sb.append(val);
+                    if (i < arrayLength - 1) {
+                        sb.append(", ");
+                    }
                 }
-                sb.append(val);
-                if (i < arrayLength - 1) {
-                    sb.append(", ");
-                }
+                sb.append("]");
             }
-            sb.append("]");
         } else {
             sb.append(baseType);
             sb.append(" ");

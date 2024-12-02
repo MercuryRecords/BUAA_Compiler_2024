@@ -3,6 +3,7 @@ import frontEnd.lexer.Lexer;
 import frontEnd.parser.Parser;
 import frontEnd.visitor.Visitor;
 import middleEnd.IRGenerator;
+import middleEnd.Module;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +32,7 @@ public class Compiler {
             node = Trimmer.instance.trim(node);
             Reporter.REPORTER.report();
             IRGenerator irGenerator = new IRGenerator(node, symbolTables);
-            irGenerator.translate(forIR);
+            Module module = irGenerator.translate(forIR);
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }
