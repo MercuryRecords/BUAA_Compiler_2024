@@ -2,7 +2,7 @@ package middleEnd;
 
 public class GlobalString extends Value implements UsableValue {
     private final int no;
-    private final String string;
+    public final String string;
     private final String type;
     public GlobalString(int no, String string, int length) {
         super();

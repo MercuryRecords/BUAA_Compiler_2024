@@ -1,9 +1,10 @@
+import backEnd.MIPSGenerator;
 import frontEnd.*;
 import frontEnd.lexer.Lexer;
 import frontEnd.parser.Parser;
 import frontEnd.visitor.Visitor;
 import middleEnd.IRGenerator;
-import middleEnd.Module;
+import middleEnd.LLVMModule;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,6 +17,7 @@ public class Compiler {
 //        private static final String forInput = "main.c";
     private static final String forIR = "llvm_ir.txt";
 //        private static final String forIR = "llvm_ir.ll";
+    private static final String forMIPS = "mips.txt";
     private static final String forLexer = "lexer.txt";
     private static final String forParser = "parser.txt";
     private static final String forVisitor = "symbol.txt";
@@ -32,7 +34,9 @@ public class Compiler {
             node = Trimmer.instance.trim(node);
             Reporter.REPORTER.report();
             IRGenerator irGenerator = new IRGenerator(node, symbolTables);
-            Module module = irGenerator.translate(forIR);
+            LLVMModule LLVMModule = irGenerator.translate(forIR);
+            MIPSGenerator mipsGenerator = new MIPSGenerator(LLVMModule);
+            mipsGenerator.translate(forMIPS);
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }

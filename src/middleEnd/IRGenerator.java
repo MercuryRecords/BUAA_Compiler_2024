@@ -25,7 +25,7 @@ public class IRGenerator {
     private int scopeCnt = 1;
     private final ConstCalculator constCalculator;
     private LLVMType.TypeID funcRetType;
-    private final Module module = new Module();
+    private final LLVMModule module = new LLVMModule();
     private int strNum = 1;
     private final Stack<LLVMLabel> forBreakLabels = new Stack<>();
     private final Stack<LLVMLabel> forContinueLabels = new Stack<>();
@@ -35,7 +35,7 @@ public class IRGenerator {
         this.constCalculator = new ConstCalculator(newSymbolTables);
     }
 
-    public Module translate(String forOutput) {
+    public LLVMModule translate(String forOutput) {
         translateModule(root);
         for (RegTracker tracker : regTrackers.values()) {
             if (tracker.getRegNo() > 0) {
