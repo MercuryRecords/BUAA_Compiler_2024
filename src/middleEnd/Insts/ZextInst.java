@@ -1,10 +1,14 @@
 package middleEnd.Insts;
 
-import middleEnd.Instruction;
+import backEnd.MIPSComment;
+import backEnd.MIPSInst;
+import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
-public class ZextInst extends Instruction implements UsableValue {
+import java.util.LinkedList;
+
+public class ZextInst extends LLVMInstruction implements UsableValue {
     private int regNo;
     private final LLVMType.TypeID baseType;
     private final UsableValue from;
@@ -38,5 +42,15 @@ public class ZextInst extends Instruction implements UsableValue {
     @Override
     public String toString() {
         return String.format("%s = zext %s %s to %s", toValueIR(), from.toLLVMType(), from.toValueIR(), toLLVMType());
+    }
+
+    @Override
+    public LinkedList<MIPSInst> toMIPS() {
+        LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
+        mipsInsts.add(new MIPSComment(this.toString()));
+
+        // TODO
+
+        return mipsInsts;
     }
 }

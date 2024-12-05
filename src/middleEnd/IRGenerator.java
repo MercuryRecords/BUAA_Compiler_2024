@@ -11,7 +11,10 @@ import middleEnd.utils.RegTracker;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.EmptyStackException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Stack;
 
 public class IRGenerator {
     private final ASTNode root;
@@ -20,7 +23,7 @@ public class IRGenerator {
     private final Stack<LLVMSymbolTable> symbolTableStack = new Stack<>();
     private final HashMap<Integer, LLVMSymbolTable> newSymbolTables = new HashMap<>();
     private final HashMap<Integer, RegTracker> regTrackers = new HashMap<>();
-    private final HashMap<String, Function> functions = new HashMap<>();
+    private final HashMap<String, LLVMFunction> functions = new HashMap<>();
     private int scopeId = 1;
     private int scopeCnt = 1;
     private final ConstCalculator constCalculator;
@@ -42,6 +45,10 @@ public class IRGenerator {
                 continue;
             }
             tracker.setRegNo();
+        }
+
+        for (LLVMFunction function : functions.values()) {
+            function.generateBasicBlocks();
         }
 
         try (FileWriter writer = new FileWriter(forOutput)) {
@@ -184,12 +191,13 @@ public class IRGenerator {
         return constCalculator.calculateConstExp(node, scopeId);
     }
 
-    private Function translateMainFuncDef(ASTNode node) {
-        Function main = new Function("main", LLVMType.TypeID.IntegerTyID);
+    private LLVMFunction translateMainFuncDef(ASTNode node) {
+        LLVMFunction main = new LLVMFunction("main", LLVMType.TypeID.IntegerTyID);
+        functions.put("main", main);
         funcRetType = main.getReturnType();
         enterScope();
         Block block = new Block();
-        LinkedList<Instruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
+        LinkedList<LLVMInstruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
         for (int i = 0; i < instructions.size() - 1; i++) {
             if (instructions.get(i) instanceof RetInst && !(instructions.get(i + 1) instanceof LLVMLabel)) {
                 instructions.add(i + 1, new LLVMLabel());
@@ -202,27 +210,27 @@ public class IRGenerator {
         return main;
     }
 
-    private Function translateFuncDef(ASTNode node) {
+    private LLVMFunction translateFuncDef(ASTNode node) {
         LeafASTNode ident = (LeafASTNode) node.children.get(1);
         Symbol symbol = getOldSymbol(ident);
-        Function function = new Function(symbol);
-        functions.put(symbol.token.token, function);
+        LLVMFunction LLVMFunction = new LLVMFunction(symbol);
+        functions.put(symbol.token.token, LLVMFunction);
         enterScope();
-        funcRetType = function.getReturnType();
+        funcRetType = LLVMFunction.getReturnType();
         for (ASTNode child : node.children) {
             if (child.isNode("FuncFParams")) {
                 LinkedList<FuncFParam> params = translateFuncFParams(child);
-                function.setFParams(params);
+                LLVMFunction.setFParams(params);
             }
         }
         Block block = new Block();
-        for (FuncFParam param : function.params) {
+        for (FuncFParam param : LLVMFunction.params) {
             AllocaInst allocaInst = new AllocaInst(param.baseType, 0);
             block.addInst(allocaInst);
             block.addInst(new StoreInst(param, allocaInst));
             addLLVMFParam(param.name, allocaInst);
         }
-        LinkedList<Instruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
+        LinkedList<LLVMInstruction> instructions = translateBlock(node.children.get(node.children.size() - 1));
         for (int i = 0; i < instructions.size() - 1; i++) {
             if (instructions.get(i) instanceof RetInst && !(instructions.get(i + 1) instanceof LLVMLabel)) {
                 instructions.add(i + 1, new LLVMLabel());
@@ -233,10 +241,10 @@ public class IRGenerator {
         if (instructions.isEmpty() || !(instructions.getLast() instanceof RetInst)) {
             block.addInst(new RetInst());
         }
-        function.setBlock(block);
+        LLVMFunction.setBlock(block);
         regTrackers.get(scopeId).addInstructions(block.getInstructions());
         exitScope();
-        return function;
+        return LLVMFunction;
     }
 
     private LinkedList<FuncFParam> translateFuncFParams(ASTNode node) {
@@ -257,9 +265,9 @@ public class IRGenerator {
         return new FuncFParam(symbol);
     }
 
-    private LinkedList<Instruction> translateBlock(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateBlock(ASTNode node) {
         // System.out.println("In translateBlock: " + node.print());
-        LinkedList<Instruction> instructions = new LinkedList<>();
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         for (ASTNode child : node.children) {
             if (child.isNode("BlockItem")) {
                 instructions.addAll(translateBlockItem(child));
@@ -268,7 +276,7 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateBlockItem(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateBlockItem(ASTNode node) {
         if (node.children.get(0).isNode("Decl")) {
             return translateDecl(node.children.get(0));
         } else {
@@ -276,9 +284,9 @@ public class IRGenerator {
         }
     }
 
-    private LinkedList<Instruction> translateDecl(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateDecl(ASTNode node) {
         // <Decl> ::= <ConstDecl> | <VarDecl>
-        LinkedList<Instruction> instructions = new LinkedList<>();
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         if (node.children.get(0).isNode("ConstDecl")) {
             instructions.addAll(translateConstDecl(node.children.get(0)));
         } else {
@@ -287,8 +295,8 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateConstDecl(ASTNode node) {
-        LinkedList<Instruction> list = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateConstDecl(ASTNode node) {
+        LinkedList<LLVMInstruction> list = new LinkedList<>();
         for (ASTNode child : node.children) {
             if (child.isNode("ConstDef") ) {
                 LeafASTNode ident = (LeafASTNode) child.children.get(0);
@@ -306,15 +314,15 @@ public class IRGenerator {
                 constInitVal.padToLength(arrayLength);
                 var.setInitVal(constInitVal);
                 addLLVMVariable(var);
-                LinkedList<Instruction> instructions = var.getInstructions();
+                LinkedList<LLVMInstruction> instructions = var.getInstructions();
                 list.addAll(instructions);
             }
         }
         return list;
     }
 
-    private LinkedList<Instruction> translateVarDecl(ASTNode node) {
-        LinkedList<Instruction> list = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateVarDecl(ASTNode node) {
+        LinkedList<LLVMInstruction> list = new LinkedList<>();
         for (ASTNode child : node.children) {
             if (child.isNode("VarDef")) {
                 LeafASTNode ident = (LeafASTNode) child.children.get(0);
@@ -338,7 +346,7 @@ public class IRGenerator {
                 // 不必填充
                 var.setInitVal(initVal);
                 addLLVMVariable(var);
-                LinkedList<Instruction> instructions = var.getInstructions();
+                LinkedList<LLVMInstruction> instructions = var.getInstructions();
                 list.addAll(instructions);
             }
         }
@@ -361,8 +369,8 @@ public class IRGenerator {
         }
     }
 
-    private LinkedList<Instruction> translateStmt(ASTNode node) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateStmt(ASTNode node) {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         if (node.children.get(0) instanceof LeafASTNode child) {
             switch (child.token.type) {
                 case IFTK       -> instructions.addAll(translateIfStmt(node));
@@ -396,8 +404,8 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateReturnStmt(ASTNode node) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateReturnStmt(ASTNode node) {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         if (node.children.size() > 1 && node.children.get(1).isNode("Exp")) {
             LLVMExp exp = translateExp(node.children.get(1));
             if (exp instanceof LLVMConst llvmConst) {
@@ -422,15 +430,15 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateBreakStmt() {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateBreakStmt() {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         instructions.add(new BranchInst(forBreakLabels.peek()));
         instructions.add(new LLVMLabel());
         return instructions;
     }
 
-    private LinkedList<Instruction> translateContinueStmt() {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateContinueStmt() {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         instructions.add(new BranchInst(forContinueLabels.peek()));
         instructions.add(new LLVMLabel());
         return instructions;
@@ -512,10 +520,10 @@ public class IRGenerator {
 //        return instructions;
 //    }
 
-    private LinkedList<Instruction> translateFromCond(ASTNode condNode, LLVMLabel trueLabel, LLVMLabel falseLabel) {
+    private LinkedList<LLVMInstruction> translateFromCond(ASTNode condNode, LLVMLabel trueLabel, LLVMLabel falseLabel) {
         assert condNode.isNode("Cond");
 
-        LinkedList<Instruction> instructions = new LinkedList<>();
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         ASTNode LOrExpNode = condNode.children.get(0);
 
 //        boolean condAlwaysFalse = true;
@@ -585,7 +593,7 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateIfStmt(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateIfStmt(ASTNode node) {
         // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
         // Cond == 1 : to stmt1
         // Cond == 0 : to stmt2
@@ -607,7 +615,7 @@ public class IRGenerator {
             // condIsFalse = afterIfStmt;
         // }
 
-        LinkedList<Instruction> condInsts = translateFromCond(node.children.get(2), condIsTrue, condIsFalse);
+        LinkedList<LLVMInstruction> condInsts = translateFromCond(node.children.get(2), condIsTrue, condIsFalse);
         // if (condInsts.size() == 1 && condInsts.get(0) instanceof BranchInst branchInst) {
         //     if (condIsTrue.equals(branchInst.dest)) {
         //         instructions.addAll(stmt1Instructions);
@@ -617,7 +625,7 @@ public class IRGenerator {
         //     return instructions;
         // }
 
-        LinkedList<Instruction> instructions = new LinkedList<>(condInsts);
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>(condInsts);
         instructions.add(condIsTrue);
         instructions.addAll(translateStmt(node.children.get(4)));
         instructions.add(new BranchInst(afterIfStmt));
@@ -713,9 +721,9 @@ public class IRGenerator {
         }
     }
 
-    private LinkedList<Instruction> translateForStmt(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateForStmt(ASTNode node) {
         // 'for' '(' [ForStmt] ';' [Cond] ';' [ForStmt] ')' Stmt
-        LinkedList<Instruction> initInstructions = new LinkedList<>();
+        LinkedList<LLVMInstruction> initInstructions = new LinkedList<>();
         int index;
         if (node.children.get(2).isNode("ForStmt")) {
             initInstructions = translateAssignStmt(node.children.get(2));
@@ -727,7 +735,7 @@ public class IRGenerator {
         LLVMLabel condIsFalse = new LLVMLabel();
         LLVMLabel toCond = new LLVMLabel();
         LLVMLabel toUpdate = new LLVMLabel();
-        LinkedList<Instruction> condInstructions = new LinkedList<>();
+        LinkedList<LLVMInstruction> condInstructions = new LinkedList<>();
         if (node.children.get(index).isNode("Cond")) {
             ASTNode condNode = node.children.get(index);
             condInstructions = translateFromCond(condNode, condIsTrue, condIsFalse);
@@ -737,7 +745,7 @@ public class IRGenerator {
             // toCond = condIsTrue;
             index += 1;
         }
-        LinkedList<Instruction> updateInstructions = new LinkedList<>();
+        LinkedList<LLVMInstruction> updateInstructions = new LinkedList<>();
         if (node.children.get(index).isNode("ForStmt")) {
             updateInstructions = translateAssignStmt(node.children.get(index));
         }   //  else {
@@ -747,8 +755,8 @@ public class IRGenerator {
         forBreakLabels.push(condIsFalse);
         forContinueLabels.push(toUpdate);
 
-        LinkedList<Instruction> bodyInstructions = translateStmt(node.children.get(node.children.size() - 1));
-        LinkedList<Instruction> instructions = new LinkedList<>(initInstructions);
+        LinkedList<LLVMInstruction> bodyInstructions = translateStmt(node.children.get(node.children.size() - 1));
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>(initInstructions);
         instructions.add(new BranchInst(toCond));
         instructions.add(toCond);
         // if (!condInstructions.isEmpty()) {
@@ -775,8 +783,8 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translatePrintfStmt(ASTNode node) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translatePrintfStmt(ASTNode node) {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         LinkedList<LLVMExp> exps = new LinkedList<>();
 
         for (ASTNode child : node.children) {
@@ -884,8 +892,8 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> PrintConstStr(String string, int tmpLen) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> PrintConstStr(String string, int tmpLen) {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         GlobalString newStr = new GlobalString(strNum++, string, tmpLen);
         module.addStrDecl(newStr);
         GetelementptrInst getInst = new GetelementptrInst(LLVMType.TypeID.CharTyID, newStr, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
@@ -897,8 +905,8 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateGetCharStmt(ASTNode node) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateGetCharStmt(ASTNode node) {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         UsableValue lval = translateLVal(node.children.get(0));
         if (lval instanceof LLVMExp) {
             instructions.addAll(((LLVMExp) lval).instructions);
@@ -907,7 +915,7 @@ public class IRGenerator {
         CallInst callInst = new CallInst(LLVMType.TypeID.IntegerTyID, "getchar");
         instructions.add(callInst);
         if (callInst.isDifferentType(lval)) {
-            Instruction fix = callInst.fix();
+            LLVMInstruction fix = callInst.fix();
             instructions.add(fix);
             instructions.add(new StoreInst((UsableValue) fix, lval));
         } else {
@@ -916,8 +924,8 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateGetIntStmt(ASTNode node) {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    private LinkedList<LLVMInstruction> translateGetIntStmt(ASTNode node) {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         UsableValue lval = translateLVal(node.children.get(0));
         if (lval instanceof LLVMExp) {
             instructions.addAll(((LLVMExp) lval).instructions);
@@ -926,7 +934,7 @@ public class IRGenerator {
         CallInst callInst = new CallInst(LLVMType.TypeID.IntegerTyID, "getint");
         instructions.add(callInst);
         if (callInst.isDifferentType(lval)) {
-            Instruction fix = callInst.fix();
+            LLVMInstruction fix = callInst.fix();
             instructions.add(fix);
             instructions.add(new StoreInst((UsableValue) fix, lval));
         } else {
@@ -935,12 +943,12 @@ public class IRGenerator {
         return instructions;
     }
 
-    private LinkedList<Instruction> translateAssignStmt(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateAssignStmt(ASTNode node) {
         LLVMExp exp = translateExp(node.children.get(2));
         if (exp instanceof LLVMConst) {
             exp = new LLVMExp(exp);
         }
-        LinkedList<Instruction> instructions = new LinkedList<>(exp.instructions);
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>(exp.instructions);
         UsableValue lval = translateLVal(node.children.get(0));
         if (lval instanceof LLVMExp) {
             instructions.addAll(((LLVMExp) lval).instructions);
@@ -990,7 +998,7 @@ public class IRGenerator {
         }
     }
 
-    private LinkedList<Instruction> translateExpStmt(ASTNode node) {
+    private LinkedList<LLVMInstruction> translateExpStmt(ASTNode node) {
         if (node.children.get(0) instanceof LeafASTNode) {
             return new LinkedList<>();
         }
@@ -1097,7 +1105,7 @@ public class IRGenerator {
             LLVMExp exp = new LLVMExp();
             LinkedList<LLVMExp> realParams = new LinkedList<>();
             LeafASTNode leaf = (LeafASTNode) node.children.get(0);
-            Function toCall = functions.get(leaf.token.token);
+            LLVMFunction toCall = functions.get(leaf.token.token);
             if (node.children.get(2).isNode("FuncRParams")) {
                 realParams = new LinkedList<>(translateFuncRParams(node.children.get(2)));
             }
@@ -1108,7 +1116,7 @@ public class IRGenerator {
             for (int i = 0; i < toCall.params.size(); i++) {
                 boolean toFix = toCall.params.get(i).isDifferentType(realParams.get(i));
                 if (toFix) {
-                    Instruction fix = toCall.params.get(i).fix(realParams.get(i));
+                    LLVMInstruction fix = toCall.params.get(i).fix(realParams.get(i));
                     exp.addUsableInstruction(fix);
                     forCall.add((UsableValue) fix);
                 } else {

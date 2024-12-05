@@ -1,8 +1,12 @@
 package middleEnd;
 
+import backEnd.MIPSInst;
+
+import java.util.LinkedList;
+
 import static middleEnd.LLVMType.InstType.LABEL;
 
-public class LLVMLabel extends Instruction implements UsableValue {
+public class LLVMLabel extends LLVMInstruction implements UsableValue {
     private int regNo;
     public LLVMLabel() {
         super(LABEL);
@@ -31,5 +35,10 @@ public class LLVMLabel extends Instruction implements UsableValue {
     @Override
     public String toString() {
         return String.format("\n%d: ", regNo);
+    }
+
+    @Override
+    public LinkedList<MIPSInst> toMIPS() {
+        throw new RuntimeException("Label should not be translated to MIPS, maybe");
     }
 }

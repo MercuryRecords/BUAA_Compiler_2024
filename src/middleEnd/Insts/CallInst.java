@@ -1,12 +1,14 @@
 package middleEnd.Insts;
 
-import middleEnd.Instruction;
+import backEnd.MIPSComment;
+import backEnd.MIPSInst;
+import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
 import java.util.LinkedList;
 
-public class CallInst extends Instruction implements UsableValue {
+public class CallInst extends LLVMInstruction implements UsableValue {
     private final LLVMType.TypeID retType;
     private final String funcName;
     private final LinkedList<UsableValue> params;
@@ -82,7 +84,7 @@ public class CallInst extends Instruction implements UsableValue {
         return !val.toLLVMType().equals(retType.toPointerType().toString());
     }
 
-    public Instruction fix() {
+    public LLVMInstruction fix() {
         if (retType == LLVMType.TypeID.CharTyID) {
             return new ZextInst(this, LLVMType.TypeID.IntegerTyID);
         } else {
@@ -92,5 +94,15 @@ public class CallInst extends Instruction implements UsableValue {
 
     public boolean isVoid() {
         return this.retType == LLVMType.TypeID.VoidTyID;
+    }
+
+    @Override
+    public LinkedList<MIPSInst> toMIPS() {
+        LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
+        mipsInsts.add(new MIPSComment(this.toString()));
+
+        // TODO
+
+        return mipsInsts;
     }
 }

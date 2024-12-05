@@ -1,10 +1,14 @@
 package middleEnd.Insts;
 
-import middleEnd.Instruction;
+import backEnd.MIPSComment;
+import backEnd.MIPSInst;
+import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
-public class AllocaInst extends Instruction implements UsableValue {
+import java.util.LinkedList;
+
+public class AllocaInst extends LLVMInstruction implements UsableValue {
     private int regNo;
     private final LLVMType.TypeID baseType;
     private final int arrayLength;
@@ -48,5 +52,15 @@ public class AllocaInst extends Instruction implements UsableValue {
     @Override
     public String toString() {
         return String.format("%s = alloca %s, align %s", toValueIR(), toNoPointerType(), baseType.toAlign());
+    }
+
+    @Override
+    public LinkedList<MIPSInst> toMIPS() {
+        LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
+        mipsInsts.add(new MIPSComment(this.toString()));
+
+        // TODO
+
+        return mipsInsts;
     }
 }

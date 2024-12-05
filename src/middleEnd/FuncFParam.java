@@ -61,7 +61,7 @@ public class FuncFParam extends Value implements UsableValue {
         return !val.toLLVMType().equals(baseType.toString());
     }
 
-    public Instruction fix(UsableValue value) {
+    public LLVMInstruction fix(UsableValue value) {
         if (baseType == LLVMType.TypeID.IntegerTyID) {
             return new ZextInst(value, baseType);
         } else {

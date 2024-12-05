@@ -47,8 +47,8 @@ public class LLVMVariable extends Value implements UsableValue {
         }
     }
 
-    public LinkedList<Instruction> getInstructions() {
-        LinkedList<Instruction> instructions = new LinkedList<>();
+    public LinkedList<LLVMInstruction> getInstructions() {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
         if (arrayLength == 0) {
             // 单个变量/常量
             if (isConst) {
@@ -69,7 +69,7 @@ public class LLVMVariable extends Value implements UsableValue {
                     if (baseType == LLVMType.TypeID.CharTyID) {
                         llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
                     }
-                    LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
+                    LinkedList<LLVMInstruction> initValInsts = llvmExp.getInstructions();
                     instructions.addAll(initValInsts);
                     AllocaInst allocaInst = new AllocaInst(baseType, arrayLength);
                     usableValue = allocaInst;
@@ -121,7 +121,7 @@ public class LLVMVariable extends Value implements UsableValue {
                         if (baseType == LLVMType.TypeID.CharTyID) {
                             llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
                         }
-                        LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
+                        LinkedList<LLVMInstruction> initValInsts = llvmExp.getInstructions();
                         instructions.addAll(initValInsts);
                         GetelementptrInst getelementptrInst = new GetelementptrInst(baseType, allocaInst, new LLVMConst(LLVMType.TypeID.IntegerTyID, i));
                         instructions.add(getelementptrInst);

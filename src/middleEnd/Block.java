@@ -3,13 +3,13 @@ package middleEnd;
 import java.util.LinkedList;
 
 public class Block extends Value {
-    private final LinkedList<Instruction> insts = new LinkedList<>();
+    private final LinkedList<LLVMInstruction> insts = new LinkedList<>();
 
-    public void addInsts(LinkedList<Instruction> instructions) {
+    public void addInsts(LinkedList<LLVMInstruction> instructions) {
         insts.addAll(instructions);
     }
 
-    public void addInst(Instruction instruction) {
+    public void addInst(LLVMInstruction instruction) {
         insts.add(instruction);
     }
 
@@ -17,14 +17,14 @@ public class Block extends Value {
     public String toString() {
         StringBuilder block = new StringBuilder();
         block.append("{\n");
-        for (Instruction inst : insts) {
+        for (LLVMInstruction inst : insts) {
             block.append("\t").append(inst.toString()).append("\n");
         }
         block.append("}");
         return block.toString();
     }
 
-    public LinkedList<Instruction> getInstructions() {
+    public LinkedList<LLVMInstruction> getInstructions() {
         return insts;
     }
 }

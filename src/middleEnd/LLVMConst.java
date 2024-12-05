@@ -112,7 +112,7 @@ public class LLVMConst extends LLVMExp implements UsableValue {
     }
 
     @Override
-    public void addUsableInstruction(Instruction inst) {
+    public void addUsableInstruction(LLVMInstruction inst) {
         throw new RuntimeException("Const can't have usable instruction");
     }
 }

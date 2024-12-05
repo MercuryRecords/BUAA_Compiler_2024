@@ -1,16 +1,19 @@
 package middleEnd;
 
 import frontEnd.Symbol;
+import middleEnd.Insts.BranchInst;
+import middleEnd.Insts.RetInst;
 
 import java.util.LinkedList;
 
-public class Function extends Value {
+public class LLVMFunction extends Value {
     public LLVMType.TypeID retType;
     public final String name;
     public final LinkedList<FuncFParam> params = new LinkedList<>();
     private Block block;
+    public LinkedList<LLVMBasicBlock> basicBlocks = new LinkedList<>();
 
-    public Function(Symbol symbol) {
+    public LLVMFunction(Symbol symbol) {
         super();
         switch (symbol.symbolType) {
             case IntFunc -> this.retType = LLVMType.TypeID.IntegerTyID;
@@ -21,7 +24,7 @@ public class Function extends Value {
         // System.out.println("Formal Parameters: " + symbol.params);
     }
 
-    public Function(String name, LLVMType.TypeID type) {
+    public LLVMFunction(String name, LLVMType.TypeID type) {
         super();
         this.retType = type;
         this.name = name;
@@ -59,5 +62,25 @@ public class Function extends Value {
 
     public LLVMType.TypeID getReturnType() {
         return retType;
+    }
+
+    public void generateBasicBlocks() {
+        // 从 Block 中生成 BasicBlock
+        int blockNo = 0;
+        LLVMBasicBlock bb = new LLVMBasicBlock(String.format("%s_%d", name, blockNo++));
+        LLVMLabel label = new LLVMLabel();
+        label.setRegNo(0);
+        for (LLVMInstruction inst : block.getInstructions()) {
+            if (inst instanceof LLVMLabel) {
+                label = (LLVMLabel) inst;
+                continue;
+            }
+            bb.addInst(inst);
+            if (inst instanceof BranchInst || inst instanceof RetInst) {
+                bb.setLLVMLabel(label);
+                basicBlocks.add(bb);
+                bb = new LLVMBasicBlock(String.format("%s_%d", name, blockNo++));
+            }
+        }
     }
 }

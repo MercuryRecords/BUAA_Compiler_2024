@@ -5,7 +5,7 @@ import middleEnd.Insts.BinaryInst;
 import java.util.LinkedList;
 
 public class LLVMExp extends Value implements UsableValue {
-    LinkedList<Instruction> instructions = new LinkedList<>();
+    LinkedList<LLVMInstruction> instructions = new LinkedList<>();
     UsableValue value;
 
     public LLVMExp(UsableValue value) {
@@ -36,7 +36,7 @@ public class LLVMExp extends Value implements UsableValue {
         throw new RuntimeException("Cannot set regNo for LLVMExp");
     }
 
-    public LinkedList<Instruction> getInstructions() {
+    public LinkedList<LLVMInstruction> getInstructions() {
         return instructions;
     }
 
@@ -64,7 +64,7 @@ public class LLVMExp extends Value implements UsableValue {
         return this;
     }
 
-    public void addUsableInstruction(Instruction inst) {
+    public void addUsableInstruction(LLVMInstruction inst) {
         assert inst instanceof UsableValue;
         instructions.add(inst);
         this.value = (UsableValue) inst;

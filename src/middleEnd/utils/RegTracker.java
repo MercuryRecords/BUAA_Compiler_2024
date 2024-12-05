@@ -1,8 +1,8 @@
 package middleEnd.utils;
 
 import middleEnd.FuncFParam;
-import middleEnd.Instruction;
 import middleEnd.Insts.CallInst;
+import middleEnd.LLVMInstruction;
 import middleEnd.UsableValue;
 
 import java.util.LinkedList;
@@ -20,8 +20,8 @@ public class RegTracker {
         usableValues.add(inst);
     }
 
-    public void addInstructions(LinkedList<Instruction> instructions) {
-        for (Instruction inst : instructions) {
+    public void addInstructions(LinkedList<LLVMInstruction> instructions) {
+        for (LLVMInstruction inst : instructions) {
             if (inst instanceof UsableValue) {
                 usableValues.add((UsableValue) inst);
             }
