@@ -1,9 +1,7 @@
 package middleEnd.Insts;
 
-import backEnd.Insts.*;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
-import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;

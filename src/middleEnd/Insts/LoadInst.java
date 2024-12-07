@@ -1,9 +1,4 @@
 package middleEnd.Insts;
-
-import backEnd.Dispatcher;
-import backEnd.Insts.LBInst;
-import backEnd.Insts.LWInst;
-import backEnd.Insts.LAInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
 import backEnd.Register;

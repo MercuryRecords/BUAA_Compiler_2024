@@ -1,10 +1,7 @@
 package middleEnd.Insts;
 
-import backEnd.Insts.ADDIUInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
-import backEnd.Dispatcher;
-import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;

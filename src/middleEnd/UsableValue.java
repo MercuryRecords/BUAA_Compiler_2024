@@ -1,7 +1,5 @@
 package middleEnd;
 
-import backEnd.Register;
-
 public interface UsableValue {
     String toValueIR();
     String toLLVMType();

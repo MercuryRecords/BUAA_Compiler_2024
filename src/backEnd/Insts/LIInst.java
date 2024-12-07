@@ -4,8 +4,8 @@ import backEnd.MIPSInst;
 import backEnd.Register;
 
 public class LIInst extends MIPSInst {
-    private Register target;
-    private int val;
+    private final Register target;
+    private final int val;
     public LIInst(Register target, int val) {
         super();
         this.target = target;

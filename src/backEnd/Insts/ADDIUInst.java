@@ -2,8 +2,7 @@ package backEnd.Insts;
 
 import backEnd.Register;
 
-public class
-ADDIUInst extends backEnd.MIPSInst {
+public class ADDIUInst extends backEnd.MIPSInst {
     private final Register rs;
     private final Register rt;
     private final int imm;
