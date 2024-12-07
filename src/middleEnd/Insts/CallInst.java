@@ -56,6 +56,11 @@ public class CallInst extends LLVMInstruction implements UsableValue {
     }
 
     @Override
+    public int getMemorySize() {
+        return this.retType.toAlign();
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         if (this.retType != LLVMType.TypeID.VoidTyID) {

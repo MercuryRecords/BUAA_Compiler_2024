@@ -151,4 +151,13 @@ public class LLVMVariable extends Value implements UsableValue {
     public void setVirtualRegNo(int regNo) {
         usableValue.setVirtualRegNo(regNo);
     }
+
+    @Override
+    public int getMemorySize() {
+        return usableValue.getMemorySize();
+//        if (arrayLength == 0) {
+//            return baseType.toAlign();
+//        }
+//        return baseType.toAlign() * arrayLength;
+    }
 }

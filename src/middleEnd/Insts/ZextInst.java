@@ -40,6 +40,11 @@ public class ZextInst extends LLVMInstruction implements UsableValue {
     }
 
     @Override
+    public int getMemorySize() {
+        return baseType.toAlign();
+    }
+
+    @Override
     public String toString() {
         return String.format("%s = zext %s %s to %s", toValueIR(), from.toLLVMType(), from.toValueIR(), toLLVMType());
     }

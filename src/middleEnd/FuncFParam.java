@@ -49,6 +49,12 @@ public class FuncFParam extends Value implements UsableValue {
     }
 
     @Override
+    public int getMemorySize() {
+        // 函数形参通过寄存器传递，并总在函数体内有对应的 alloca 指令，因此不需要额外分配内存
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s %s", toLLVMType(), toValueIR());
     }

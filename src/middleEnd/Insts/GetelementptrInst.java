@@ -41,6 +41,11 @@ public class GetelementptrInst extends LLVMInstruction implements UsableValue {
     }
 
     @Override
+    public int getMemorySize() {
+        return baseType.toAlign();
+    }
+
+    @Override
     public String toString() {
         int tmpLen = from.toLLVMType().length() - 1;
         if (from.toLLVMType().charAt(0) == '[') {

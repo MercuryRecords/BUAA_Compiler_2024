@@ -32,6 +32,12 @@ public class GlobalString extends Value implements UsableValue {
     }
 
     @Override
+    public int getMemorySize() {
+        // 全局变量分配在 .data 段
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s = private unnamed_addr constant %s c\"%s\", align %d", toValueIR(), type, string, toAlign());
     }

@@ -32,6 +32,11 @@ public class LLVMConst extends LLVMExp implements UsableValue {
         throw new RuntimeException("Const can't have regNo");
     }
 
+    @Override
+    public int getMemorySize() {
+        return 0;
+    }
+
     public LLVMConst binaryOperate(LLVMType.InstType instType, LLVMConst right) {
         LLVMConst left = this;
         switch (instType) {

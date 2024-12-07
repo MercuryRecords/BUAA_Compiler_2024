@@ -33,6 +33,11 @@ public class LLVMLabel extends LLVMInstruction implements UsableValue {
     }
 
     @Override
+    public int getMemorySize() {
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return String.format("\n%d: ", regNo);
     }

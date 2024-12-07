@@ -26,6 +26,7 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
     public String toValueIR() {
         return String.format("%%%d", regNo);
     }
+
     @Override
     public String toLLVMType() {
         return baseType.toString();
@@ -39,6 +40,11 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
     @Override
     public void setVirtualRegNo(int regNo) {
         this.regNo = regNo;
+    }
+
+    @Override
+    public int getMemorySize() {
+        return 4;
     }
 
     @Override

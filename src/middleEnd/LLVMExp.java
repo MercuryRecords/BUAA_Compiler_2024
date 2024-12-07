@@ -36,6 +36,11 @@ public class LLVMExp extends Value implements UsableValue {
         throw new RuntimeException("Cannot set regNo for LLVMExp");
     }
 
+    @Override
+    public int getMemorySize() {
+        return value.getMemorySize();
+    }
+
     public LinkedList<LLVMInstruction> getInstructions() {
         return instructions;
     }

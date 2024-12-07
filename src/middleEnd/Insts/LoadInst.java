@@ -12,9 +12,6 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
     int regNo;
     LLVMType.TypeID baseType;
     UsableValue from;
-    boolean holdingRegister = false;
-    Register reg;
-    int offsetInMemory;
     public LoadInst(LLVMType.TypeID baseType, UsableValue from) {
         super(LLVMType.InstType.LOAD);
         this.baseType = baseType;
@@ -39,6 +36,11 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
     @Override
     public void setVirtualRegNo(int regNo) {
         this.regNo = regNo;
+    }
+
+    @Override
+    public int getMemorySize() {
+        return baseType.toAlign();
     }
 
     @Override

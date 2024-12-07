@@ -41,6 +41,14 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
         return baseType.toAlign();
     }
 
+    @Override
+    public int getMemorySize() {
+        if (arrayLength == 0) {
+            return baseType.toAlign();
+        }
+        return baseType.toAlign() * arrayLength;
+    }
+
     private String toNoPointerType() {
         if (arrayLength == 0) {
             return baseType.toString();
