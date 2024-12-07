@@ -8,7 +8,7 @@ import middleEnd.Insts.TruncInst;
 
 import java.util.LinkedList;
 
-public class LLVMVariable extends Value implements UsableValue {
+public class LLVMVariable extends Value {
     public boolean isConst;
     public String name;
     public int arrayLength; // 为 0 是表示不是数组
@@ -63,8 +63,8 @@ public class LLVMVariable extends Value implements UsableValue {
                 // 单个变量
                 if (initVal != null) {
                     LLVMExp llvmExp = initVal.get(0);
-                    if (llvmExp instanceof LLVMConst) {
-                        llvmExp = new LLVMExp(llvmExp);
+                    if (llvmExp instanceof LLVMConst llvmConst) {
+                        llvmExp = new LLVMExp(llvmConst);
                     }
                     if (baseType == LLVMType.TypeID.CharTyID) {
                         llvmExp.addUsableInstruction(new TruncInst(llvmExp.value, baseType));
@@ -130,34 +130,5 @@ public class LLVMVariable extends Value implements UsableValue {
             }
         }
         return instructions;
-    }
-
-    @Override
-    public String toValueIR() {
-        return usableValue.toValueIR();
-    }
-
-    @Override
-    public String toLLVMType() {
-        return usableValue.toLLVMType();
-    }
-
-    @Override
-    public int toAlign() {
-        return usableValue.toAlign();
-    }
-
-    @Override
-    public void setVirtualRegNo(int regNo) {
-        usableValue.setVirtualRegNo(regNo);
-    }
-
-    @Override
-    public int getMemorySize() {
-        return usableValue.getMemorySize();
-//        if (arrayLength == 0) {
-//            return baseType.toAlign();
-//        }
-//        return baseType.toAlign() * arrayLength;
     }
 }

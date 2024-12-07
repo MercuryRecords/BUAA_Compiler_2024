@@ -4,7 +4,7 @@ import middleEnd.Insts.BinaryInst;
 
 import java.util.LinkedList;
 
-public class LLVMExp extends Value implements UsableValue {
+public class LLVMExp extends Value {
     LinkedList<LLVMInstruction> instructions = new LinkedList<>();
     UsableValue value;
 
@@ -14,31 +14,6 @@ public class LLVMExp extends Value implements UsableValue {
 
     public LLVMExp() {
         this.value = null;
-    }
-
-    @Override
-    public String toValueIR() {
-        return value.toValueIR();
-    }
-
-    @Override
-    public String toLLVMType() {
-        return value.toLLVMType();
-    }
-
-    @Override
-    public int toAlign() {
-        return value.toAlign();
-    }
-
-    @Override
-    public void setVirtualRegNo(int regNo) {
-        throw new RuntimeException("Cannot set regNo for LLVMExp");
-    }
-
-    @Override
-    public int getMemorySize() {
-        return value.getMemorySize();
     }
 
     public LinkedList<LLVMInstruction> getInstructions() {
@@ -79,10 +54,9 @@ public class LLVMExp extends Value implements UsableValue {
         instructions.addAll(exp1.instructions);
     }
 
-    public LLVMExp logical() {
+    public void logical() {
         BinaryInst newInst = new BinaryInst(LLVMType.InstType.ICMP_NE, this.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
         instructions.add(newInst);
         this.value = newInst;
-        return this;
     }
 }

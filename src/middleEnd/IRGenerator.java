@@ -315,8 +315,8 @@ public class IRGenerator {
                 ConstInitVal constInitVal = translateConstInitVal(lastChild, arrayLength);
                 constInitVal.padToLength(arrayLength);
                 var.setInitVal(constInitVal);
-                addLLVMVariable(var);
                 LinkedList<LLVMInstruction> instructions = var.getInstructions();
+                addLLVMVariable(var);
                 list.addAll(instructions);
             }
         }
@@ -347,8 +347,8 @@ public class IRGenerator {
                 }
                 // 不必填充
                 var.setInitVal(initVal);
-                addLLVMVariable(var);
                 LinkedList<LLVMInstruction> instructions = var.getInstructions();
+                addLLVMVariable(var);
                 list.addAll(instructions);
             }
         }
@@ -416,16 +416,16 @@ public class IRGenerator {
                 return instructions;
             }
             instructions.addAll(exp.instructions);
-            if (funcRetType == LLVMType.TypeID.CharTyID && !exp.toLLVMType().contains("i8")){
+            if (funcRetType == LLVMType.TypeID.CharTyID && !exp.value.toLLVMType().contains("i8")){
                 TruncInst truncInst = new TruncInst(exp.value, LLVMType.TypeID.CharTyID);
                 instructions.add(truncInst);
                 exp.addUsableInstruction(truncInst);
-            } else if (funcRetType == LLVMType.TypeID.IntegerTyID && !exp.toLLVMType().contains("i32")) {
+            } else if (funcRetType == LLVMType.TypeID.IntegerTyID && !exp.value.toLLVMType().contains("i32")) {
                 ZextInst zextInst = new ZextInst(exp.value, LLVMType.TypeID.IntegerTyID);
                 instructions.add(zextInst);
                 exp.addUsableInstruction(zextInst);
             }
-            instructions.add(new RetInst(exp));
+            instructions.add(new RetInst(exp.value));
         } else {
             instructions.add(new RetInst());
         }
@@ -556,11 +556,11 @@ public class IRGenerator {
 //                            }
                             eqExp = new LLVMExp(constEqExp);
                         }
-                        if (!eqExp.toLLVMType().contains("i1")) {
+                        if (!eqExp.value.toLLVMType().contains("i1")) {
                             eqExp.logical();
                         }
                         instructions.addAll(eqExp.instructions);
-                        instructions.add(new BranchInst(eqExp, nextEqExp, nextLAndExp));
+                        instructions.add(new BranchInst(eqExp.value, nextEqExp, nextLAndExp));
                         if (j != LAndExpNode.children.size() - 1) {
                             instructions.add(nextEqExp);
                         }
@@ -662,12 +662,12 @@ public class IRGenerator {
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
-            if (!left.toLLVMType().equals("i32")) {
+            if (!left.value.toLLVMType().equals("i32")) {
                 left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
             }
-            if (!right.toLLVMType().equals("i32")) {
-                if (right instanceof LLVMConst) {
-                    right = new LLVMExp(right);
+            if (!right.value.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst constRight) {
+                    right = new LLVMExp(constRight);
                 }
                 right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
@@ -704,12 +704,12 @@ public class IRGenerator {
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
-            if (!left.toLLVMType().equals("i32")) {
+            if (!left.value.toLLVMType().equals("i32")) {
                 left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
             }
-            if (!right.toLLVMType().equals("i32")) {
-                if (right instanceof LLVMConst) {
-                    right = new LLVMExp(right);
+            if (!right.value.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst constRight) {
+                    right = new LLVMExp(constRight);
                 }
                 right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
@@ -833,12 +833,12 @@ public class IRGenerator {
 
                     LLVMExp exp = exps.get(currExpIndex++);
                     LinkedList<UsableValue> params = new LinkedList<>();
-                    if (!exp.toLLVMType().contains("i32")) {
-                        ZextInst zextInst = new ZextInst(exp, LLVMType.TypeID.IntegerTyID);
+                    if (!exp.value.toLLVMType().contains("i32")) {
+                        ZextInst zextInst = new ZextInst(exp.value, LLVMType.TypeID.IntegerTyID);
                         instructions.add(zextInst);
                         params.add(zextInst);
                     } else {
-                        params.add(exp);
+                        params.add(exp.value);
                     }
                     CallInst callInst = new CallInst("putint", params);
                     instructions.add(callInst);
@@ -853,12 +853,12 @@ public class IRGenerator {
 
                     LLVMExp exp = exps.get(currExpIndex++);
                     LinkedList<UsableValue> params = new LinkedList<>();
-                    if (!exp.toLLVMType().contains("i32")) {
-                        ZextInst zextInst = new ZextInst(exp, LLVMType.TypeID.IntegerTyID);
+                    if (!exp.value.toLLVMType().contains("i32")) {
+                        ZextInst zextInst = new ZextInst(exp.value, LLVMType.TypeID.IntegerTyID);
                         instructions.add(zextInst);
                         params.add(zextInst);
                     } else {
-                        params.add(exp);
+                        params.add(exp.value);
                     }
                     CallInst callInst = new CallInst("putch", params);
                     instructions.add(callInst);
@@ -908,77 +908,69 @@ public class IRGenerator {
     }
 
     private LinkedList<LLVMInstruction> translateGetCharStmt(ASTNode node) {
-        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
-        UsableValue lval = translateLVal(node.children.get(0));
-        if (lval instanceof LLVMExp) {
-            instructions.addAll(((LLVMExp) lval).instructions);
-        }
+        LLVMExp lval = translateLVal(node.children.get(0));
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>(lval.instructions);
 
         CallInst callInst = new CallInst(LLVMType.TypeID.IntegerTyID, "getchar");
         instructions.add(callInst);
-        if (callInst.isDifferentType(lval)) {
+        if (callInst.isDifferentType(lval.value)) {
             LLVMInstruction fix = callInst.fix();
             instructions.add(fix);
-            instructions.add(new StoreInst((UsableValue) fix, lval));
+            instructions.add(new StoreInst((UsableValue) fix, lval.value));
         } else {
-            instructions.add(new StoreInst(callInst, lval));
+            instructions.add(new StoreInst(callInst, lval.value));
         }
         return instructions;
     }
 
     private LinkedList<LLVMInstruction> translateGetIntStmt(ASTNode node) {
-        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
-        UsableValue lval = translateLVal(node.children.get(0));
-        if (lval instanceof LLVMExp) {
-            instructions.addAll(((LLVMExp) lval).instructions);
-        }
+        LLVMExp lval = translateLVal(node.children.get(0));
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>(lval.instructions);
 
         CallInst callInst = new CallInst(LLVMType.TypeID.IntegerTyID, "getint");
         instructions.add(callInst);
-        if (callInst.isDifferentType(lval)) {
+        if (callInst.isDifferentType(lval.value)) {
             LLVMInstruction fix = callInst.fix();
             instructions.add(fix);
-            instructions.add(new StoreInst((UsableValue) fix, lval));
+            instructions.add(new StoreInst((UsableValue) fix, lval.value));
         } else {
-            instructions.add(new StoreInst(callInst, lval));
+            instructions.add(new StoreInst(callInst, lval.value));
         }
         return instructions;
     }
 
     private LinkedList<LLVMInstruction> translateAssignStmt(ASTNode node) {
         LLVMExp exp = translateExp(node.children.get(2));
-        if (exp instanceof LLVMConst) {
-            exp = new LLVMExp(exp);
+        if (exp instanceof LLVMConst llvmConst) {
+            exp = new LLVMExp(llvmConst);
         }
         LinkedList<LLVMInstruction> instructions = new LinkedList<>(exp.instructions);
-        UsableValue lval = translateLVal(node.children.get(0));
-        if (lval instanceof LLVMExp) {
-            instructions.addAll(((LLVMExp) lval).instructions);
-        }
-        if (lval.toLLVMType().contains("i32") && !exp.toLLVMType().contains("i32")) {
+        LLVMExp lval = translateLVal(node.children.get(0));
+        instructions.addAll(lval.instructions);
+        if (lval.value.toLLVMType().contains("i32") && !exp.value.toLLVMType().contains("i32")) {
             ZextInst zextInst = new ZextInst(exp.value, LLVMType.TypeID.IntegerTyID);
             exp.addUsableInstruction(zextInst);
             instructions.add(zextInst);
-        } else if (lval.toLLVMType().contains("i8") && !exp.toLLVMType().contains("i8")) {
+        } else if (lval.value.toLLVMType().contains("i8") && !exp.value.toLLVMType().contains("i8")) {
             TruncInst truncInst = new TruncInst(exp.value, LLVMType.TypeID.CharTyID);
             exp.addUsableInstruction(truncInst);
             instructions.add(truncInst);
         }
 
-        instructions.add(new StoreInst(exp.value, lval));
+        instructions.add(new StoreInst(exp.value, lval.value));
 
         return instructions;
     }
 
-    private UsableValue translateLVal(ASTNode node) {
+    private LLVMExp translateLVal(ASTNode node) {
         LeafASTNode leaf = (LeafASTNode) node.children.get(0);
         UsableValue var = getLLVMVariable(leaf.token.token);
         assert var != null;
         if (node.children.size() > 3) {
             LLVMType.TypeID baseType;
             LLVMExp exp = translateExp(node.children.get(2));
-            if (exp instanceof LLVMConst) {
-                exp = new LLVMExp(exp);
+            if (exp instanceof LLVMConst llvmConst) {
+                exp = new LLVMExp(llvmConst);
             }
             if (var.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;
@@ -996,7 +988,7 @@ public class IRGenerator {
             exp.addUsableInstruction(getInst);
             return exp;
         } else {
-            return var;
+            return new LLVMExp(var);
         }
     }
 
@@ -1029,12 +1021,12 @@ public class IRGenerator {
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
-            if (!left.toLLVMType().equals("i32")) {
+            if (!left.value.toLLVMType().equals("i32")) {
                 left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
             }
-            if (!right.toLLVMType().equals("i32")) {
-                if (right instanceof LLVMConst) {
-                    right = new LLVMExp(right);
+            if (!right.value.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst constRight) {
+                    right = new LLVMExp(constRight);
                 }
                 right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
@@ -1065,12 +1057,12 @@ public class IRGenerator {
             } else if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
-            if (!left.toLLVMType().equals("i32")) {
+            if (!left.value.toLLVMType().equals("i32")) {
                 left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
             }
-            if (!right.toLLVMType().equals("i32")) {
-                if (right instanceof LLVMConst) {
-                    right = new LLVMExp(right);
+            if (!right.value.toLLVMType().equals("i32")) {
+                if (right instanceof LLVMConst constRight) {
+                    right = new LLVMExp(constRight);
                 }
                 right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
@@ -1116,13 +1108,13 @@ public class IRGenerator {
             }
             LinkedList<UsableValue> forCall = new LinkedList<>();
             for (int i = 0; i < toCall.params.size(); i++) {
-                boolean toFix = toCall.params.get(i).isDifferentType(realParams.get(i));
+                boolean toFix = toCall.params.get(i).isDifferentType(realParams.get(i).value);
                 if (toFix) {
-                    LLVMInstruction fix = toCall.params.get(i).fix(realParams.get(i));
+                    LLVMInstruction fix = toCall.params.get(i).fix(realParams.get(i).value);
                     exp.addUsableInstruction(fix);
                     forCall.add((UsableValue) fix);
                 } else {
-                    forCall.add(realParams.get(i));
+                    forCall.add(realParams.get(i).value);
                 }
             }
             CallInst callInst;
@@ -1203,8 +1195,8 @@ public class IRGenerator {
                     return new LLVMConst(LLVMType.TypeID.IntegerTyID, val);
                 }
             }
-             if (indexExp instanceof LLVMConst) {
-                 indexExp = new LLVMExp(indexExp);
+             if (indexExp instanceof LLVMConst llvmConst) {
+                 indexExp = new LLVMExp(llvmConst);
              }
             LLVMType.TypeID baseType;
             if (value.toLLVMType().contains("i32")) {
@@ -1240,16 +1232,16 @@ public class IRGenerator {
 //            }
             LLVMExp lVal = new LLVMExp(value);
             LLVMType.TypeID baseType;
-            if (lVal.toLLVMType().contains("i32")) {
+            if (lVal.value.toLLVMType().contains("i32")) {
                 baseType = LLVMType.TypeID.IntegerTyID;
             } else {
                 baseType = LLVMType.TypeID.CharTyID;
             }
-            if (lVal.toLLVMType().charAt(0) == '[') {
+            if (lVal.value.toLLVMType().charAt(0) == '[') {
                 GetelementptrInst getInst = new GetelementptrInst(baseType, lVal.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
                 lVal.addUsableInstruction(getInst);
                 return lVal;
-            } else if (lVal.toLLVMType().contains("**")) {
+            } else if (lVal.value.toLLVMType().contains("**")) {
                 LoadInst loadInst = new LoadInst(baseType.toPointerType(), lVal.value);
                 lVal.addUsableInstruction(loadInst);
                 return lVal;

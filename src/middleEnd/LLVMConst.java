@@ -95,11 +95,10 @@ public class LLVMConst extends LLVMExp implements UsableValue {
     }
 
     @Override
-    public LLVMExp logical() {
+    public void logical() {
         if (constValue != 0) {
             constValue = 1;
         }
-        return this;
     }
 
     @Override

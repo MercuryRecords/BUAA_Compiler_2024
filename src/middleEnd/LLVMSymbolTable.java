@@ -14,7 +14,11 @@ public class LLVMSymbolTable {
 
 
     public void addVariable(LLVMVariable var) {
-        symbols.put(var.name, var);
+        if (var instanceof GlobalVariable globalVariable) {
+            symbols.put(globalVariable.name, globalVariable);
+        } else {
+            symbols.put(var.name, var.usableValue);
+        }
     }
 
     public UsableValue get(String token) {
