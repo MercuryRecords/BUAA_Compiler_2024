@@ -49,7 +49,6 @@ public class MIPSGenerator {
     }
 
     private LinkedList<MIPSInst> translateMIPSInstruction(LLVMInstruction instruction) {
-
         return instruction.toMIPS();
     }
 

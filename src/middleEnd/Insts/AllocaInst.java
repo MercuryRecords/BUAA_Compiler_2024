@@ -1,7 +1,10 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.ADDIUInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.Dispatcher;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -12,6 +15,7 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
     private int regNo;
     private final LLVMType.TypeID baseType;
     private final int arrayLength;
+    private int offsetInMemory;
     public AllocaInst(LLVMType.TypeID baseType, int arrayLength) {
         super(LLVMType.InstType.ALLOCA);
         this.baseType = baseType;
@@ -20,6 +24,21 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
 
     public void setRegNo(int regNo) {
         this.regNo = regNo;
+    }
+
+    @Override
+    public int offsetInMemory() {
+        return offsetInMemory;
+    }
+
+    @Override
+    public Register getReg() {
+        return null;
+    }
+
+    @Override
+    public boolean useReg() {
+        return false;
     }
 
     @Override
@@ -58,9 +77,11 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
     public LinkedList<MIPSInst> toMIPS() {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
-
-        // TODO
-
+        // 申请内存，记录位置
+        int size = baseType.toAlign() * arrayLength;
+        mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, -size));
+        offsetInMemory = Dispatcher.getInstance().getOffset();
+        Dispatcher.getInstance().addOffset(size);
         return mipsInsts;
     }
 }

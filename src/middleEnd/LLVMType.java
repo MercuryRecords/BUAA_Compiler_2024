@@ -3,7 +3,6 @@ package middleEnd;
 public class LLVMType {
     public enum TypeID {
         VoidTyID("void"),
-        LongTyID("i64"),
         IntegerTyID("i32"),
         IntegerPtrTyID("i32*"),
         IntegerPtrPtrTyID("i32**"),
@@ -28,7 +27,7 @@ public class LLVMType {
             return switch (s) {
                 case "i32" -> 4;
                 case "i8" -> 1;
-                case "i32*", "i8*", "i64" -> 8;
+                case "i32*", "i8*" -> 8;
                 default -> 0;
             };
         }

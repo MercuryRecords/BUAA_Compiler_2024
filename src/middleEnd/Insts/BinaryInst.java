@@ -42,6 +42,11 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
     }
 
     @Override
+    public int offsetInMemory() {
+        return 0;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s = %s %s %s, %s", toValueIR(), type.toString(), op1.toLLVMType(), op1.toValueIR(), op2.toValueIR());
     }

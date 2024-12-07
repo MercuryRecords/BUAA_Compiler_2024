@@ -1,7 +1,9 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.*;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -28,8 +30,28 @@ public class StoreInst extends LLVMInstruction {
     public LinkedList<MIPSInst> toMIPS() {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
+        /*
+        # store i32 2, i32* %2
+        li $t0, 2
+        sw $t0, 4($fp)
+         */
+        if (from.toValueIR().startsWith("%") || from.toValueIR().startsWith("@")) {
+            // 从内存中加载
+            // TODO 全局变量
+            if (from.toLLVMType().contains("i32")) {
+                mipsInsts.add(new LWInst(Register.FP, Register.T0, from.offsetInMemory()));
+            } else {
+                mipsInsts.add(new LBInst(Register.FP, Register.T0, from.offsetInMemory()));
+            }
+        } else {
+            mipsInsts.add(new LIInst(Register.T0, Integer.parseInt(from.toValueIR())));
+        }
 
-        // TODO
+        if (to.toLLVMType().contains("i32")) {
+            mipsInsts.add(new SWInst(Register.FP, Register.T0, to.offsetInMemory()));
+        } else {
+            mipsInsts.add(new SBInst(Register.FP, Register.T0, to.offsetInMemory()));
+        }
 
         return mipsInsts;
     }

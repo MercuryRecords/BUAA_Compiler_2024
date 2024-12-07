@@ -33,6 +33,11 @@ public class LLVMLabel extends LLVMInstruction implements UsableValue {
     }
 
     @Override
+    public int offsetInMemory() {
+        throw new RuntimeException("Label has no offset in memory");
+    }
+
+    @Override
     public String toString() {
         return String.format("\n%d: ", regNo);
     }
