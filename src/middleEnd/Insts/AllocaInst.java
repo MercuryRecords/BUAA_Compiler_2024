@@ -1,7 +1,9 @@
 package middleEnd.Insts;
 
+import backEnd.MIPSManager;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -66,13 +68,11 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
     public LinkedList<MIPSInst> toMIPS() {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
-
-        // TODO
-//        int size = baseType.toAlign() * arrayLength;
-//        mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, -size));
-//        offsetInMemory = Dispatcher.getInstance().getOffset();
-//        Dispatcher.getInstance().addOffset(size);
-
+        // 给值申请内存
+        MIPSManager.getInstance().allocateMem(this);
+        // 给指针申请寄存器？算了，懒加载吧
+        // mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+        // Register reg = MIPSManager.getInstance().getReg(this);
         return mipsInsts;
     }
 }

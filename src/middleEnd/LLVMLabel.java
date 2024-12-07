@@ -41,9 +41,4 @@ public class LLVMLabel extends LLVMInstruction implements UsableValue {
     public String toString() {
         return String.format("\n%d: ", regNo);
     }
-
-    @Override
-    public LinkedList<MIPSInst> toMIPS() {
-        throw new RuntimeException("Label should not be translated to MIPS, maybe");
-    }
 }

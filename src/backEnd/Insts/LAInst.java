@@ -4,16 +4,16 @@ import backEnd.MIPSInst;
 import backEnd.Register;
 
 public class LAInst extends MIPSInst {
-    private final Register register;
-    private final String valueIR;
-    public LAInst(Register register, String valueIR) {
+    private final Register target;
+    private final String val;
+    public LAInst(Register target, String val) {
         super();
-        this.register = register;
-        this.valueIR = valueIR;
+        this.target = target;
+        this.val = val;
     }
 
     @Override
     public String toString() {
-        return "la " + register.toString() + ", " + valueIR;
+        return "la " + target + ", " + val;
     }
 }

@@ -1,5 +1,7 @@
 package middleEnd;
 
+import middleEnd.Insts.AllocaInst;
+
 import java.util.LinkedList;
 
 public class Block extends Value {
@@ -26,5 +28,20 @@ public class Block extends Value {
 
     public LinkedList<LLVMInstruction> getInstructions() {
         return insts;
+    }
+
+    public void sortAllocaInstsToFront() {
+        LinkedList<LLVMInstruction> allocaInsts = new LinkedList<>();
+        LinkedList<LLVMInstruction> otherInsts = new LinkedList<>();
+        for (LLVMInstruction inst : insts) {
+            if (inst instanceof AllocaInst) {
+                allocaInsts.add(inst);
+            } else {
+                otherInsts.add(inst);
+            }
+        }
+        insts.clear();
+        insts.addAll(allocaInsts);
+        insts.addAll(otherInsts);
     }
 }

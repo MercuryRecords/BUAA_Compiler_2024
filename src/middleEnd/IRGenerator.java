@@ -204,6 +204,7 @@ public class IRGenerator {
             }
         }
         block.addInsts(instructions);
+        block.sortAllocaInstsToFront();
         main.setBlock(block);
         regTrackers.get(scopeId).addInstructions(block.getInstructions());
         exitScope();
@@ -242,6 +243,7 @@ public class IRGenerator {
             block.addInst(new RetInst());
         }
         LLVMFunction.setBlock(block);
+        block.sortAllocaInstsToFront();
         regTrackers.get(scopeId).addInstructions(block.getInstructions());
         exitScope();
         return LLVMFunction;

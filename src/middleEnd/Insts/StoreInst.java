@@ -1,7 +1,10 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.*;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -29,7 +32,45 @@ public class StoreInst extends LLVMInstruction {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        Register fromReg;
+        if (from.toValueIR().startsWith("%")) {
+            // 为虚拟寄存器，分配一个物理寄存器
+            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+            fromReg = MIPSManager.getInstance().getReg(from);
+            if (from.toLLVMType().equals("i8")) {
+                mipsInsts.add(new LBInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+            } else {
+                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+            }
+        } else {
+            // 为常量使用寄存器 K0 存储
+            mipsInsts.add(new LIInst(Register.K0, from.toValueIR()));
+            fromReg = Register.K0;
+        }
+
+        Register toReg;
+        if (to.toValueIR().startsWith("@")) {
+            // 全局单个变量，加载地址
+            mipsInsts.add(new LAInst(Register.K1, to.toValueIR()));
+            toReg = Register.K1;
+        } else {
+            // 为虚拟寄存器
+            if (MIPSManager.getInstance().hasReg(to)) {
+                // 使用已有的物理寄存器
+                toReg = MIPSManager.getInstance().getReg(to);
+            } else {
+                // 分配一个物理寄存器，从内存中加载值
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                toReg = MIPSManager.getInstance().getReg(to);
+                mipsInsts.add(new LWInst(Register.SP, toReg, MIPSManager.getInstance().getValueOffset(to)));
+            }
+        }
+
+        if (from.toLLVMType().equals("i8")) {
+            mipsInsts.add(new SBInst(toReg, fromReg, 0));
+        } else {
+            mipsInsts.add(new SWInst(toReg, fromReg, 0));
+        }
 
         return mipsInsts;
     }

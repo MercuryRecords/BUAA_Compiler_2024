@@ -33,6 +33,7 @@ public class MIPSGenerator {
 
     private MIPSFunction translateMIPSFunction(LLVMFunction llvmFunction) {
         MIPSFunction newFunction = new MIPSFunction(llvmFunction.name);
+        MIPSManager.getInstance().setCurrentFunction(newFunction);
         for (LLVMBasicBlock basicBlock : llvmFunction.basicBlocks) {
             newFunction.addBasicBlock(translateMIPSBasicBlock(basicBlock));
         }
