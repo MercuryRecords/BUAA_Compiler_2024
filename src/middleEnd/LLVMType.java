@@ -54,7 +54,6 @@ public class LLVMType {
         MUL("mul"),
         SDIV("sdiv"),
         SREM("srem"),
-        XOR("xor"),
 
         LABEL("label"),
         BRANCH("br"),

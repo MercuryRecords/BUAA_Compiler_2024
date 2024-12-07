@@ -98,11 +98,6 @@ public class LLVMVariable extends Value implements UsableValue {
             } else {
                 // 变量数组
                 if (initVal != null) {
-//                    for (int i = 0; i < initVal.size(); i++) {
-//                        LLVMExp llvmExp = initVal.get(i);
-//                        LinkedList<Instruction> initValInsts = llvmExp.getInstructions();
-//                        instructions.addAll(initValInsts);
-//                    }
                     AllocaInst allocaInst = new AllocaInst(baseType, arrayLength);
                     usableValue = allocaInst;
                     instructions.add(allocaInst);
@@ -153,7 +148,7 @@ public class LLVMVariable extends Value implements UsableValue {
     }
 
     @Override
-    public void setRegNo(int regNo) {
-        usableValue.setRegNo(regNo);
+    public void setVirtualRegNo(int regNo) {
+        usableValue.setVirtualRegNo(regNo);
     }
 }

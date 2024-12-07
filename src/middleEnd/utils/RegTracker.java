@@ -40,7 +40,7 @@ public class RegTracker {
                     continue;
                 }
             }
-            value.setRegNo(regNo++);
+            value.setVirtualRegNo(regNo++);
         }
     }
 

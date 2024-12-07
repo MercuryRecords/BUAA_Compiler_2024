@@ -18,7 +18,6 @@ public class MIPSGenerator {
         try (FileWriter writer = new FileWriter(forOutput)) {
             writer.write(mipsDataSection.toString());
             writer.write(mipsTextSection.toString());
-            // writer.write(module.toString());
         } catch (IOException e) {
             e.printStackTrace(System.out);
         }

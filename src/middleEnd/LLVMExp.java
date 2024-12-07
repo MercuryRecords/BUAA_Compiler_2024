@@ -32,7 +32,7 @@ public class LLVMExp extends Value implements UsableValue {
     }
 
     @Override
-    public void setRegNo(int regNo) {
+    public void setVirtualRegNo(int regNo) {
         throw new RuntimeException("Cannot set regNo for LLVMExp");
     }
 

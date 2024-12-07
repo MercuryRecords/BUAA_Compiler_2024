@@ -28,13 +28,8 @@ public class LLVMLabel extends LLVMInstruction implements UsableValue {
     }
 
     @Override
-    public void setRegNo(int regNo) {
+    public void setVirtualRegNo(int regNo) {
         this.regNo = regNo;
-    }
-
-    @Override
-    public int offsetInMemory() {
-        throw new RuntimeException("Label has no offset in memory");
     }
 
     @Override

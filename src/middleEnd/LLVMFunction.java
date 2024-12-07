@@ -69,7 +69,7 @@ public class LLVMFunction extends Value {
         int blockNo = 0;
         LLVMBasicBlock bb = new LLVMBasicBlock(String.format("%s_%d", name, blockNo++));
         LLVMLabel label = new LLVMLabel();
-        label.setRegNo(0);
+        label.setVirtualRegNo(0);
         for (LLVMInstruction inst : block.getInstructions()) {
             if (inst instanceof LLVMLabel) {
                 label = (LLVMLabel) inst;

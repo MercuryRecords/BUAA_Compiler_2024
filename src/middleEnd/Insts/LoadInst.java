@@ -1,7 +1,12 @@
 package middleEnd.Insts;
 
+import backEnd.Dispatcher;
+import backEnd.Insts.LBInst;
+import backEnd.Insts.LWInst;
+import backEnd.Insts.LAInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -12,6 +17,9 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
     int regNo;
     LLVMType.TypeID baseType;
     UsableValue from;
+    boolean holdingRegister = false;
+    Register reg;
+    int offsetInMemory;
     public LoadInst(LLVMType.TypeID baseType, UsableValue from) {
         super(LLVMType.InstType.LOAD);
         this.baseType = baseType;
@@ -34,7 +42,7 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
     }
 
     @Override
-    public void setRegNo(int regNo) {
+    public void setVirtualRegNo(int regNo) {
         this.regNo = regNo;
     }
 

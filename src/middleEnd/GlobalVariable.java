@@ -78,7 +78,7 @@ public class GlobalVariable extends LLVMVariable implements UsableValue  {
     }
 
     @Override
-    public void setRegNo(int regNo) {
+    public void setVirtualRegNo(int regNo) {
         throw new RuntimeException("GlobalVariable cannot be assigned a register");
     }
 }

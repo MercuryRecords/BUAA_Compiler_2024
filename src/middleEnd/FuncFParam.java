@@ -44,7 +44,7 @@ public class FuncFParam extends Value implements UsableValue {
     }
 
     @Override
-    public void setRegNo(int regNo) {
+    public void setVirtualRegNo(int regNo) {
         this.regNo = regNo;
     }
 

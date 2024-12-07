@@ -27,7 +27,7 @@ public class GlobalString extends Value implements UsableValue {
     }
 
     @Override
-    public void setRegNo(int regNo) {
+    public void setVirtualRegNo(int regNo) {
         throw new RuntimeException("GlobalString cannot be assigned a register");
     }
 
