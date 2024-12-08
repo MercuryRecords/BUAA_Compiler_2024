@@ -1,5 +1,6 @@
 package backEnd;
 
+import backEnd.Insts.ADDIUInst;
 import middleEnd.*;
 
 import java.io.FileWriter;
@@ -37,6 +38,11 @@ public class MIPSGenerator {
         for (LLVMBasicBlock basicBlock : llvmFunction.basicBlocks) {
             newFunction.addBasicBlock(translateMIPSBasicBlock(basicBlock));
         }
+        MIPSBasicBlock entryBlock = new MIPSBasicBlock();
+        LinkedList<MIPSInst> insts = new LinkedList<>();
+        insts.add(new ADDIUInst(Register.SP, Register.SP, -MIPSManager.getInstance().getOffset()));
+        entryBlock.addInstructions(insts);
+        newFunction.addBasicBlock(0, entryBlock);
         return newFunction;
     }
 

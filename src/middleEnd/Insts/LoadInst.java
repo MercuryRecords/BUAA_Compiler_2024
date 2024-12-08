@@ -1,6 +1,10 @@
 package middleEnd.Insts;
+import backEnd.Insts.LAInst;
+import backEnd.Insts.LBInst;
+import backEnd.Insts.LWInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
 import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
@@ -53,7 +57,35 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        // MIPSManager.getInstance().allocateMemForAlloca(this);
+
+        Register fromReg;
+        if (from.toValueIR().startsWith("@")) {
+            // 全局单个变量，加载地址
+            mipsInsts.add(new LAInst(Register.K0, from.toValueIR()));
+            fromReg = Register.K0;
+        } else {
+            // 为虚拟寄存器
+            if (MIPSManager.getInstance().hasReg(from)) {
+                // 使用已有的物理寄存器
+                fromReg = MIPSManager.getInstance().getReg(from);
+            } else {
+                // 分配一个物理寄存器，从内存中加载值
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                fromReg = MIPSManager.getInstance().getReg(from);
+                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+            }
+        }
+
+        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+        Register toReg = MIPSManager.getInstance().getReg(this);
+        if (baseType == LLVMType.TypeID.CharTyID) {
+            mipsInsts.add(new LBInst(fromReg, toReg, 0));
+        } else {
+            mipsInsts.add(new LWInst(fromReg, toReg, 0));
+        }
+
+
 
         return mipsInsts;
     }

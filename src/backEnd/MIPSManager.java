@@ -1,6 +1,7 @@
 package backEnd;
 
 import backEnd.Insts.SWInst;
+import middleEnd.Insts.AllocaInst;
 import middleEnd.UsableValue;
 
 import java.util.HashMap;
@@ -59,14 +60,17 @@ public class MIPSManager {
         used = new LinkedList<>();
     }
 
-    public void allocateMem(UsableValue value) {
-        HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
-        int size = value.getMemorySize();
-        // 申请内存
-        if (!map.containsKey(value) && size != 0) {
-            map.put(value, offset);
-            addOffset(size);
-        }
+    public int allocateMemForAlloca(int size) {
+        int offset = this.offset;
+        addOffset(size);
+        return offset;
+//        HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
+//        int size = value.getMemorySize();
+//        // 申请内存
+//        if (!map.containsKey(value) && size != 0) {
+//            map.put(value, offset);
+//            addOffset(size);
+//        }
     }
 
     public LinkedList<MIPSInst> deallocateReg() {
@@ -77,8 +81,17 @@ public class MIPSManager {
             used.remove(reg);
             free.add(reg);
             UsableValue value = regMap.get(reg);
-            int offset = offsetMap.get(currentFunction).get(value);
-            insts.add(new SWInst(Register.SP, reg, offset));
+            if (offsetMap.get(currentFunction).containsKey(value)) {
+                int offset = offsetMap.get(currentFunction).get(value);
+                insts.add(new SWInst(reg, Register.SP, offset));
+            } else {
+                HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
+                int size = value.getMemorySize();
+                // 申请内存
+                map.put(value, offset);
+                addOffset(size);
+                insts.add(new SWInst(reg, Register.SP, offset));
+            }
         }
         return insts;
     }

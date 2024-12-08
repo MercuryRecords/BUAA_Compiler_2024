@@ -34,13 +34,18 @@ public class StoreInst extends LLVMInstruction {
 
         Register fromReg;
         if (from.toValueIR().startsWith("%")) {
-            // 为虚拟寄存器，分配一个物理寄存器
-            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-            fromReg = MIPSManager.getInstance().getReg(from);
-            if (from.toLLVMType().equals("i8")) {
-                mipsInsts.add(new LBInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+            if (MIPSManager.getInstance().hasReg(from)) {
+                // 使用已有的物理寄存器
+                fromReg = MIPSManager.getInstance().getReg(from);
             } else {
-                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+                // 为虚拟寄存器，分配一个物理寄存器
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                fromReg = MIPSManager.getInstance().getReg(from);
+                if (from.toLLVMType().equals("i8")) {
+                    mipsInsts.add(new LBInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+                } else {
+                    mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+                }
             }
         } else {
             // 为常量使用寄存器 K0 存储

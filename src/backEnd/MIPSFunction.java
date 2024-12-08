@@ -9,6 +9,10 @@ public class MIPSFunction {
         this.name = "func_" + name;
     }
 
+    public void addBasicBlock(int index, MIPSBasicBlock mipsBasicBlock) {
+        basicBlocks.add(index, mipsBasicBlock);
+    }
+
     public void addBasicBlock(MIPSBasicBlock mipsBasicBlock) {
         basicBlocks.add(mipsBasicBlock);
     }

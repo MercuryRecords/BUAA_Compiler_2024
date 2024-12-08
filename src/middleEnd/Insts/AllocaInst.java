@@ -1,5 +1,6 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.ADDIUInst;
 import backEnd.MIPSManager;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
@@ -45,10 +46,11 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
 
     @Override
     public int getMemorySize() {
-        if (arrayLength == 0) {
-            return baseType.toAlign();
-        }
-        return baseType.toAlign() * arrayLength;
+        return baseType.toAlign();
+//        if (arrayLength == 0) {
+//            return baseType.toAlign();
+//        }
+//        return baseType.toAlign() * arrayLength;
     }
 
     private String toNoPointerType() {
@@ -69,10 +71,17 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
         // 给值申请内存
-        MIPSManager.getInstance().allocateMem(this);
-        // 给指针申请寄存器？算了，懒加载吧
-        // mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-        // Register reg = MIPSManager.getInstance().getReg(this);
+        int size;
+        if (arrayLength == 0) {
+            size = baseType.toAlign();
+        } else {
+            size = baseType.toAlign() * arrayLength;
+        }
+        int offset = MIPSManager.getInstance().allocateMemForAlloca(size);
+        // 给指针申请寄存器
+        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+        Register reg = MIPSManager.getInstance().getReg(this);
+        mipsInsts.add(new ADDIUInst(Register.SP, reg, offset));
         return mipsInsts;
     }
 }
