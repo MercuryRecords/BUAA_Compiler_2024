@@ -57,8 +57,6 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // MIPSManager.getInstance().allocateMemForAlloca(this);
-
         Register fromReg;
         if (from.toValueIR().startsWith("@")) {
             // 全局单个变量，加载地址

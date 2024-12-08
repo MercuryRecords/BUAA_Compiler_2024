@@ -47,6 +47,7 @@ public class StoreInst extends LLVMInstruction {
                     mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
                 }
             }
+            MIPSManager.getInstance().reserveUsedReg(fromReg);
         } else {
             // 为常量使用寄存器 K0 存储
             mipsInsts.add(new LIInst(Register.K0, from.toValueIR()));
@@ -76,6 +77,8 @@ public class StoreInst extends LLVMInstruction {
         } else {
             mipsInsts.add(new SWInst(toReg, fromReg, 0));
         }
+
+        MIPSManager.getInstance().resetReservedRegs();
 
         return mipsInsts;
     }

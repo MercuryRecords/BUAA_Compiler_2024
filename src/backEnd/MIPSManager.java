@@ -1,10 +1,10 @@
 package backEnd;
 
 import backEnd.Insts.SWInst;
-import middleEnd.Insts.AllocaInst;
 import middleEnd.UsableValue;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class MIPSManager {
@@ -16,25 +16,26 @@ public class MIPSManager {
     private LinkedList<Register> used = new LinkedList<>();
     private LinkedList<Register> free = new LinkedList<>();
     private HashMap<Register, UsableValue> regMap = new HashMap<>();
+    private HashSet<Register> reserved = new HashSet<>();
     private MIPSManager() {
         allTempRegs.add(Register.T0);
         allTempRegs.add(Register.T1);
-        allTempRegs.add(Register.T2);
-        allTempRegs.add(Register.T3);
-        allTempRegs.add(Register.T4);
-        allTempRegs.add(Register.T5);
-        allTempRegs.add(Register.T6);
-        allTempRegs.add(Register.T7);
-        allTempRegs.add(Register.T8);
-        allTempRegs.add(Register.T9);
-        allTempRegs.add(Register.S0);
-        allTempRegs.add(Register.S1);
-        allTempRegs.add(Register.S2);
-        allTempRegs.add(Register.S3);
-        allTempRegs.add(Register.S4);
-        allTempRegs.add(Register.S5);
-        allTempRegs.add(Register.S6);
-        allTempRegs.add(Register.S7);
+//        allTempRegs.add(Register.T2);
+//        allTempRegs.add(Register.T3);
+//        allTempRegs.add(Register.T4);
+//        allTempRegs.add(Register.T5);
+//        allTempRegs.add(Register.T6);
+//        allTempRegs.add(Register.T7);
+//        allTempRegs.add(Register.T8);
+//        allTempRegs.add(Register.T9);
+//        allTempRegs.add(Register.S0);
+//        allTempRegs.add(Register.S1);
+//        allTempRegs.add(Register.S2);
+//        allTempRegs.add(Register.S3);
+//        allTempRegs.add(Register.S4);
+//        allTempRegs.add(Register.S5);
+//        allTempRegs.add(Register.S6);
+//        allTempRegs.add(Register.S7);
     }
 
     public static MIPSManager getInstance() {
@@ -81,6 +82,7 @@ public class MIPSManager {
             used.remove(reg);
             free.add(reg);
             UsableValue value = regMap.get(reg);
+            insts.add(new MIPSComment("saving " + value.toValueIR() + " to memory, reg: " + reg));
             if (offsetMap.get(currentFunction).containsKey(value)) {
                 int offset = offsetMap.get(currentFunction).get(value);
                 insts.add(new SWInst(reg, Register.SP, offset));
@@ -118,6 +120,19 @@ public class MIPSManager {
     }
 
     private Register nextUsedReg() {
-        return used.getFirst();
+        for (Register reg : used) {
+            if (!reserved.contains(reg)) {
+                return reg;
+            }
+        }
+        throw new RuntimeException("No free register");
+    }
+
+    public void reserveUsedReg(Register fromReg) {
+        reserved.add(fromReg);
+    }
+
+    public void resetReservedRegs() {
+        reserved.clear();
     }
 }
