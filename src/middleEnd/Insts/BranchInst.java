@@ -1,7 +1,13 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.BEQZInst;
+import backEnd.Insts.BNEZInst;
+import backEnd.Insts.JInst;
+import backEnd.Insts.LWInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMLabel;
 import middleEnd.UsableValue;
@@ -42,7 +48,28 @@ public class BranchInst extends LLVMInstruction {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        if (val == null) {
+            mipsInsts.add(new JInst(MIPSManager.getInstance().getMIPSLabel(dest)));
+        } else {
+            Register reg;
+            if (val.toValueIR().startsWith("%")) {
+                if (MIPSManager.getInstance().hasReg(val)) {
+                    reg = MIPSManager.getInstance().getReg(val);
+                } else {
+                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                    reg = MIPSManager.getInstance().getReg(val);
+                    mipsInsts.add(new LWInst(Register.SP, reg, MIPSManager.getInstance().getValueOffset(val)));
+                }
+                mipsInsts.add(new BEQZInst(reg, MIPSManager.getInstance().getMIPSLabel(isFalse)));
+                mipsInsts.add(new BNEZInst(reg, MIPSManager.getInstance().getMIPSLabel(isTrue)));
+            } else {
+                if (Integer.parseInt(val.toValueIR()) == 0) {
+                    mipsInsts.add(new JInst(MIPSManager.getInstance().getMIPSLabel(isFalse)));
+                } else {
+                    mipsInsts.add(new JInst(MIPSManager.getInstance().getMIPSLabel(isTrue)));
+                }
+            }
+        }
 
         return mipsInsts;
     }

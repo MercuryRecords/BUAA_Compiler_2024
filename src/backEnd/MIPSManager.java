@@ -3,6 +3,8 @@ package backEnd;
 import backEnd.Insts.LWInst;
 import backEnd.Insts.SWInst;
 import middleEnd.FuncFParam;
+import middleEnd.LLVMFunction;
+import middleEnd.LLVMLabel;
 import middleEnd.UsableValue;
 
 import java.util.HashMap;
@@ -12,8 +14,8 @@ import java.util.LinkedList;
 public class MIPSManager {
     private static final MIPSManager MIPS_MANAGER = new MIPSManager();
     private int offset = 0;
-    private MIPSFunction currentFunction;
-    private final HashMap<MIPSFunction, HashMap<UsableValue, Integer>> offsetMap = new HashMap<>();
+    private LLVMFunction currentFunction;
+    private final HashMap<LLVMFunction, HashMap<UsableValue, Integer>> offsetMap = new HashMap<>();
     private final LinkedList<Register> allTempRegs = new LinkedList<>();
     private LinkedList<Register> used = new LinkedList<>();
     private LinkedList<Register> free = new LinkedList<>();
@@ -58,7 +60,7 @@ public class MIPSManager {
         offset -= size;
     }
 
-    public void setCurrentFunction(MIPSFunction function) {
+    public void setCurrentFunction(LLVMFunction function) {
         currentFunction = function;
         offsetMap.putIfAbsent(function, new HashMap<>());
         free = new LinkedList<>(allTempRegs);
@@ -185,5 +187,9 @@ public class MIPSManager {
             insts.add(new LWInst(Register.SP, reg, offset));
         }
         return insts;
+    }
+
+    public String getMIPSLabel(LLVMLabel dest) {
+        return currentFunction.labelToBlock.get(dest).name;
     }
 }

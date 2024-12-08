@@ -13,9 +13,12 @@ public class MIPSTextSection {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(".text\n");
+        sb.append("jal func_main\n");
+        sb.append("j end\n");
         for (MIPSFunction function : functions) {
             sb.append(function.toString());
         }
+        sb.append("end:\n");
         return sb.toString();
     }
 }

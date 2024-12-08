@@ -6,6 +6,8 @@ import frontEnd.Symbol;
 import middleEnd.Insts.BranchInst;
 import middleEnd.Insts.RetInst;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class LLVMFunction extends Value {
@@ -16,6 +18,7 @@ public class LLVMFunction extends Value {
     private int offset = 0;
     public LinkedList<LLVMBasicBlock> basicBlocks = new LinkedList<>();
     private final LinkedList<Register> freeArgRegs = new LinkedList<>();
+    public HashMap<LLVMLabel, LLVMBasicBlock> labelToBlock = new HashMap<>();
     // private final LinkedList<Register> usedArgRegs = new LinkedList<>();
 
     public LLVMFunction(Symbol symbol) {
@@ -91,25 +94,17 @@ public class LLVMFunction extends Value {
             bb.addInst(inst);
             if (inst instanceof BranchInst || inst instanceof RetInst) {
                 bb.setLLVMLabel(label);
+                labelToBlock.put(label, bb);
                 basicBlocks.add(bb);
                 bb = new LLVMBasicBlock(String.format("%s_%d", name, blockNo++));
             }
         }
     }
 
-    public int getParamsSize() {
-        int ret = 0;
-        for (FuncFParam param : params) {
-            ret += param.toAlign();
-        }
-        return ret;
-    }
-
     public void translateEntryBlock() {
         for (FuncFParam param : params) {
             if (!freeArgRegs.isEmpty()) {
                 Register reg = freeArgRegs.removeFirst();
-                // usedArgRegs.add(reg);
                 MIPSManager.getInstance().setRegMap(reg, param);
             }
             MIPSManager.getInstance().allocateMemForArg();

@@ -33,7 +33,7 @@ public class MIPSGenerator {
 
     private MIPSFunction translateMIPSFunction(LLVMFunction llvmFunction) {
         MIPSFunction newFunction = new MIPSFunction(llvmFunction.name);
-        MIPSManager.getInstance().setCurrentFunction(newFunction);
+        MIPSManager.getInstance().setCurrentFunction(llvmFunction);
 //        int paramsSize = llvmFunction.getParamsSize();
 //        MIPSManager.getInstance().subOffset(paramsSize);
 //        for (FuncFParam param : llvmFunction.params) {

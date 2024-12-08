@@ -12,11 +12,11 @@ public class MIPSVarDecl extends MIPSDecl {
     public MIPSVarDecl(GlobalVariable variable) {
         super();
         this.name = "@" + variable.name;
-        if (variable.baseType == LLVMType.TypeID.IntegerTyID) {
-            this.type = ".word";
-        } else {
-            this.type = ".byte";
-        }
+//        if (variable.baseType == LLVMType.TypeID.IntegerTyID) {
+        this.type = ".word";
+//        } else {
+//            this.type = ".byte";
+//        }
         length = variable.arrayLength == 0 ? 1 : variable.arrayLength;
         initVal = (ConstInitVal) variable.initVal;
     }
