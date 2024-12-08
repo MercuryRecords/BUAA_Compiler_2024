@@ -1,6 +1,5 @@
 package backEnd;
 
-import backEnd.Insts.ADDIUInst;
 import middleEnd.*;
 
 import java.io.FileWriter;
@@ -35,19 +34,30 @@ public class MIPSGenerator {
     private MIPSFunction translateMIPSFunction(LLVMFunction llvmFunction) {
         MIPSFunction newFunction = new MIPSFunction(llvmFunction.name);
         MIPSManager.getInstance().setCurrentFunction(newFunction);
+//        int paramsSize = llvmFunction.getParamsSize();
+//        MIPSManager.getInstance().subOffset(paramsSize);
+//        for (FuncFParam param : llvmFunction.params) {
+//            if (MIPSManager.getInstance().hasFreeArgReg()) {
+//
+//            }
+//        }
+
+        llvmFunction.translateEntryBlock();
+
         for (LLVMBasicBlock basicBlock : llvmFunction.basicBlocks) {
             newFunction.addBasicBlock(translateMIPSBasicBlock(basicBlock));
         }
-        MIPSBasicBlock entryBlock = new MIPSBasicBlock();
-        LinkedList<MIPSInst> insts = new LinkedList<>();
-        insts.add(new ADDIUInst(Register.SP, Register.SP, -MIPSManager.getInstance().getOffset()));
-        entryBlock.addInstructions(insts);
-        newFunction.addBasicBlock(0, entryBlock);
+
+        //MIPSBasicBlock entryBlock = new MIPSBasicBlock(llvmFunction.name + "_entry");
+        //LinkedList<MIPSInst> insts = new LinkedList<>();
+        //insts.add(new ADDIUInst(Register.SP, Register.SP, -MIPSManager.getInstance().getOffset()));
+        //entryBlock.addInstructions(insts);
+        //newFunction.addBasicBlock(0, entryBlock);
         return newFunction;
     }
 
     private MIPSBasicBlock translateMIPSBasicBlock(LLVMBasicBlock basicBlock) {
-        MIPSBasicBlock newBlock = new MIPSBasicBlock();
+        MIPSBasicBlock newBlock = new MIPSBasicBlock(basicBlock.name);
         for (LLVMInstruction instruction : basicBlock.instructions) {
             newBlock.addInstructions(translateMIPSInstruction(instruction));
         }

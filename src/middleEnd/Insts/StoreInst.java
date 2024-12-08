@@ -1,6 +1,9 @@
 package middleEnd.Insts;
 
-import backEnd.Insts.*;
+import backEnd.Insts.LAInst;
+import backEnd.Insts.LIInst;
+import backEnd.Insts.LWInst;
+import backEnd.Insts.SWInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
 import backEnd.MIPSManager;
@@ -41,11 +44,7 @@ public class StoreInst extends LLVMInstruction {
                 // 为虚拟寄存器，分配一个物理寄存器
                 mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
                 fromReg = MIPSManager.getInstance().getReg(from);
-                if (from.toLLVMType().equals("i8")) {
-                    mipsInsts.add(new LBInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
-                } else {
-                    mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
-                }
+                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
             }
             MIPSManager.getInstance().reserveUsedReg(fromReg);
         } else {
@@ -72,11 +71,8 @@ public class StoreInst extends LLVMInstruction {
             }
         }
 
-        if (from.toLLVMType().equals("i8")) {
-            mipsInsts.add(new SBInst(toReg, fromReg, 0));
-        } else {
-            mipsInsts.add(new SWInst(toReg, fromReg, 0));
-        }
+
+        mipsInsts.add(new SWInst(toReg, fromReg, 0));
 
         MIPSManager.getInstance().resetReservedRegs();
 

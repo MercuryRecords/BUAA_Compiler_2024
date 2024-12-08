@@ -1,9 +1,5 @@
 package middleEnd;
 
-import backEnd.MIPSInst;
-
-import java.util.LinkedList;
-
 import static middleEnd.LLVMType.InstType.LABEL;
 
 public class LLVMLabel extends LLVMInstruction implements UsableValue {

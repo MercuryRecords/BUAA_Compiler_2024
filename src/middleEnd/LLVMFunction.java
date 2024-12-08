@@ -1,5 +1,7 @@
 package middleEnd;
 
+import backEnd.MIPSManager;
+import backEnd.Register;
 import frontEnd.Symbol;
 import middleEnd.Insts.BranchInst;
 import middleEnd.Insts.RetInst;
@@ -11,23 +13,34 @@ public class LLVMFunction extends Value {
     public final String name;
     public final LinkedList<FuncFParam> params = new LinkedList<>();
     private Block block;
+    private int offset = 0;
     public LinkedList<LLVMBasicBlock> basicBlocks = new LinkedList<>();
+    private final LinkedList<Register> freeArgRegs = new LinkedList<>();
+    // private final LinkedList<Register> usedArgRegs = new LinkedList<>();
 
     public LLVMFunction(Symbol symbol) {
         super();
+        initFreeArgRegs();
         switch (symbol.symbolType) {
             case IntFunc -> this.retType = LLVMType.TypeID.IntegerTyID;
             case CharFunc -> this.retType = LLVMType.TypeID.CharTyID;
             case VoidFunc -> this.retType = LLVMType.TypeID.VoidTyID;
         }
         this.name = symbol.token.token;
-        // System.out.println("Formal Parameters: " + symbol.params);
     }
 
     public LLVMFunction(String name, LLVMType.TypeID type) {
         super();
+        initFreeArgRegs();
         this.retType = type;
         this.name = name;
+    }
+
+    private void initFreeArgRegs() {
+        freeArgRegs.add(Register.A0);
+        freeArgRegs.add(Register.A1);
+        freeArgRegs.add(Register.A2);
+        freeArgRegs.add(Register.A3);
     }
 
     public void setBlock(Block block) {
@@ -81,6 +94,27 @@ public class LLVMFunction extends Value {
                 basicBlocks.add(bb);
                 bb = new LLVMBasicBlock(String.format("%s_%d", name, blockNo++));
             }
+        }
+    }
+
+    public int getParamsSize() {
+        int ret = 0;
+        for (FuncFParam param : params) {
+            ret += param.toAlign();
+        }
+        return ret;
+    }
+
+    public void translateEntryBlock() {
+        for (FuncFParam param : params) {
+            if (!freeArgRegs.isEmpty()) {
+                Register reg = freeArgRegs.removeFirst();
+                // usedArgRegs.add(reg);
+                MIPSManager.getInstance().setRegMap(reg, param);
+            }
+            MIPSManager.getInstance().allocateMemForArg();
+            MIPSManager.getInstance().setParamOffset(param, offset);
+            offset -= 4;
         }
     }
 }

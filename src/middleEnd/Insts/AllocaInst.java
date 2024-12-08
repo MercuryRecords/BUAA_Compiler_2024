@@ -1,9 +1,9 @@
 package middleEnd.Insts;
 
 import backEnd.Insts.ADDIUInst;
-import backEnd.MIPSManager;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
 import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;

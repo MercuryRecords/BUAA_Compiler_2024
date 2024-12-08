@@ -3,7 +3,7 @@ package middleEnd;
 import java.util.LinkedList;
 
 public class LLVMBasicBlock {
-    private final String name;
+    public final String name;
     private LLVMLabel label;
     public final LinkedList<LLVMInstruction> instructions = new LinkedList<>();
 

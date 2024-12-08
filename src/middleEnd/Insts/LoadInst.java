@@ -1,6 +1,5 @@
 package middleEnd.Insts;
 import backEnd.Insts.LAInst;
-import backEnd.Insts.LBInst;
 import backEnd.Insts.LWInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
@@ -78,11 +77,8 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
 
         mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
         Register toReg = MIPSManager.getInstance().getReg(this);
-        if (baseType == LLVMType.TypeID.CharTyID) {
-            mipsInsts.add(new LBInst(fromReg, toReg, 0));
-        } else {
-            mipsInsts.add(new LWInst(fromReg, toReg, 0));
-        }
+        mipsInsts.add(new LWInst(fromReg, toReg, 0));
+
 
         MIPSManager.getInstance().resetReservedRegs();
 

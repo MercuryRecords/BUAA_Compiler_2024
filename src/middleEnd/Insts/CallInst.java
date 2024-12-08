@@ -1,7 +1,10 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.*;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -101,12 +104,107 @@ public class CallInst extends LLVMInstruction implements UsableValue {
         return this.retType == LLVMType.TypeID.VoidTyID;
     }
 
+    private static Register getReg(int i) {
+        return switch (i) {
+            case 0 -> Register.A0;
+            case 1 -> Register.A1;
+            case 2 -> Register.A2;
+            case 3 -> Register.A3;
+            default -> null;
+        };
+    }
+
+    private boolean isOutput() {
+        return this.funcName.equals("putstr") || this.funcName.equals("putch") || this.funcName.equals("putint");
+    }
+
+    private boolean isInput() {
+        return this.funcName.equals("getch") || this.funcName.equals("getint");
+    }
+
     @Override
     public LinkedList<MIPSInst> toMIPS() {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        if (isOutput()) {
+            UsableValue param = params.get(0);
+            Register fromReg;
+            if (param.toValueIR().startsWith("%")) {
+                if (MIPSManager.getInstance().hasReg(param)) {
+                    fromReg = MIPSManager.getInstance().getReg(param);
+                } else {
+                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                    fromReg = MIPSManager.getInstance().getReg(param);
+                    mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(param)));
+                }
+            } else if (param.toValueIR().startsWith("@")) {
+                fromReg = Register.K0;
+                mipsInsts.add(new LAInst(fromReg, param.toValueIR()));
+            } else {
+                fromReg = Register.K0;
+                mipsInsts.add(new LIInst(fromReg, param.toValueIR()));
+            }
+            mipsInsts.add(new ADDIUInst(fromReg, Register.A0, 0));
+            if (funcName.equals("putint")) {
+                mipsInsts.add(new LIInst(Register.V0, String.valueOf(1)));
+            } else if (funcName.equals("putstr")) {
+                mipsInsts.add(new LIInst(Register.V0, String.valueOf(4)));
+            } else {
+                mipsInsts.add(new LIInst(Register.V0, String.valueOf(11)));
+            }
+            mipsInsts.add(new SYSCALLInst());
+        } else if (isInput()) {
+            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+            Register reg = MIPSManager.getInstance().getReg(this);
+            if (funcName.equals("getint")) {
+                mipsInsts.add(new LIInst(Register.V0, String.valueOf(5)));
+            } else {
+                mipsInsts.add(new LIInst(Register.V0, String.valueOf(12)));
+            }
+            mipsInsts.add(new SYSCALLInst());
+            mipsInsts.add(new ADDIUInst(Register.V0, reg, 0));
+        } else {
+            mipsInsts.addAll(MIPSManager.getInstance().storeAllReg());
+            int offset = MIPSManager.getInstance().getOffset();
+            for (int i = 0; i < params.size(); i++) {
+                UsableValue param = params.get(i);
+                Register fromReg;
+                if (param.toValueIR().startsWith("%")) {
+                    if (MIPSManager.getInstance().hasReg(param)) {
+                        fromReg = MIPSManager.getInstance().getReg(param);
+                    } else {
+                        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                        fromReg = MIPSManager.getInstance().getReg(param);
+                        mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(param)));
+                    }
+                    MIPSManager.getInstance().reserveUsedReg(fromReg);
+                } else {
+                    mipsInsts.add(new LIInst(Register.K0, param.toValueIR()));
+                    fromReg = Register.K0;
+                }
+
+                Register reg = getReg(i);
+                if (reg != null) {
+                    mipsInsts.add(new ADDIUInst(fromReg, reg, 0));
+                } else {
+                    mipsInsts.add(new SWInst(Register.SP, fromReg, offset - 4 * i));
+                }
+            }
+
+            mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, offset));
+            // 准备工作完成，开始调用
+            mipsInsts.add(new JALInst("func_" + funcName));
+            // 调用完成，恢复现场
+            mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, -offset));
+            mipsInsts.addAll(MIPSManager.getInstance().restoreAllReg());
+
+            if (retType != LLVMType.TypeID.VoidTyID) {
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                Register reg = MIPSManager.getInstance().getReg(this);
+                mipsInsts.add(new ADDIUInst(Register.V0, reg, 0));
+            }
+        }
 
         return mipsInsts;
     }

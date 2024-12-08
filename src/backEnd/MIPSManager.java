@@ -1,6 +1,8 @@
 package backEnd;
 
+import backEnd.Insts.LWInst;
 import backEnd.Insts.SWInst;
+import middleEnd.FuncFParam;
 import middleEnd.UsableValue;
 
 import java.util.HashMap;
@@ -15,27 +17,29 @@ public class MIPSManager {
     private final LinkedList<Register> allTempRegs = new LinkedList<>();
     private LinkedList<Register> used = new LinkedList<>();
     private LinkedList<Register> free = new LinkedList<>();
+    private LinkedList<Register> usedArgs = new LinkedList<>();
+    private LinkedList<Register> freeArgs = new LinkedList<>();
     private HashMap<Register, UsableValue> regMap = new HashMap<>();
     private HashSet<Register> reserved = new HashSet<>();
     private MIPSManager() {
         allTempRegs.add(Register.T0);
         allTempRegs.add(Register.T1);
         allTempRegs.add(Register.T2);
-//        allTempRegs.add(Register.T3);
-//        allTempRegs.add(Register.T4);
-//        allTempRegs.add(Register.T5);
-//        allTempRegs.add(Register.T6);
-//        allTempRegs.add(Register.T7);
-//        allTempRegs.add(Register.T8);
-//        allTempRegs.add(Register.T9);
-//        allTempRegs.add(Register.S0);
-//        allTempRegs.add(Register.S1);
-//        allTempRegs.add(Register.S2);
-//        allTempRegs.add(Register.S3);
-//        allTempRegs.add(Register.S4);
-//        allTempRegs.add(Register.S5);
-//        allTempRegs.add(Register.S6);
-//        allTempRegs.add(Register.S7);
+        allTempRegs.add(Register.T3);
+        allTempRegs.add(Register.T4);
+        allTempRegs.add(Register.T5);
+        allTempRegs.add(Register.T6);
+        allTempRegs.add(Register.T7);
+        allTempRegs.add(Register.T8);
+        allTempRegs.add(Register.T9);
+        allTempRegs.add(Register.S0);
+        allTempRegs.add(Register.S1);
+        allTempRegs.add(Register.S2);
+        allTempRegs.add(Register.S3);
+        allTempRegs.add(Register.S4);
+        allTempRegs.add(Register.S5);
+        allTempRegs.add(Register.S6);
+        allTempRegs.add(Register.S7);
     }
 
     public static MIPSManager getInstance() {
@@ -50,8 +54,8 @@ public class MIPSManager {
         return offsetMap.get(currentFunction).get(value);
     }
 
-    public void addOffset(int size) {
-        offset += size;
+    public void subOffset(int size) {
+        offset -= size;
     }
 
     public void setCurrentFunction(MIPSFunction function) {
@@ -59,18 +63,20 @@ public class MIPSManager {
         offsetMap.putIfAbsent(function, new HashMap<>());
         free = new LinkedList<>(allTempRegs);
         used = new LinkedList<>();
+        regMap = new HashMap<>();
+        offset = 0;
     }
 
     public int allocateMemForAlloca(int size) {
         int offset = this.offset;
-        addOffset(size);
+        subOffset(size);
         return offset;
 //        HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
 //        int size = value.getMemorySize();
 //        // 申请内存
 //        if (!map.containsKey(value) && size != 0) {
 //            map.put(value, offset);
-//            addOffset(size);
+//            subOffset(size);
 //        }
     }
 
@@ -85,14 +91,14 @@ public class MIPSManager {
             insts.add(new MIPSComment("saving " + value.toValueIR() + " to memory, reg: " + reg));
             if (offsetMap.get(currentFunction).containsKey(value)) {
                 int offset = offsetMap.get(currentFunction).get(value);
-                insts.add(new SWInst(reg, Register.SP, offset));
+                insts.add(new SWInst(Register.SP, reg, offset));
             } else {
                 HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
                 int size = value.getMemorySize();
                 // 申请内存
                 map.put(value, offset);
-                addOffset(size);
-                insts.add(new SWInst(reg, Register.SP, offset));
+                insts.add(new SWInst(Register.SP, reg, offset));
+                subOffset(size);
             }
         }
         return insts;
@@ -134,5 +140,50 @@ public class MIPSManager {
 
     public void resetReservedRegs() {
         reserved.clear();
+    }
+
+    public boolean hasFreeArgReg() {
+        return !this.freeArgs.isEmpty();
+    }
+
+    public void setRegMap(Register reg, FuncFParam param) {
+        regMap.put(reg, param);
+    }
+
+    public void setParamOffset(FuncFParam param, int offset) {
+        offsetMap.get(currentFunction).put(param, offset);
+    }
+
+    public void allocateMemForArg() {
+        offset -= 4;
+    }
+
+    public LinkedList<MIPSInst> storeAllReg() {
+        LinkedList<MIPSInst> insts = new LinkedList<>();
+        for (Register reg : used) {
+            UsableValue value = regMap.get(reg);
+            if (offsetMap.get(currentFunction).containsKey(value)) {
+                int offset = offsetMap.get(currentFunction).get(value);
+                insts.add(new SWInst(Register.SP, reg, offset));
+            } else {
+                HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
+                int size = value.getMemorySize();
+                // 申请内存
+                map.put(value, offset);
+                insts.add(new SWInst(Register.SP, reg, offset));
+                subOffset(size);
+            }
+        }
+        return insts;
+    }
+
+    public LinkedList<MIPSInst> restoreAllReg() {
+        LinkedList<MIPSInst> insts = new LinkedList<>();
+        for (Register reg : used) {
+            UsableValue value = regMap.get(reg);
+            int offset = offsetMap.get(currentFunction).get(value);
+            insts.add(new LWInst(Register.SP, reg, offset));
+        }
+        return insts;
     }
 }
