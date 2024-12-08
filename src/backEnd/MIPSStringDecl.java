@@ -7,7 +7,7 @@ public class MIPSStringDecl extends MIPSDecl {
     String string;
     public MIPSStringDecl(GlobalString value) {
         super();
-        name = value.toValueIR();
+        name = "global_" + value.toValueIR().substring(1);
         string = value.string;
         modifyString();
     }

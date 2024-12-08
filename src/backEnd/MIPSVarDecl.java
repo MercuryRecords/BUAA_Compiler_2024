@@ -2,7 +2,6 @@ package backEnd;
 
 import middleEnd.ConstInitVal;
 import middleEnd.GlobalVariable;
-import middleEnd.LLVMType;
 
 public class MIPSVarDecl extends MIPSDecl {
     String name;
@@ -11,7 +10,7 @@ public class MIPSVarDecl extends MIPSDecl {
     ConstInitVal initVal;
     public MIPSVarDecl(GlobalVariable variable) {
         super();
-        this.name = "@" + variable.name;
+        this.name = "global_" + variable.name;
 //        if (variable.baseType == LLVMType.TypeID.IntegerTyID) {
         this.type = ".word";
 //        } else {

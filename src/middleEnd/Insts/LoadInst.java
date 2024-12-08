@@ -59,7 +59,7 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
         Register fromReg;
         if (from.toValueIR().startsWith("@")) {
             // 全局单个变量，加载地址
-            mipsInsts.add(new LAInst(Register.K0, from.toValueIR()));
+            mipsInsts.add(new LAInst(Register.K0, "global_" + from.toValueIR().substring(1)));
             fromReg = Register.K0;
         } else {
             // 为虚拟寄存器

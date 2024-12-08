@@ -140,7 +140,7 @@ public class CallInst extends LLVMInstruction implements UsableValue {
                 }
             } else if (param.toValueIR().startsWith("@")) {
                 fromReg = Register.K0;
-                mipsInsts.add(new LAInst(fromReg, param.toValueIR()));
+                mipsInsts.add(new LAInst(fromReg, "global_" + param.toValueIR().substring(1)));
             } else {
                 fromReg = Register.K0;
                 mipsInsts.add(new LIInst(fromReg, param.toValueIR()));

@@ -56,7 +56,7 @@ public class StoreInst extends LLVMInstruction {
         Register toReg;
         if (to.toValueIR().startsWith("@")) {
             // 全局单个变量，加载地址
-            mipsInsts.add(new LAInst(Register.K1, to.toValueIR()));
+            mipsInsts.add(new LAInst(Register.K1, "global_" + to.toValueIR().substring(1)));
             toReg = Register.K1;
         } else {
             // 为虚拟寄存器

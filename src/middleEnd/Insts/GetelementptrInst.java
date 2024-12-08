@@ -67,7 +67,7 @@ public class GetelementptrInst extends LLVMInstruction implements UsableValue {
         if (from.toValueIR().startsWith("@")) {
             // 全局数组
             fromReg = Register.K0;
-            mipsInsts.add(new LAInst(fromReg, from.toValueIR()));
+            mipsInsts.add(new LAInst(fromReg, "global_" + from.toValueIR().substring(1)));
         } else {
             // 为虚拟寄存器
             if (MIPSManager.getInstance().hasReg(from)) {

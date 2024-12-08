@@ -23,6 +23,8 @@ public class MIPSManager {
     private LinkedList<Register> freeArgs = new LinkedList<>();
     private HashMap<Register, UsableValue> regMap = new HashMap<>();
     private HashSet<Register> reserved = new HashSet<>();
+    private UsableValue forSP = new LLVMLabel();
+    private UsableValue forRA = new LLVMLabel();
     private MIPSManager() {
         allTempRegs.add(Register.T0);
         allTempRegs.add(Register.T1);
@@ -176,6 +178,13 @@ public class MIPSManager {
                 subOffset(size);
             }
         }
+        HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
+        map.put(MIPS_MANAGER.forSP, offset);
+        insts.add(new SWInst(Register.SP, Register.SP, offset));
+        subOffset(4);
+        map.put(MIPS_MANAGER.forRA, offset);
+        insts.add(new SWInst(Register.SP, Register.RA, offset));
+        subOffset(4);
         return insts;
     }
 
@@ -186,6 +195,9 @@ public class MIPSManager {
             int offset = offsetMap.get(currentFunction).get(value);
             insts.add(new LWInst(Register.SP, reg, offset));
         }
+        HashMap<UsableValue, Integer> map = offsetMap.get(currentFunction);
+        insts.add(new LWInst(Register.SP, Register.SP, map.get(MIPS_MANAGER.forSP)));
+        insts.add(new LWInst(Register.SP, Register.RA, map.get(MIPS_MANAGER.forRA)));
         return insts;
     }
 
