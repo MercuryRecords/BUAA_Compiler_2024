@@ -25,10 +25,10 @@ public class LLVMType {
 
         public int toAlign() {
             return switch (s) {
-                case "i32" -> 4;
+                // case "i32" -> 4;
                 case "i8" -> 1;
-                case "i32*", "i8*" -> 8;
-                default -> 0;
+                // case "i32*", "i8*" -> 8;
+                default -> 4;
             };
         }
 

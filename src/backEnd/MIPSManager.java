@@ -20,7 +20,7 @@ public class MIPSManager {
     private MIPSManager() {
         allTempRegs.add(Register.T0);
         allTempRegs.add(Register.T1);
-//        allTempRegs.add(Register.T2);
+        allTempRegs.add(Register.T2);
 //        allTempRegs.add(Register.T3);
 //        allTempRegs.add(Register.T4);
 //        allTempRegs.add(Register.T5);

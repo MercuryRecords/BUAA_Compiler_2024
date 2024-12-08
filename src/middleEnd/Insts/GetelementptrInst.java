@@ -1,7 +1,10 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.*;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -60,7 +63,52 @@ public class GetelementptrInst extends LLVMInstruction implements UsableValue {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        Register fromReg;
+        if (from.toValueIR().startsWith("@")) {
+            // 全局数组
+            fromReg = Register.K0;
+            mipsInsts.add(new LAInst(fromReg, from.toValueIR()));
+        } else {
+            // 为虚拟寄存器
+            if (MIPSManager.getInstance().hasReg(from)) {
+                // 使用已有的物理寄存器
+                fromReg = MIPSManager.getInstance().getReg(from);
+            } else {
+                // 分配一个物理寄存器，从内存中加载值
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                fromReg = MIPSManager.getInstance().getReg(from);
+                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+            }
+            MIPSManager.getInstance().reserveUsedReg(fromReg);
+        }
+
+        Register offsetReg;
+        if (offset.toValueIR().startsWith("%")) {
+            if (MIPSManager.getInstance().hasReg(offset)) {
+                offsetReg = MIPSManager.getInstance().getReg(offset);
+            } else {
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                offsetReg = MIPSManager.getInstance().getReg(offset);
+                mipsInsts.add(new LWInst(Register.SP, offsetReg, MIPSManager.getInstance().getValueOffset(offset)));
+            }
+            MIPSManager.getInstance().reserveUsedReg(offsetReg);
+        } else {
+            offsetReg = Register.K1;
+            mipsInsts.add(new LIInst(offsetReg, offset.toValueIR()));
+        }
+
+        if (baseType != LLVMType.TypeID.CharPtrTyID) {
+            mipsInsts.add(new SLLInst(offsetReg, offsetReg, 2));
+        }
+
+        Register toReg;
+        if (!MIPSManager.getInstance().hasReg(this)) {
+            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+        }
+        toReg = MIPSManager.getInstance().getReg(this);
+        mipsInsts.add(new ADDUInst(fromReg, offsetReg, toReg));
+
+        MIPSManager.getInstance().resetReservedRegs();
 
         return mipsInsts;
     }

@@ -73,6 +73,7 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
                 fromReg = MIPSManager.getInstance().getReg(from);
                 mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
             }
+            MIPSManager.getInstance().reserveUsedReg(fromReg);
         }
 
         mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
@@ -83,7 +84,7 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
             mipsInsts.add(new LWInst(fromReg, toReg, 0));
         }
 
-
+        MIPSManager.getInstance().resetReservedRegs();
 
         return mipsInsts;
     }
