@@ -1,7 +1,12 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.ADDIUInst;
+import backEnd.Insts.JRRAInst;
+import backEnd.Insts.LIInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -33,7 +38,18 @@ public class RetInst extends LLVMInstruction {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        if (ret != null) {
+            if (ret.toValueIR().startsWith("%")) {
+                if (!MIPSManager.getInstance().hasReg(ret)) {
+                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                }
+                Register retReg = MIPSManager.getInstance().getReg(ret);
+                mipsInsts.add(new ADDIUInst(retReg, Register.V0, 0));
+            } else {
+                mipsInsts.add(new LIInst(Register.V0, ret.toValueIR()));
+            }
+        }
+        mipsInsts.add(new JRRAInst());
 
         return mipsInsts;
     }

@@ -1,7 +1,11 @@
 package middleEnd.Insts;
 
+import backEnd.Insts.ADDIUInst;
+import backEnd.Insts.LIInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
+import backEnd.MIPSManager;
+import backEnd.Register;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -54,7 +58,22 @@ public class ZextInst extends LLVMInstruction implements UsableValue {
         LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
         mipsInsts.add(new MIPSComment(this.toString()));
 
-        // TODO
+        Register fromReg;
+        if (from.toValueIR().startsWith("%")) {
+            if (!MIPSManager.getInstance().hasReg(from)) {
+                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+            }
+            fromReg = MIPSManager.getInstance().getReg(from);
+            MIPSManager.getInstance().reserveUsedReg(fromReg);
+        } else {
+            fromReg = Register.K0;
+            mipsInsts.add(new LIInst(fromReg, from.toValueIR()));
+        }
+
+        Register reg;
+        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+        reg = MIPSManager.getInstance().getReg(this);
+        mipsInsts.add(new ADDIUInst(fromReg, reg, 0));
 
         return mipsInsts;
     }
