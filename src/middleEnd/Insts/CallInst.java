@@ -171,6 +171,7 @@ public class CallInst extends LLVMInstruction implements UsableValue {
         } else {
             mipsInsts.addAll(MIPSManager.getInstance().storeAllReg());
             int offset = MIPSManager.getInstance().getOffset();
+            mipsInsts.add(new MIPSComment("handling params"));
             for (int i = 0; i < params.size(); i++) {
                 UsableValue param = params.get(i);
                 Register fromReg;

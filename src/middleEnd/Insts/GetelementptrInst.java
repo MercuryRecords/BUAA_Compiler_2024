@@ -1,9 +1,6 @@
 package middleEnd.Insts;
 
-import backEnd.Insts.ADDUInst;
-import backEnd.Insts.LAInst;
-import backEnd.Insts.LIInst;
-import backEnd.Insts.SLLInst;
+import backEnd.Insts.*;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
 import backEnd.MIPSManager;

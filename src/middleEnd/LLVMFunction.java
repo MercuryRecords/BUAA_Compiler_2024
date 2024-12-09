@@ -102,10 +102,10 @@ public class LLVMFunction extends Value {
 
     public void translateEntryBlock() {
         for (FuncFParam param : params) {
-            if (!freeArgRegs.isEmpty()) {
-                Register reg = freeArgRegs.removeFirst();
-                MIPSManager.getInstance().setRegMap(reg, param);
-            }
+//            if (!freeArgRegs.isEmpty()) {
+//                Register reg = freeArgRegs.removeFirst();
+//                MIPSManager.getInstance().setRegMap(reg, param);
+//            }
             MIPSManager.getInstance().allocateMemForArg();
             MIPSManager.getInstance().setParamOffset(param, offset);
             offset -= 4;
