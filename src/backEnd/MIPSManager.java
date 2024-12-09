@@ -29,20 +29,20 @@ public class MIPSManager {
         allTempRegs.add(Register.T1);
         allTempRegs.add(Register.T2);
         allTempRegs.add(Register.T3);
-        allTempRegs.add(Register.T4);
-        allTempRegs.add(Register.T5);
-        allTempRegs.add(Register.T6);
-        allTempRegs.add(Register.T7);
-        allTempRegs.add(Register.T8);
-        allTempRegs.add(Register.T9);
-        allTempRegs.add(Register.S0);
-        allTempRegs.add(Register.S1);
-        allTempRegs.add(Register.S2);
-        allTempRegs.add(Register.S3);
-        allTempRegs.add(Register.S4);
-        allTempRegs.add(Register.S5);
-        allTempRegs.add(Register.S6);
-        allTempRegs.add(Register.S7);
+//        allTempRegs.add(Register.T4);
+//        allTempRegs.add(Register.T5);
+//        allTempRegs.add(Register.T6);
+//        allTempRegs.add(Register.T7);
+//        allTempRegs.add(Register.T8);
+//        allTempRegs.add(Register.T9);
+//        allTempRegs.add(Register.S0);
+//        allTempRegs.add(Register.S1);
+//        allTempRegs.add(Register.S2);
+//        allTempRegs.add(Register.S3);
+//        allTempRegs.add(Register.S4);
+//        allTempRegs.add(Register.S5);
+//        allTempRegs.add(Register.S6);
+//        allTempRegs.add(Register.S7);
     }
 
     public static MIPSManager getInstance() {

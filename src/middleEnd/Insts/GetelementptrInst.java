@@ -48,7 +48,7 @@ public class GetelementptrInst extends LLVMInstruction implements UsableValue {
 
     @Override
     public int getMemorySize() {
-        return baseType.toAlign();
+        return 4;
     }
 
     @Override

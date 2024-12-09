@@ -60,7 +60,7 @@ public class CallInst extends LLVMInstruction implements UsableValue {
 
     @Override
     public int getMemorySize() {
-        return this.retType.toAlign();
+        return 4;
     }
 
     @Override
@@ -192,11 +192,13 @@ public class CallInst extends LLVMInstruction implements UsableValue {
                 Register reg = getReg(i);
                 if (reg != null) {
                     mipsInsts.add(new ADDIUInst(fromReg, reg, 0));
+                    mipsInsts.add(new SWInst(Register.SP, reg, offset - 4 * i));
                 } else {
                     mipsInsts.add(new SWInst(Register.SP, fromReg, offset - 4 * i));
                 }
             }
 
+            MIPSManager.getInstance().releaseRegs();
             mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, offset));
             // 准备工作完成，开始调用
             mipsInsts.add(new JALInst("func_" + funcName));

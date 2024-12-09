@@ -19,6 +19,6 @@ public class MIPSStringDecl extends MIPSDecl {
 
     @Override
     public String toString() {
-        return name + ": .asciiz \"" + string + "\"\n";
+        return name + ": .asciiz \"" + string + "\"";
     }
 }

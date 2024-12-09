@@ -46,7 +46,7 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
 
     @Override
     public int getMemorySize() {
-        return baseType.toAlign();
+        return 4;
 //        if (arrayLength == 0) {
 //            return baseType.toAlign();
 //        }
@@ -73,9 +73,9 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
         // 给值申请内存
         int size;
         if (arrayLength == 0) {
-            size = baseType.toAlign();
+            size = 4;
         } else {
-            size = baseType.toAlign() * arrayLength;
+            size = 4 * arrayLength;
         }
         int offset = MIPSManager.getInstance().allocateMemForAlloca(size);
         // 给指针申请寄存器
