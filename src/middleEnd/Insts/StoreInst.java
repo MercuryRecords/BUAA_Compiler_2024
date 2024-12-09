@@ -2,7 +2,6 @@ package middleEnd.Insts;
 
 import backEnd.Insts.LAInst;
 import backEnd.Insts.LIInst;
-import backEnd.Insts.LWInst;
 import backEnd.Insts.SWInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
@@ -37,16 +36,17 @@ public class StoreInst extends LLVMInstruction {
 
         Register fromReg;
         if (from.toValueIR().startsWith("%")) {
-            if (MIPSManager.getInstance().hasReg(from)) {
-                // 使用已有的物理寄存器
-                fromReg = MIPSManager.getInstance().getReg(from);
-            } else {
+//            if (MIPSManager.getInstance().hasReg(from)) {
+//                // 使用已有的物理寄存器
+//                fromReg = MIPSManager.getInstance().getReg(from);
+//            } else {
                 // 为虚拟寄存器，分配一个物理寄存器
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
                 fromReg = MIPSManager.getInstance().getReg(from);
-                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
-            }
-            MIPSManager.getInstance().reserveUsedReg(fromReg);
+                mipsInsts.add(MIPSManager.getInstance().loadValueToReg(from, fromReg));
+//                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+//            }
+//            MIPSManager.getInstance().reserveUsedReg(fromReg);
         } else {
             // 为常量使用寄存器 K0 存储
             mipsInsts.add(new LIInst(Register.K0, from.toValueIR()));
@@ -60,21 +60,23 @@ public class StoreInst extends LLVMInstruction {
             toReg = Register.K1;
         } else {
             // 为虚拟寄存器
-            if (MIPSManager.getInstance().hasReg(to)) {
-                // 使用已有的物理寄存器
-                toReg = MIPSManager.getInstance().getReg(to);
-            } else {
+//            if (MIPSManager.getInstance().hasReg(to)) {
+//                // 使用已有的物理寄存器
+//                toReg = MIPSManager.getInstance().getReg(to);
+//            } else {
                 // 分配一个物理寄存器，从内存中加载值
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
                 toReg = MIPSManager.getInstance().getReg(to);
-                mipsInsts.add(new LWInst(Register.SP, toReg, MIPSManager.getInstance().getValueOffset(to)));
-            }
+                mipsInsts.add(MIPSManager.getInstance().loadValueToReg(to, toReg));
+//                mipsInsts.add(new LWInst(Register.SP, toReg, MIPSManager.getInstance().getValueOffset(to)));
+//            }
         }
 
 
         mipsInsts.add(new SWInst(toReg, fromReg, 0));
+        MIPSManager.getInstance().releaseRegs();
 
-        MIPSManager.getInstance().resetReservedRegs();
+//        MIPSManager.getInstance().resetReservedRegs();
 
         return mipsInsts;
     }

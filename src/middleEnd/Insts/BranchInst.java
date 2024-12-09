@@ -3,7 +3,6 @@ package middleEnd.Insts;
 import backEnd.Insts.BEQZInst;
 import backEnd.Insts.BNEZInst;
 import backEnd.Insts.JInst;
-import backEnd.Insts.LWInst;
 import backEnd.MIPSComment;
 import backEnd.MIPSInst;
 import backEnd.MIPSManager;
@@ -53,13 +52,14 @@ public class BranchInst extends LLVMInstruction {
         } else {
             Register reg;
             if (val.toValueIR().startsWith("%")) {
-                if (MIPSManager.getInstance().hasReg(val)) {
-                    reg = MIPSManager.getInstance().getReg(val);
-                } else {
-                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-                    reg = MIPSManager.getInstance().getReg(val);
-                    mipsInsts.add(new LWInst(Register.SP, reg, MIPSManager.getInstance().getValueOffset(val)));
-                }
+//                if (MIPSManager.getInstance().hasReg(val)) {
+//                    reg = MIPSManager.getInstance().getReg(val);
+//                } else {
+//                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                reg = MIPSManager.getInstance().getReg(val);
+//                    mipsInsts.add(new LWInst(Register.SP, reg, MIPSManager.getInstance().getValueOffset(val)));
+                mipsInsts.add(MIPSManager.getInstance().loadValueToReg(val, reg));
+//                }
                 mipsInsts.add(new BEQZInst(reg, MIPSManager.getInstance().getMIPSLabel(isFalse)));
                 mipsInsts.add(new BNEZInst(reg, MIPSManager.getInstance().getMIPSLabel(isTrue)));
             } else {
@@ -70,6 +70,7 @@ public class BranchInst extends LLVMInstruction {
                 }
             }
         }
+        MIPSManager.getInstance().releaseRegs();
 
         return mipsInsts;
     }

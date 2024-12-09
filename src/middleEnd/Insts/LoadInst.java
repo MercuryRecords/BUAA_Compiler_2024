@@ -63,24 +63,27 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
             fromReg = Register.K0;
         } else {
             // 为虚拟寄存器
-            if (MIPSManager.getInstance().hasReg(from)) {
-                // 使用已有的物理寄存器
-                fromReg = MIPSManager.getInstance().getReg(from);
-            } else {
+//            if (MIPSManager.getInstance().hasReg(from)) {
+//                // 使用已有的物理寄存器
+//                fromReg = MIPSManager.getInstance().getReg(from);
+//            } else {
                 // 分配一个物理寄存器，从内存中加载值
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
                 fromReg = MIPSManager.getInstance().getReg(from);
-                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
-            }
-            MIPSManager.getInstance().reserveUsedReg(fromReg);
+                mipsInsts.add(MIPSManager.getInstance().loadValueToReg(from, fromReg));
+//                mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(from)));
+//            }
+//            MIPSManager.getInstance().reserveUsedReg(fromReg);
         }
 
-        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
         Register toReg = MIPSManager.getInstance().getReg(this);
         mipsInsts.add(new LWInst(fromReg, toReg, 0));
+        mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, toReg));
 
+        MIPSManager.getInstance().releaseRegs();
 
-        MIPSManager.getInstance().resetReservedRegs();
+//        MIPSManager.getInstance().resetReservedRegs();
 
         return mipsInsts;
     }

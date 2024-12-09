@@ -119,7 +119,7 @@ public class CallInst extends LLVMInstruction implements UsableValue {
     }
 
     private boolean isInput() {
-        return this.funcName.equals("getch") || this.funcName.equals("getint");
+        return this.funcName.equals("getchar") || this.funcName.equals("getint");
     }
 
     @Override
@@ -131,13 +131,14 @@ public class CallInst extends LLVMInstruction implements UsableValue {
             UsableValue param = params.get(0);
             Register fromReg;
             if (param.toValueIR().startsWith("%")) {
-                if (MIPSManager.getInstance().hasReg(param)) {
-                    fromReg = MIPSManager.getInstance().getReg(param);
-                } else {
-                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-                    fromReg = MIPSManager.getInstance().getReg(param);
-                    mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(param)));
-                }
+//                if (MIPSManager.getInstance().hasReg(param)) {
+//                    fromReg = MIPSManager.getInstance().getReg(param);
+//                } else {
+//                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                fromReg = MIPSManager.getInstance().getReg(param);
+//                    mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(param)));
+                mipsInsts.add(MIPSManager.getInstance().loadValueToReg(param, fromReg));
+//                }
             } else if (param.toValueIR().startsWith("@")) {
                 fromReg = Register.K0;
                 mipsInsts.add(new LAInst(fromReg, "global_" + param.toValueIR().substring(1)));
@@ -145,6 +146,7 @@ public class CallInst extends LLVMInstruction implements UsableValue {
                 fromReg = Register.K0;
                 mipsInsts.add(new LIInst(fromReg, param.toValueIR()));
             }
+
             mipsInsts.add(new ADDIUInst(fromReg, Register.A0, 0));
             if (funcName.equals("putint")) {
                 mipsInsts.add(new LIInst(Register.V0, String.valueOf(1)));
@@ -153,9 +155,10 @@ public class CallInst extends LLVMInstruction implements UsableValue {
             } else {
                 mipsInsts.add(new LIInst(Register.V0, String.valueOf(11)));
             }
+
             mipsInsts.add(new SYSCALLInst());
         } else if (isInput()) {
-            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
             Register reg = MIPSManager.getInstance().getReg(this);
             if (funcName.equals("getint")) {
                 mipsInsts.add(new LIInst(Register.V0, String.valueOf(5)));
@@ -164,6 +167,7 @@ public class CallInst extends LLVMInstruction implements UsableValue {
             }
             mipsInsts.add(new SYSCALLInst());
             mipsInsts.add(new ADDIUInst(Register.V0, reg, 0));
+            mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
         } else {
             mipsInsts.addAll(MIPSManager.getInstance().storeAllReg());
             int offset = MIPSManager.getInstance().getOffset();
@@ -171,14 +175,15 @@ public class CallInst extends LLVMInstruction implements UsableValue {
                 UsableValue param = params.get(i);
                 Register fromReg;
                 if (param.toValueIR().startsWith("%")) {
-                    if (MIPSManager.getInstance().hasReg(param)) {
-                        fromReg = MIPSManager.getInstance().getReg(param);
-                    } else {
-                        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-                        fromReg = MIPSManager.getInstance().getReg(param);
-                        mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(param)));
-                    }
-                    MIPSManager.getInstance().reserveUsedReg(fromReg);
+//                    if (MIPSManager.getInstance().hasReg(param)) {
+//                        fromReg = MIPSManager.getInstance().getReg(param);
+//                    } else {
+//                        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+                    fromReg = MIPSManager.getInstance().getReg(param);
+                    mipsInsts.add(MIPSManager.getInstance().loadValueToReg(param, fromReg));
+//                        mipsInsts.add(new LWInst(Register.SP, fromReg, MIPSManager.getInstance().getValueOffset(param)));
+//                    }
+//                    MIPSManager.getInstance().reserveUsedReg(fromReg);
                 } else {
                     mipsInsts.add(new LIInst(Register.K0, param.toValueIR()));
                     fromReg = Register.K0;
@@ -200,11 +205,13 @@ public class CallInst extends LLVMInstruction implements UsableValue {
             mipsInsts.addAll(MIPSManager.getInstance().restoreAllReg());
 
             if (retType != LLVMType.TypeID.VoidTyID) {
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
                 Register reg = MIPSManager.getInstance().getReg(this);
                 mipsInsts.add(new ADDIUInst(Register.V0, reg, 0));
+                mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
             }
         }
+        MIPSManager.getInstance().releaseRegs();
 
         return mipsInsts;
     }

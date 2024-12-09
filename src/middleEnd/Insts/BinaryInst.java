@@ -62,11 +62,12 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
 
         Register reg1;
         if (op1.toValueIR().startsWith("%")) {
-            if (!MIPSManager.getInstance().hasReg(op1)) {
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-            }
+//            if (!MIPSManager.getInstance().hasReg(op1)) {
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//            }
             reg1 = MIPSManager.getInstance().getReg(op1);
-            MIPSManager.getInstance().reserveUsedReg(reg1);
+//            MIPSManager.getInstance().reserveUsedReg(reg1);
+            mipsInsts.add(MIPSManager.getInstance().loadValueToReg(op1, reg1));
         } else {
             // 是常数，加载到 K0 寄存器
             reg1 = Register.K0;
@@ -75,20 +76,21 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
 
         Register reg2;
         if (op2.toValueIR().startsWith("%")) {
-            if (!MIPSManager.getInstance().hasReg(op2)) {
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-            }
+//            if (!MIPSManager.getInstance().hasReg(op2)) {
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//            }
             reg2 = MIPSManager.getInstance().getReg(op2);
-            MIPSManager.getInstance().reserveUsedReg(reg2);
+//            MIPSManager.getInstance().reserveUsedReg(reg2);
+            mipsInsts.add(MIPSManager.getInstance().loadValueToReg(op2, reg2));
         } else {
             // 是常数，加载到 K1 寄存器
             reg2 = Register.K1;
             mipsInsts.add(new LIInst(reg2, op2.toValueIR()));
         }
 
-        if (!MIPSManager.getInstance().hasReg(this)) {
-            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-        }
+//        if (!MIPSManager.getInstance().hasReg(this)) {
+//            mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//        }
         Register reg = MIPSManager.getInstance().getReg(this);
         switch (type) {
             case ADD -> mipsInsts.add(new ADDUInst(reg1, reg2, reg));
@@ -124,6 +126,8 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
                 mipsInsts.add(new SLEInst(reg, reg1, reg2));
             }
         }
+        mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
+        MIPSManager.getInstance().releaseRegs();
 
         return mipsInsts;
     }

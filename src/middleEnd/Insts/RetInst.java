@@ -40,16 +40,18 @@ public class RetInst extends LLVMInstruction {
 
         if (ret != null) {
             if (ret.toValueIR().startsWith("%")) {
-                if (!MIPSManager.getInstance().hasReg(ret)) {
-                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-                }
+//                if (!MIPSManager.getInstance().hasReg(ret)) {
+//                    mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//                }
                 Register retReg = MIPSManager.getInstance().getReg(ret);
+                mipsInsts.add(MIPSManager.getInstance().loadValueToReg(ret, retReg));
                 mipsInsts.add(new ADDIUInst(retReg, Register.V0, 0));
             } else {
                 mipsInsts.add(new LIInst(Register.V0, ret.toValueIR()));
             }
         }
         mipsInsts.add(new JRRAInst());
+        MIPSManager.getInstance().releaseRegs();
 
         return mipsInsts;
     }

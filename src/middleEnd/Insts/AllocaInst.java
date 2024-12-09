@@ -79,9 +79,11 @@ public class AllocaInst extends LLVMInstruction implements UsableValue {
         }
         int offset = MIPSManager.getInstance().allocateMemForAlloca(size);
         // 给指针申请寄存器
-        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+        // mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
         Register reg = MIPSManager.getInstance().getReg(this);
         mipsInsts.add(new ADDIUInst(Register.SP, reg, offset));
+        mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
+        MIPSManager.getInstance().releaseRegs();
         return mipsInsts;
     }
 }

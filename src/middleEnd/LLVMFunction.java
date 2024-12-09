@@ -7,7 +7,6 @@ import middleEnd.Insts.BranchInst;
 import middleEnd.Insts.RetInst;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 
 public class LLVMFunction extends Value {

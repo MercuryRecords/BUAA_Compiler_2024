@@ -60,20 +60,23 @@ public class ZextInst extends LLVMInstruction implements UsableValue {
 
         Register fromReg;
         if (from.toValueIR().startsWith("%")) {
-            if (!MIPSManager.getInstance().hasReg(from)) {
-                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
-            }
+//            if (!MIPSManager.getInstance().hasReg(from)) {
+//                mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//            }
             fromReg = MIPSManager.getInstance().getReg(from);
-            MIPSManager.getInstance().reserveUsedReg(fromReg);
+            mipsInsts.add(MIPSManager.getInstance().loadValueToReg(from, fromReg));
+//            MIPSManager.getInstance().reserveUsedReg(fromReg);
         } else {
             fromReg = Register.K0;
             mipsInsts.add(new LIInst(fromReg, from.toValueIR()));
         }
 
         Register reg;
-        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
+//        mipsInsts.addAll(MIPSManager.getInstance().deallocateReg());
         reg = MIPSManager.getInstance().getReg(this);
         mipsInsts.add(new ADDIUInst(fromReg, reg, 0));
+        mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
+        MIPSManager.getInstance().releaseRegs();
 
         return mipsInsts;
     }
