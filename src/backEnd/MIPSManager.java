@@ -23,26 +23,27 @@ public class MIPSManager {
 //    private HashMap<Register, UsableValue> regMap = new HashMap<>();
 //    private HashSet<Register> reserved = new HashSet<>();
 //    private UsableValue forSP = new LLVMLabel();
-    private UsableValue forRA = new LLVMLabel();
+    private int regIndex = 0;
+    private final UsableValue forRA = new LLVMLabel();
     private MIPSManager() {
         allTempRegs.add(Register.T0);
         allTempRegs.add(Register.T1);
         allTempRegs.add(Register.T2);
         allTempRegs.add(Register.T3);
-//        allTempRegs.add(Register.T4);
-//        allTempRegs.add(Register.T5);
-//        allTempRegs.add(Register.T6);
-//        allTempRegs.add(Register.T7);
-//        allTempRegs.add(Register.T8);
-//        allTempRegs.add(Register.T9);
-//        allTempRegs.add(Register.S0);
-//        allTempRegs.add(Register.S1);
-//        allTempRegs.add(Register.S2);
-//        allTempRegs.add(Register.S3);
-//        allTempRegs.add(Register.S4);
-//        allTempRegs.add(Register.S5);
-//        allTempRegs.add(Register.S6);
-//        allTempRegs.add(Register.S7);
+        allTempRegs.add(Register.T4);
+        allTempRegs.add(Register.T5);
+        allTempRegs.add(Register.T6);
+        allTempRegs.add(Register.T7);
+        allTempRegs.add(Register.T8);
+        allTempRegs.add(Register.T9);
+        allTempRegs.add(Register.S0);
+        allTempRegs.add(Register.S1);
+        allTempRegs.add(Register.S2);
+        allTempRegs.add(Register.S3);
+        allTempRegs.add(Register.S4);
+        allTempRegs.add(Register.S5);
+        allTempRegs.add(Register.S6);
+        allTempRegs.add(Register.S7);
     }
 
     public static MIPSManager getInstance() {
@@ -117,11 +118,10 @@ public class MIPSManager {
 //                return entry.getKey();
 //            }
 //        }
-        Register reg = nextFreeReg();
-//        regMap.put(reg, value);
-        free.remove(reg);
-        used.add(reg);
-        return reg;
+        //        regMap.put(reg, value);
+//        free.remove(reg);
+//        used.add(reg);
+        return nextFreeReg();
     }
 
     public MIPSInst saveRegToMemory(UsableValue value, Register reg) {
@@ -147,7 +147,9 @@ public class MIPSManager {
     }
 
     private Register nextFreeReg() {
-        return free.getFirst();
+        Register ret = free.get(regIndex);
+        regIndex = (regIndex + 1) % free.size();
+        return ret;
     }
 
 //    private Register nextUsedReg() {
@@ -227,7 +229,7 @@ public class MIPSManager {
     }
 
     public void releaseRegs() {
-        free.addAll(used);
-        used.clear();
+//        free.addAll(used);
+//        used.clear();
     }
 }
