@@ -105,21 +105,19 @@ private ASTNode parseCompUnit() {
     node.addChild(parseMainFuncDef());
     return node;
 }
-```
 
-```java
-    private ASTNode parseForStmt() {
-        // <ForStmt> ::=  <LVal> '=' <Exp>
-        ASTNode node = new ASTNode("ForStmt");
-        node.addChild(parseLVal());
-        node.addChild(parseTokenType(LexType.ASSIGN));
-        node.addChild(parseExp());
+private ASTNode parseForStmt() {
+    // <ForStmt> ::=  <LVal> '=' <Exp>
+    ASTNode node = new ASTNode("ForStmt");
+    node.addChild(parseLVal());
+    node.addChild(parseTokenType(LexType.ASSIGN));
+    node.addChild(parseExp());
 
-        if (OUTPUT) {
-            sb.append(node.print()).append("\n");
-        }
-        return node;
+    if (OUTPUT) {
+        sb.append(node.print()).append("\n");
     }
+    return node;
+}
 ```
 
 可以看到为了适应输出语法成分的要求，我在每个解析函数中都添加了 `if (OUTPUT)` 的判断，以决定是否输出语法成分的信息。在 `ASTNode` 类中，我设计了 `print()` 方法，用于输出语法成分的信息。
@@ -167,3 +165,132 @@ private ASTNode parseTokenType(LexType type) {
 
 ### 编码前的设计
 
+在本课程的实验设计中，语义分析实验要求我们实现以下功能：
+
+1. 对于正确的源程序，需要从源程序中识别出定义的常量、变量、函数、形参，输出它们的作用域序号，单词的字符/字符串形式，类型名称。
+2. 对于错误的源程序，需要识别出错误，并输出错误所在的行号和错误的类别码。
+
+为了实现以上功能，我设计了 `Visitor` 类，定义了访问不同类型节点的方法，如 `visitConstDecl`、`visitVarDecl`、`visitFuncDef` 等。通过递归地调用这些方法，编译器可以在遍历语法树的过程中，对每个节点进行语义分析。 `Visitor` 类包含一个 analyze 方法，该方法接受一个 `ASTNode` 对象作为输入，并返回一个 `HashMap<Integer, SymbolTable>` 作为输出，供后续中间代码生成部分使用。
+
+#### 符号表管理
+
+语义分析过程中需要维护符号表，用于记录变量的定义和作用域。`Visitor` 类中使用 `SymbolTable` 类来表示符号表，并使用`symbolTableStack` 来使用栈式地管理符号表。得益于栈式管理，符号表可以很好地支持嵌套作用域。在每个作用域开始时，编译器会创建一个新的符号表，并将其压入栈中。在作用域结束时，编译器会弹出栈顶的符号表。这样，编译器就可以在遍历语法树的过程中，正确地维护符号表的状态。
+
+#### 错误处理
+
+在语义分析的过程中，编译器需要关注文法中剩下的所有未处理的可能错误，包括变量未定义和变量重定义等。对于变量未定义，编译器会在访问到相应的节点时，检查符号表中是否存在该变量；对于变量重定义，编译器会在访问到相应的节点时，检查符号表中是否已经存在该变量。对于这两个比较频繁的检查操作，我将其分别封装成了两个方法：
+
+```java
+private boolean checkErrorB(Token token) {
+    if (currTable.hasSymbol(token.token)) {
+        Reporter.REPORTER.add(new MyError(token.lineNum, "b"));
+        return false;
+    }
+    return true;
+}
+
+private void checkErrorC(Token token) {
+    SymbolTable table = currTable;
+    while (table != null) {
+        if (table.hasSymbol(token.token)) {
+            return;
+        }
+
+        table = table.parentTable;
+    }
+
+    Reporter.REPORTER.add(new MyError(token.lineNum, "c"));
+}
+```
+
+对于其他的错误，如类型不匹配等，我则直接在相应的节点访问方法中进行处理。
+
+#### 输出信息
+
+在语义分析的过程中，编译器需要输出一些信息，包括变量的作用域序号、单词的字符/字符串形式、类型名称等。我选择在遍历完语法树之后，将所有的符号信息输出到目标文件中。由于实验对输出格式的要求，我对符号表中的符号进行了排序，并按照要求输出。具体实现如下：
+
+```java
+public HashMap<Integer, SymbolTable> analyze(String forOutput) {
+    visitCompUnit(root);
+    ArrayList<Symbol> symbols = new ArrayList<>();
+    for (SymbolTable table : allSymbolTables.values()) {
+        symbols.addAll(table.getAllSymbols());
+    }
+
+    // symbols 排序后输出
+    symbols.sort((a, b) -> {
+        if (a.tableId != b.tableId) {
+            return a.tableId - b.tableId;
+        } else
+            return a.id - b.id;
+    });
+
+    try (FileWriter writer = new FileWriter(forOutput)) {
+        for (Symbol symbol : symbols) {
+            writer.write(symbol + "\n");
+        }
+    } catch (IOException e) {
+        e.printStackTrace(System.out);
+    }
+    return allSymbolTables;
+}
+```
+
+当然，在 `Symbol` 类中，我重写了 `toString` 方法，以便于输出。
+
+```java
+public class Symbol {
+    public int id;
+    public int tableId;
+    public Token token;
+    public SymbolType symbolType;
+    public ArrayList<Symbol> params = new ArrayList<>();
+
+    // 其他方法
+
+    @Override
+    public String toString() {
+        return tableId + " " + token.token + " " + symbolType;
+    }
+}
+```
+
+### 编码完成之后的修改
+
+在初步编码完成之后，我主要发现了这个问题：由于我为所有语法树结点都统一使用 `ASTNode` 类，而没有为每个语法成分实现特定的类，因此在语义分析的过程中，我需要直接对 `ASTNode` 对象 `children` 字段取下标以获取子节点。然而，由于输入的 `testfile.txt` 文件中可能有错误，即某些语法成分可能不存在于之前生成的语法树中，因此我需要对下标的选取进行比较细致的考量，不能直接使用特定的下标，而是需要使用循环遍历 `children` 字段，以确保能够正确地获取到子节点。
+
+```java
+// 原有代码
+private void visitConstDef(ASTNode node, _SymbolType1 symbolType1) {
+    // <ConstDef> ::= <Ident> '=' <ConstInitVal> | <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
+    Token token = ((LeafASTNode) node.children.get(0)).token;
+    checkErrorB(token);
+    _SymbolType2 symbolType2 = null;
+    if (node.children.size() == 3) {
+        // <Ident> '=' <ConstInitVal>
+        symbolType2 = _SymbolType2.CONST;
+    } else if (node.children.size() == 6) {
+        // <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
+        symbolType2 = _SymbolType2.CONSTARRAY;
+    }
+    currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
+}
+
+// 修改后的代码
+private void visitConstDef(ASTNode node, _SymbolType1 symbolType1) {
+    // <ConstDef> ::= <Ident> '=' <ConstInitVal> | <Ident> '[' <ConstExp> ']' '=' <ConstInitVal>
+    Token token = ((LeafASTNode) node.children.get(0)).token;
+    checkErrorB(token);
+    _SymbolType2 symbolType2 = _SymbolType2.CONST;
+    for (ASTNode child : node.children) {
+        if (child.isNode("LEAF")) {
+            if (((LeafASTNode) child).token.isType(LexType.LBRACK)) {
+                symbolType2 = _SymbolType2.CONSTARRAY;
+            }
+        }
+    }
+    currTable.addSymbol(new Symbol(symbolId++, currTable.id, token, symbolType1, symbolType2));
+}
+```
+
+在后续的实验中，我逐渐意识到，为所有语法树结点都统一使用 `ASTNode` 类的做法虽然能减轻工作量，但并不利于后续的语义分析。如果为每个语法成分实现特定的类，那么在语义分析和中间代码生成的过程中，我就可以直接使用这些特定的类，而不需要使用循环遍历 `children` 字段。
