@@ -294,3 +294,192 @@ private void visitConstDef(ASTNode node, _SymbolType1 symbolType1) {
 ```
 
 在后续的实验中，我逐渐意识到，为所有语法树结点都统一使用 `ASTNode` 类的做法虽然能减轻工作量，但并不利于后续的语义分析。如果为每个语法成分实现特定的类，那么在语义分析和中间代码生成的过程中，我就可以直接使用这些特定的类，而不需要使用循环遍历 `children` 字段。
+
+## 中间代码生成
+
+### 编码前的设计
+
+本次实验要求根据文法规则及语义约定，采用自顶向下的语法制导翻译技术，进行语义分析并生成目标代码。我首先选择了生成 LLVM IR 代码，因为 LLVM IR 是一种中间表示，能够很好地描述程序的控制流和数据的表示。同时，由于本系列实验的文法实际上是 C 语言的一个子集，因此在配置好编译环境后，可以使用 Clang 的编译器生成标准的 LLVM IR 代码，从而验证我的代码的正确性。
+
+要翻译出 LLVM IR 代码，首先需要对其有一定的了解。我首先花了相当多的时间来理解 LLVM IR 中“一切皆 Value ”的思想，以及如何使用 LLVM IR 来描述程序的控制流和数据流。在了解了 LLVM IR 的基本概念之后，就可以开始编写代码了。首先需要意识到，在中间代码生成的过程中，总可以将一个语法成分翻译为一或多个 LLVM IR 语句，或者翻译为一个 LLVM IR 表达式。因此，在实现中间代码生成时，我选择继续使用自顶向下的语法制导翻译技术，为每个语法成分实现对应的方法，并在这些方法中生成相应的 LLVM IR 代码。
+
+除了教程中已经涉及的部分，我对 LLVM IR 的翻译还有一些理解与实现，说明如下：
+
+#### 全局变量
+
+在 LLVM IR 中，全局变量需要使用 `@` 符号开头，并且需要指定类型。由于全局变量在程序运行期间一直存在，因此需要使用 `global` 关键字。此外，全局变量还需要指定初始值，可以使用 `=` 符号来指定初始值。在实验文法中有这样的要求：“对于全局变量中的常量表达式，在生成的 LLVM IR 中需要直接算出其具体的值，同时，也需要完成必要的类型转换。”因此，在生成全局变量的 LLVM IR 代码时，我实现了一个工具类 `ConstCalculator` ，用于计算常量表达式的值，并在生成全局变量的 LLVM IR 代码时调用该工具类。
+
+```java
+public class ConstCalculator {
+    private final HashMap<Integer, LLVMSymbolTable> symbolTables;
+    private int scopeId; // 查找用
+
+    public ConstCalculator(HashMap<Integer, LLVMSymbolTable> symbolTables) {
+        this.symbolTables = symbolTables;
+    }
+
+    private int getConst(String name, int i) {
+        int currScopeId = scopeId;
+        while (currScopeId > 0) {
+            if (symbolTables.get(currScopeId).symbols.containsKey(name)) {
+                UsableValue usableValue = symbolTables.get(currScopeId).symbols.get(name);
+                ConstInitVal constInitVal = symbolTables.get(currScopeId).getConstInitVal(usableValue);
+                return constInitVal.getConstValue(i);
+            }
+
+            if (symbolTables.get(currScopeId).parentTable == null) {
+                break;
+            }
+
+            currScopeId = symbolTables.get(currScopeId).parentTable.id;
+        }
+        throw new RuntimeException("Const not found: " + name);
+    }
+
+    public int calculateConstExp(ASTNode node, int scopeId) {
+        this.scopeId = scopeId;
+        return calculateConstExp(node);
+    }
+    // ...
+}
+```
+
+#### 整体流程
+
+考虑完相对独立的全局变量翻译，我接着从整体考虑如何利用对 `toString` 方法的重写生成 LLVM IR 代码。在编写 LLVM IR 各成分对应的类时，我吸取了语法分析阶段的经验，为每个语法成分都实现了对应的类，并在这些类中重写了 `toString` 方法，从而在生成 LLVM IR 代码时，能够直接调用这些类的 `toString` 方法来生成相应的 LLVM IR 代码。
+
+```java
+public class LLVMModule {
+    // <CompUnit> ::= {<Decl>} {<FuncDef>} <MainFuncDef>
+    public final LinkedList<Value> globalValues = new LinkedList<>();
+    public final LinkedList<LLVMFunction> LLVMFunctions = new LinkedList<>();
+
+    // ...
+
+    @Override
+    public String toString() {
+        StringBuilder module = new StringBuilder();
+        for (Value value : globalValues) {
+            module.append(value.toString()).append("\n");
+        }
+        for (LLVMFunction LLVMFunction : LLVMFunctions) {
+            module.append(LLVMFunction.toString()).append("\n");
+        }
+        return module.toString();
+    }
+}
+```
+
+#### 局部变量
+
+由于局部变量在函数调用时才分配内存，因此需要使用 alloca 指令来分配内存。在这一部分，我部分地利用了语法分析阶段生成的符号表，通过查询符号表，可以知道局部变量的类型，从而生成相应的 alloca 指令。与此同时，我也根据 LLVM IR 的性质管理了适用于 LLVM IR 的符号表，从而在生成 LLVM IR 代码时，能够正确地引用局部变量。
+
+```java
+public class LLVMVariable extends Value {
+    public boolean isConst;
+    public String name;
+    public int arrayLength; // 为 0 是表示不是数组
+    public LLVMType.TypeID baseType;
+    public InitVal initVal;
+    public UsableValue usableValue;
+
+    public LLVMVariable(Symbol symbol, int arrayLength) {
+        super();
+        setFromSymbol(symbol);
+        this.arrayLength = arrayLength;
+    }
+
+    public LinkedList<LLVMInstruction> getInstructions() {
+        LinkedList<LLVMInstruction> instructions = new LinkedList<>();
+        if (arrayLength == 0) {
+            // 单个变量/常量
+            if (isConst) {
+                // 单个常量
+                // ...
+            } else {
+                // 单个变量
+                // ...
+            }
+        } else {
+            // 数组
+            if (isConst || initVal instanceof ConstInitVal) {
+                // 常量数组
+                // ...
+            } else {
+                // 变量数组
+                // ...
+            }
+        }
+        return instructions;
+    }
+}
+```
+
+#### 表达式与虚拟寄存器
+
+在 LLVM IR 中，表达式计算的结果通常存储在虚拟寄存器中，因此需要为每个虚拟寄存器生成一个唯一的标识符。为了满足虚拟表达式的需求，我定义了一个 `UsableValue` 接口，用于表示可用的值，包括常量、变量和虚拟寄存器。在生成 LLVM IR 代码时，需要根据表达式的类型生成相应的虚拟寄存器、正确地引用这些虚拟寄存器。
+
+同时，除了一些可以直接解析为 LLVM IR 语法成分类的语法树结点外，还有些语法树结点通过解析生成的是一系列 LLVM IR 指令，即 `LinkedList<LLVMInstruction>` 。在解析 `Exp` 结点时，我意识到不仅需要返回一个 `UsableValue` ，还需要返回一个 `LinkedList<LLVMInstruction>` ，用于生成 LLVM IR 代码。因此，我创建了一个 `LLVMExp` 类，用于表示可用的值和对应的 LLVM IR 指令。通过使用这个类的一些方法，可以方便地生成 LLVM IR 代码。
+
+```java
+public class LLVMExp extends Value {
+    LinkedList<LLVMInstruction> instructions = new LinkedList<>();
+    UsableValue value;
+
+    // ...
+
+    public LLVMExp binaryOperate(LLVMType.InstType instType, LLVMExp llvmExp) {
+        instructions.addAll(llvmExp.instructions);
+        UsableValue left = this.value;
+        UsableValue right = llvmExp.value;
+        BinaryInst newInst = new BinaryInst(instType, left, right);
+        instructions.add(newInst);
+        this.value = newInst;
+        return this;
+    }
+
+    public void logical() {
+        BinaryInst newInst = new BinaryInst(LLVMType.InstType.ICMP_NE, this.value, new LLVMConst(LLVMType.TypeID.IntegerTyID, 0));
+        instructions.add(newInst);
+        this.value = newInst;
+    }
+}
+```
+
+#### 条件与循环
+
+在生成这部分的 LLVM IR 代码时，代码需要跳转到之后还未构建的基本块，这基本也决定了如果采用数字编号虚拟寄存器的方式，那么很难实现跳转的功能。因此，我仿照 LLVM IR 中的 `SlotTracker`，使用 `LLVMLabel` 来标记基本块，并实现了一个简易的 `RegTracker` 类来管理虚拟寄存器，在生成需要用到虚拟寄存器的指令时，通过 `RegTracker` 进行记录；在完成翻译工作后，通过 `RegTracker` 生成对应的虚拟寄存器编号。这个类还可以很好地与我的 `UsableValue` 接口配合使用，从而实现虚拟寄存器的引用。
+
+```java
+public class RegTracker {
+    private final int scopeId;
+    private final LinkedList<UsableValue> usableValues = new LinkedList<>();
+    private int regNo = 0; // 已经用过的编号
+
+    public RegTracker(int scopeId) {
+        this.scopeId = scopeId;
+    }
+
+    public void addValue(UsableValue inst) {
+        usableValues.add(inst);
+    }
+
+    public void setRegNo() {
+        boolean FParamsIsEnd = false;
+        for (UsableValue value : usableValues) {
+            if (!(value instanceof FuncFParam) && !FParamsIsEnd) {
+                FParamsIsEnd = true;
+                regNo++;
+            }
+            if (value instanceof CallInst callInst) {
+                if (callInst.isVoid()) {
+                    continue;
+                }
+            }
+            value.setVirtualRegNo(regNo++);
+        }
+    }
+}
+```
+
+### 编码完成之后的修改
