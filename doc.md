@@ -1,3 +1,65 @@
+## 编译器总体设计
+
+### 总体结构
+
+编译器仿照 LLVM 的设计，实现三端的编译器结构，包括前端、中端和后端。前端负责词法分析、语法分析和语义分析，将源代码解析为抽象语法树（AST），中端负责对 AST 进行优化、生成 LLVM IR，后端负责将 LLVM IR 转换为目标代码。在设计上，编译器适应五次实验的要求，将前端分为词法分析、语法分析和语义分析三个部分，分别完成词法单元的解析、语法树的生成、符号表管理；在解析的过程中还需要根据文法和实验的要求进行错误处理。中端和后端对应的两次实验不需要考虑错误处理，仅完成相应的功能。
+
+错误处理部分，编译器使用 `Reporter` 类进行错误处理，利用单例模式设计，通过 `Reporter.REPORTER.add(MyError e)` 和 `Reporter.REPORTER.report()` 实现错误信息的存储和输出。
+
+### 接口设计
+
+为了实践“高内聚，低耦合”的设计原则，编译器将各个模块设计为独立的类，并使用接口进行交互。具体而言，五个部分的接口设计如下：
+
+- `Lexer`：词法分析器，负责将源代码解析为词法单元，并输出词法单元信息到 `lexer.txt` 文件；
+- `Parser`：语法分析器，负责将词法单元解析为抽象语法树（AST），并输出语法树结构到 `parser.txt` 文件；
+- `Visitor`：语义分析器，负责对 AST 进行遍历，进行建立符号表和大部分错误处理的工作，并输出符号表内容到 `symbol.txt` 文件；
+- `Reporter`：错误处理器，负责错误信息的存储和输出，输出到 `error.txt` 文件；
+- `IRGenerator`：中间代码生成器，负责将 AST 转换为 LLVM IR（利用了语义分析部分生成的符号表信息），并输出中间代码到 `llvm_ir.txt` 文件。
+- `MIPSGenerator`：目标代码生成器，负责将 LLVM IR 转换为 MIPS 代码，并输出目标代码到 `mips.txt` 文件。
+
+在编译器的实现部分，我还设计了一个 `Trimmer` 类，负责对语义分析之后的 AST 进行修剪。实现这个类主要是为了适应 LLVM IR 生成中对于短路求值的要求，使得中间代码生成时判断更加方便：
+
+```java
+private ASTNode trimLAndExp(ASTNode node) {
+    // from: LAndExp → EqExp | LAndExp '&&' EqExp
+    // to  : LAndExp → EqExp { '&&' EqExp }
+    ASTNode ret = new ASTNode(node.name);
+    if (node.children.size() == 1) {
+        ret.addChild(trimEqExp(node.children.get(0)));
+    } else {
+        ret = trimLAndExp(node.children.get(0));
+        ret.addChild(node.children.get(1));
+        ret.addChild(trimEqExp(node.children.get(2)));
+    }
+    return ret;
+}
+```
+
+### 文件组织
+
+编译器大概的文件组织已在总体结构中叙述，这里给出主要的文件结构：
+
+```
+│  Compiler.java
+│  config.json
+│  
+├─backEnd
+│  │  MIPSGenerator.java
+│  │  MIPSManager.java
+│  │  
+│  └─Insts
+│          
+├─frontEnd
+│  ├─lexer
+│  ├─parser
+│  └─visitor
+│          
+└─middleEnd
+    │  IRGenerator.java
+    ├─Insts
+    └─utils
+```
+
 ## 词法分析设计
 
 ### 编码前的设计
@@ -612,3 +674,6 @@ public class CallInst extends LLVMInstruction implements UsableValue {
 ### 编码完成之后的修改
 
 初步写完目标代码生成部分之后，我优化了一些编译器中的问题。如在 LLVM IR 生成阶段，我完全没有考虑使用 `zeroinitializer`，导致在目标代码生成阶段，如果要声明一个初值为 0 的全局数组，其 MIPS 代码将非常丑陋，当然 LLVM IR 代码也非常丑陋。因此，我修改了 LLVM IR 生成部分，使得全局变量声明时，如果初值为全 0，则使用 `zeroinitializer`；基于此我也在 MIPS 代码生成时进行了简化形式的声明。
+
+## 代码优化
+
