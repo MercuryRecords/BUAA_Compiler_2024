@@ -70,6 +70,8 @@ public class LLVMType {
         ICMP_SLT("icmp slt"),
         ICMP_SLE("icmp sle"),
 
+        SHL("shl"),
+
         ;
         private final String s;
         InstType(String s) {

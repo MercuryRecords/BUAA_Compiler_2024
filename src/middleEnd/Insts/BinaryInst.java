@@ -5,6 +5,7 @@ import backEnd.MIPSComment;
 import backEnd.MIPSInst;
 import backEnd.MIPSManager;
 import backEnd.Register;
+import middleEnd.LLVMConst;
 import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
@@ -72,6 +73,19 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
             // 是常数，加载到 K0 寄存器
             reg1 = Register.K0;
             mipsInsts.add(new LIInst(reg1, op1.toValueIR()));
+        }
+
+        if (type == LLVMType.InstType.SHL) {
+            Register reg = MIPSManager.getInstance().getReg(this);
+            if (!(op2 instanceof LLVMConst)) {
+                throw new RuntimeException("op2 is not a constant");
+            }
+            int shift = ((LLVMConst) op2).constValue;
+            mipsInsts.add(new SLLInst(reg1, reg, shift));
+            mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
+            MIPSManager.getInstance().releaseRegs();
+
+            return mipsInsts;
         }
 
         Register reg2;

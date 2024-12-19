@@ -1,9 +1,6 @@
 package middleEnd;
 
-import frontEnd.ASTNode;
-import frontEnd.LeafASTNode;
-import frontEnd.Symbol;
-import frontEnd.SymbolTable;
+import frontEnd.*;
 import frontEnd.lexer.LexType;
 import middleEnd.Insts.*;
 import middleEnd.utils.ConstCalculator;
@@ -1018,16 +1015,28 @@ public class IRGenerator {
                 } else {
                     return constLeft.binaryOperate(LLVMType.InstType.SUB, constRight);
                 }
-            } else if (left instanceof LLVMConst constLeft) {
+            }
+
+            if (Trimmer.optimize) {
+                if (left instanceof LLVMConst constLeft && constLeft.constValue == 0) {
+                    return right;
+                }
+
+                if (right instanceof LLVMConst constRight && constRight.constValue == 0) {
+                    return left;
+                }
+            }
+
+            if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
             if (!left.value.toLLVMType().equals("i32")) {
                 left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
             }
+            if (right instanceof LLVMConst constRight) {
+                right = new LLVMExp(constRight);
+            }
             if (!right.value.toLLVMType().equals("i32")) {
-                if (right instanceof LLVMConst constRight) {
-                    right = new LLVMExp(constRight);
-                }
                 right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
             if (token.equals("+")){
@@ -1054,16 +1063,67 @@ public class IRGenerator {
                     return constLeft.binaryOperate(LLVMType.InstType.SREM, constRight);
 
                 }
-            } else if (left instanceof LLVMConst constLeft) {
+            }
+
+            if (Trimmer.optimize) {
+                switch (token) {
+                    case "*" -> {
+                        if (left instanceof LLVMConst constLeft) {
+                            int val = constLeft.constValue;
+                            if (val == 0) {
+                                return new LLVMConst(LLVMType.TypeID.IntegerTyID, 0);
+                            } else if (val == 1) {
+                                return right;
+                            } else if (isPowerOf2(val)) {
+                                int log = log2(val);
+                                LLVMExp exp = new LLVMExp(new LLVMConst(LLVMType.TypeID.IntegerTyID, log));
+                                return right.binaryOperate(LLVMType.InstType.SHL, exp);
+                            }
+                        }
+
+                        if (right instanceof LLVMConst constRight) {
+                            int val = constRight.constValue;
+                            if (val == 0) {
+                                return new LLVMConst(LLVMType.TypeID.IntegerTyID, 0);
+                            } else if (val == 1) {
+                                return left;
+                            } else if (isPowerOf2(val)) {
+                                int log = log2(val);
+                                LLVMExp exp = new LLVMExp(new LLVMConst(LLVMType.TypeID.IntegerTyID, log));
+                                return left.binaryOperate(LLVMType.InstType.SHL, exp);
+                            }
+                        }
+                    }
+                    case "/" -> {
+                        if (right instanceof LLVMConst constRight) {
+                            int val = constRight.constValue;
+                            if (val == 1) {
+                                return left;
+                            }
+                        }
+                    }
+                    case "%" -> {
+                        if (right instanceof LLVMConst constRight) {
+                            int val = constRight.constValue;
+                            if (val == 1) {
+                                return new LLVMConst(LLVMType.TypeID.IntegerTyID, 0);
+                            }
+                        }
+                    }
+                }
+
+            }
+
+            if (left instanceof LLVMConst constLeft) {
                 left = new LLVMExp(constLeft);
             }
             if (!left.value.toLLVMType().equals("i32")) {
                 left.addUsableInstruction(new ZextInst(left.value, LLVMType.TypeID.IntegerTyID));
             }
+            if (right instanceof LLVMConst constRight) {
+                right = new LLVMExp(constRight);
+            }
             if (!right.value.toLLVMType().equals("i32")) {
-                if (right instanceof LLVMConst constRight) {
-                    right = new LLVMExp(constRight);
-                }
                 right.addUsableInstruction(new ZextInst(right.value, LLVMType.TypeID.IntegerTyID));
             }
             if (((LeafASTNode) node.children.get(1)).token.token.equals("*")) {
@@ -1075,6 +1135,18 @@ public class IRGenerator {
             }
         }
     }
+
+    private boolean isPowerOf2(int val) {
+        if (val <= 0) {
+            return false;
+        }
+        return (val & (val - 1)) == 0;
+    }
+
+    private int log2(int val) {
+        return Integer.numberOfTrailingZeros(val);
+    }
+
 
     private LLVMExp translateUnaryExp(ASTNode node) {
         if (node.children.size() == 1) {

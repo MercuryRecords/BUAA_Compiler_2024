@@ -2,6 +2,7 @@ package frontEnd;
 
 public class Trimmer {
     public static Trimmer instance = new Trimmer();
+    public static boolean optimize = true;
 
     private Trimmer() {
 
