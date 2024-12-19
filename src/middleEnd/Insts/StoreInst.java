@@ -11,6 +11,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class StoreInst extends LLVMInstruction {
@@ -27,6 +28,14 @@ public class StoreInst extends LLVMInstruction {
     @Override
     public String toString() {
         return String.format("store %s %s, %s %s", from.toLLVMType(), from.toValueIR(), to.toLLVMType(), to.toValueIR());
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        map.put(from, 1);
+        map.put(to, 1);
+        return map;
     }
 
     @Override

@@ -11,6 +11,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class RetInst extends LLVMInstruction {
@@ -31,6 +32,15 @@ public class RetInst extends LLVMInstruction {
         } else {
             return String.format("ret %s %s", ret.toLLVMType(), ret.toValueIR());
         }
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        if (ret != null) {
+            map.put(ret, 1);
+        }
+        return map;
     }
 
     @Override

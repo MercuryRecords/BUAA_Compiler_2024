@@ -10,6 +10,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class TruncInst extends LLVMInstruction implements UsableValue {
@@ -51,6 +52,13 @@ public class TruncInst extends LLVMInstruction implements UsableValue {
     @Override
     public String toString() {
         return String.format("%s = trunc %s %s to %s", toValueIR(), from.toLLVMType(), from.toValueIR(), toLLVMType());
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        map.put(from, 1);
+        return map;
     }
 
     @Override

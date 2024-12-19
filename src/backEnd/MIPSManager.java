@@ -2,20 +2,17 @@ package backEnd;
 
 import backEnd.Insts.LWInst;
 import backEnd.Insts.SWInst;
-import middleEnd.FuncFParam;
-import middleEnd.LLVMFunction;
-import middleEnd.LLVMLabel;
-import middleEnd.UsableValue;
+import middleEnd.*;
 
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 
 public class MIPSManager {
     private static final MIPSManager MIPS_MANAGER = new MIPSManager();
     private int offset = 0;
     private LLVMFunction currentFunction;
     private final HashMap<LLVMFunction, HashMap<UsableValue, Integer>> offsetMap = new HashMap<>();
-    private final LinkedList<Register> allTempRegs = new LinkedList<>();
+    private final LinkedList<Register> tempRegs = new LinkedList<>();
+    private final LinkedList<Register> globalRegs = new LinkedList<>();
     private LinkedList<Register> used = new LinkedList<>();
     private LinkedList<Register> free = new LinkedList<>();
 //    private LinkedList<Register> usedArgs = new LinkedList<>();
@@ -25,25 +22,26 @@ public class MIPSManager {
 //    private UsableValue forSP = new LLVMLabel();
     private int regIndex = 0;
     private final UsableValue forRA = new LLVMLabel();
+    private final HashMap<UsableValue, Register> globalRegMap = new HashMap<>();
     private MIPSManager() {
-        allTempRegs.add(Register.T0);
-        allTempRegs.add(Register.T1);
-        allTempRegs.add(Register.T2);
-        allTempRegs.add(Register.T3);
-        allTempRegs.add(Register.T4);
-        allTempRegs.add(Register.T5);
-        allTempRegs.add(Register.T6);
-        allTempRegs.add(Register.T7);
-        allTempRegs.add(Register.T8);
-        allTempRegs.add(Register.T9);
-        allTempRegs.add(Register.S0);
-        allTempRegs.add(Register.S1);
-        allTempRegs.add(Register.S2);
-        allTempRegs.add(Register.S3);
-        allTempRegs.add(Register.S4);
-        allTempRegs.add(Register.S5);
-        allTempRegs.add(Register.S6);
-//        allTempRegs.add(Register.S7);
+        tempRegs.add(Register.T0);
+        tempRegs.add(Register.T1);
+        tempRegs.add(Register.T2);
+        
+        globalRegs.add(Register.T3);
+        globalRegs.add(Register.T4);
+        globalRegs.add(Register.T5);
+        globalRegs.add(Register.T6);
+        globalRegs.add(Register.T7);
+        globalRegs.add(Register.T8);
+        globalRegs.add(Register.T9);
+        globalRegs.add(Register.S0);
+        globalRegs.add(Register.S1);
+        globalRegs.add(Register.S2);
+        globalRegs.add(Register.S3);
+        globalRegs.add(Register.S4);
+        globalRegs.add(Register.S5);
+        globalRegs.add(Register.S6);
     }
 
     public static MIPSManager getInstance() {
@@ -65,7 +63,7 @@ public class MIPSManager {
     public void setCurrentFunction(LLVMFunction function) {
         currentFunction = function;
         offsetMap.putIfAbsent(function, new HashMap<>());
-        free = new LinkedList<>(allTempRegs);
+        free = new LinkedList<>(tempRegs);
         used = new LinkedList<>();
 //        regMap = new HashMap<>();
         offset = 0;
@@ -121,6 +119,9 @@ public class MIPSManager {
         //        regMap.put(reg, value);
 //        free.remove(reg);
 //        used.add(reg);
+        if (globalRegMap.containsKey(value)) {
+            return globalRegMap.get(value);
+        }
         return nextFreeReg();
     }
 
@@ -137,11 +138,17 @@ public class MIPSManager {
             inst = new SWInst(Register.SP, reg, offset);
             subOffset(size);
         }
+        if (globalRegMap.containsKey(value)) {
+            return new MIPSComment(String.format("value %s is in globalRegMap", value.toValueIR()));
+        }
         return inst;
     }
 
     public MIPSInst loadValueToReg(UsableValue value, Register reg) {
 //        LinkedList<MIPSInst> insts = new LinkedList<>();
+        if (globalRegMap.containsKey(value)) {
+            return new MIPSComment(String.format("value %s is in globalRegMap", value.toValueIR()));
+        }
         int offset = offsetMap.get(currentFunction).get(value);
         return new LWInst(Register.SP, reg, offset);
     }
@@ -231,5 +238,39 @@ public class MIPSManager {
     public void releaseRegs() {
 //        free.addAll(used);
 //        used.clear();
+    }
+
+    public void setReference(LLVMFunction mainFunc) {
+        if (mainFunc == null) {
+            return; // 怎么可能
+        }
+
+        HashMap<UsableValue, Integer> map = new HashMap<>(); // 记录引用次数
+
+        for (LLVMBasicBlock block : mainFunc.basicBlocks) {
+            for (LLVMInstruction inst : block.instructions) {
+                if (inst instanceof LLVMLabel) {
+                    continue;
+                }
+                if (inst instanceof UsableValue value) {
+                    map.put(value, 0);
+                }
+                HashMap<UsableValue, Integer> temp = inst.getReferencedValues();
+                for (UsableValue value : temp.keySet()) {
+                    if (value instanceof LLVMInstruction) {
+                        map.put(value, map.getOrDefault(value, 0) + temp.get(value));
+                    }
+                }
+            }
+        }
+
+        int k = 14;
+        List<Map.Entry<UsableValue, Integer>> topK = new ArrayList<>(map.entrySet());
+        topK.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+        topK = topK.subList(0, Math.min(k, topK.size()));
+        for (Map.Entry<UsableValue, Integer> entry : topK) {
+            UsableValue value = entry.getKey();
+            globalRegMap.put(value, globalRegs.remove());
+        }
     }
 }

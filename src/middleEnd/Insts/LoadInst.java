@@ -9,6 +9,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class LoadInst extends LLVMInstruction implements UsableValue {
@@ -49,6 +50,13 @@ public class LoadInst extends LLVMInstruction implements UsableValue {
     @Override
     public String toString() {
         return String.format("%s = load %s, %s* %s", toValueIR(), toLLVMType(), toLLVMType(), from.toValueIR());
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        map.put(from, 1);
+        return map;
     }
 
     @Override

@@ -9,6 +9,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class GetelementptrInst extends LLVMInstruction implements UsableValue {
@@ -56,6 +57,14 @@ public class GetelementptrInst extends LLVMInstruction implements UsableValue {
         } else {
             return String.format("%s = getelementptr %s, %s %s, i32 %s", toValueIR(), from.toLLVMType().substring(0, tmpLen), from.toLLVMType(), from.toValueIR(), offset.toValueIR());
         }
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        map.put(from, 1);
+        map.put(offset, 1);
+        return map;
     }
 
     @Override

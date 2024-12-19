@@ -9,6 +9,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class CallInst extends LLVMInstruction implements UsableValue {
@@ -82,6 +83,19 @@ public class CallInst extends LLVMInstruction implements UsableValue {
         }
         sb.append(")");
         return sb.toString();
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        for (UsableValue param : params) {
+            if (map.containsKey(param)) {
+                map.put(param, map.get(param) + 1);
+            } else {
+                map.put(param, 1);
+            }
+        }
+        return map;
     }
 
     public boolean isDifferentType(UsableValue val) {

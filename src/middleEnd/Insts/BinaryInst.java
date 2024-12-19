@@ -11,6 +11,7 @@ import middleEnd.LLVMInstruction;
 import middleEnd.LLVMType;
 import middleEnd.UsableValue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class BinaryInst extends LLVMInstruction implements UsableValue {
@@ -55,6 +56,18 @@ public class BinaryInst extends LLVMInstruction implements UsableValue {
     @Override
     public String toString() {
         return String.format("%s = %s %s %s, %s", toValueIR(), type.toString(), op1.toLLVMType(), op1.toValueIR(), op2.toValueIR());
+    }
+
+    @Override
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        HashMap<UsableValue, Integer> map = new HashMap<>();
+        map.put(op1, 1);
+        if (map.containsKey(op2)) {
+            map.put(op2, map.get(op2) + 1);
+        } else {
+            map.put(op2, 1);
+        }
+        return map;
     }
 
     @Override

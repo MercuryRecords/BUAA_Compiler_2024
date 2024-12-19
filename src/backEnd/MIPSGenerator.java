@@ -1,5 +1,6 @@
 package backEnd;
 
+import frontEnd.Trimmer;
 import middleEnd.*;
 
 import java.io.FileWriter;
@@ -13,6 +14,16 @@ public class MIPSGenerator {
     }
 
     public void translate(String forOutput) {
+        if (Trimmer.optimize) {
+            LLVMFunction mainFunc = null;
+            for (LLVMFunction llvmFunction : llvmModule.LLVMFunctions) {
+                if (llvmFunction.name.equals("main")) {
+                    mainFunc = llvmFunction;
+                }
+            }
+            MIPSManager.getInstance().setReference(mainFunc);
+        }
+
         MIPSDataSection mipsDataSection = translateMIPSDataSection();
         MIPSTextSection mipsTextSection = translateMIPSTextSection();
         try (FileWriter writer = new FileWriter(forOutput)) {

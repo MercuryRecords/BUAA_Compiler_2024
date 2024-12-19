@@ -2,6 +2,7 @@ package middleEnd;
 
 import backEnd.MIPSInst;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class LLVMInstruction extends User {
@@ -12,5 +13,9 @@ public class LLVMInstruction extends User {
 
     public LinkedList<MIPSInst> toMIPS() {
         throw new RuntimeException("LLVMInstruction.toMIPS() not implemented");
+    }
+
+    public HashMap<UsableValue, Integer> getReferencedValues() {
+        return new HashMap<>();
     }
 }
