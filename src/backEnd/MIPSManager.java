@@ -43,7 +43,7 @@ public class MIPSManager {
         allTempRegs.add(Register.S4);
         allTempRegs.add(Register.S5);
         allTempRegs.add(Register.S6);
-        allTempRegs.add(Register.S7);
+//        allTempRegs.add(Register.S7);
     }
 
     public static MIPSManager getInstance() {
