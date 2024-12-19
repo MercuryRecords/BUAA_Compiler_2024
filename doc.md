@@ -485,3 +485,130 @@ public class RegTracker {
 ### 编码完成之后的修改
 
 在初步编写中间代码生成部分时，我对 LLVM IR 的语法并不是很熟悉，因此有些地方写的不符合规范。通过对照公共测试库的标准答案，伴随着不断地修改和调试，我逐渐熟悉了 LLVM IR 的语法，并按照规范编写了代码。在此部分能说明的修改数不胜数，因此我不再一一列举。重点在于，要习惯于利用 Clang 的 `clang` 命令行工具来生成标准的 LLVM IR 代码，通过对比自己的代码和标准答案，可以快速发现并修改错误。中间代码生成部分体量庞大，在思考和编写代码上花费的时间也较多，因此我建议后来人在编写代码时，要尽量单元化地编写代码，并对新增的功能进行充分的测试，以减少调试和修改代码的时间；在编写编译器代码时也要多从全局思考，对编译器的各个部分进行合理的分工，适时进行代码重构，提高代码的可维护性。
+
+## 目标代码生成
+
+### 编码前的设计
+
+本次实验需要编译器从 LLVM IR 生成 MIPS 汇编代码。一个基本的 MIPS 程序包含 `.data` 数据段和 `.text` 代码段两部分。`.data` 段存储了全局变量，`.text` 段则存储了可执行的指令。我实现了一个 `MIPSGenerator` 类，用于生成 MIPS 汇编代码。由于中间代码生成部分已经组织好了各层次的 LLVM IR 成分，因此 MIPS 汇编代码生成按照 `Module - Section - Function - BasicBlock - Instruction` 的层次进行逐级翻译即可。
+
+由于编译器为 LLVM IR 指令分别单独实现了具体的类，因此我在指令父类 `LLVMInstruction` 中声明了方法 `toMIPS()`，并在各个指令类中实现了该方法。在 `MIPSGenerator` 类中，我通过调用 `toMIPS()` 方法，即可将 LLVM IR 指令翻译为 MIPS 汇编代码。
+
+```java
+public class StoreInst extends LLVMInstruction {
+
+    private final UsableValue from;
+    private final UsableValue to;
+
+    public StoreInst(UsableValue from, UsableValue to) {
+        super(LLVMType.InstType.STORE);
+        this.from = from;
+        this.to = to;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("store %s %s, %s %s", from.toLLVMType(), from.toValueIR(), to.toLLVMType(), to.toValueIR());
+    }
+
+    @Override
+    public LinkedList<MIPSInst> toMIPS() {
+        LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
+        mipsInsts.add(new MIPSComment(this.toString()));
+
+        Register fromReg;
+        if (from.toValueIR().startsWith("%")) {
+            fromReg = MIPSManager.getInstance().getReg(from);
+            mipsInsts.add(MIPSManager.getInstance().loadValueToReg(from, fromReg));
+        } else {
+            // 为常量使用寄存器 K0 存储
+            mipsInsts.add(new LIInst(Register.K0, from.toValueIR()));
+            fromReg = Register.K0;
+        }
+
+        Register toReg;
+        if (to.toValueIR().startsWith("@")) {
+            // 全局单个变量，加载地址
+            mipsInsts.add(new LAInst(Register.K1, "global_" + to.toValueIR().substring(1)));
+            toReg = Register.K1;
+        } else {
+            // 为虚拟寄存器
+            toReg = MIPSManager.getInstance().getReg(to);
+            mipsInsts.add(MIPSManager.getInstance().loadValueToReg(to, toReg));
+        }
+
+
+        mipsInsts.add(new SWInst(toReg, fromReg, 0));
+        MIPSManager.getInstance().releaseRegs();
+
+        return mipsInsts;
+    }
+}
+```
+
+#### 寄存器分配与管理
+
+在从 LLVM IR 生成 MIPS 汇编代码的过程中，寄存器分配是一个核心问题。由于 MIPS 指令集只有 32 个寄存器，而 LLVM IR 代码中使用的是数量无限的虚拟寄存器，因此需要将虚拟寄存器映射到 MIPS 寄存器。我实现了一个 `MIPSManager` 类，用于管理 MIPS 寄存器的分配和释放。在实现上，我采用了基础的栈式寄存器分配算法，即将变量都保存在栈上，寄存器仅保存计算时的中间结果，计算完成后即将结果写入栈中，因此只需要固定地分配少量寄存器即可实现。
+
+在处理函数调用的时候，编译器还需要使用 `MIPSManager` 类完成以下几个操作：参数传递、保存现场、生成跳转语句、恢复现场。
+
+```java
+public class CallInst extends LLVMInstruction implements UsableValue {
+    private final LLVMType.TypeID retType;
+    private final String funcName;
+    private final LinkedList<UsableValue> params;
+    private int regNo;
+
+    @Override
+    public LinkedList<MIPSInst> toMIPS() {
+        LinkedList<MIPSInst> mipsInsts = new LinkedList<>();
+        mipsInsts.add(new MIPSComment(this.toString()));
+
+        if (isNormalFunc()) {
+            mipsInsts.addAll(MIPSManager.getInstance().storeAllReg());
+            int offset = MIPSManager.getInstance().getOffset();
+            mipsInsts.add(new MIPSComment("handling params"));
+            for (int i = 0; i < params.size(); i++) {
+                UsableValue param = params.get(i);
+                Register fromReg;
+                if (param.toValueIR().startsWith("%")) {
+                    fromReg = MIPSManager.getInstance().getReg(param);
+                    mipsInsts.add(MIPSManager.getInstance().loadValueToReg(param, fromReg));
+                } else {
+                    mipsInsts.add(new LIInst(Register.K0, param.toValueIR()));
+                    fromReg = Register.K0;
+                }
+
+                Register reg = getReg(i);
+                if (reg != null) {
+                    mipsInsts.add(new ADDIUInst(fromReg, reg, 0));
+                    mipsInsts.add(new SWInst(Register.SP, reg, offset - 4 * i));
+                } else {
+                    mipsInsts.add(new SWInst(Register.SP, fromReg, offset - 4 * i));
+                }
+            }
+
+            MIPSManager.getInstance().releaseRegs();
+            mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, offset));
+            // 准备工作完成，开始调用
+            mipsInsts.add(new JALInst("func_" + funcName));
+            // 调用完成，恢复现场
+            mipsInsts.add(new ADDIUInst(Register.SP, Register.SP, -offset));
+            mipsInsts.addAll(MIPSManager.getInstance().restoreAllReg());
+
+            if (retType != LLVMType.TypeID.VoidTyID) {
+                Register reg = MIPSManager.getInstance().getReg(this);
+                mipsInsts.add(new ADDIUInst(Register.V0, reg, 0));
+                mipsInsts.add(MIPSManager.getInstance().saveRegToMemory(this, reg));
+            }
+        }
+        MIPSManager.getInstance().releaseRegs();
+
+        return mipsInsts;
+    }
+}
+```
+
+### 编码完成之后的修改
+
+初步写完目标代码生成部分之后，我优化了一些编译器中的问题。如在 LLVM IR 生成阶段，我完全没有考虑使用 `zeroinitializer`，导致在目标代码生成阶段，如果要声明一个初值为 0 的全局数组，其 MIPS 代码将非常丑陋，当然 LLVM IR 代码也非常丑陋。因此，我修改了 LLVM IR 生成部分，使得全局变量声明时，如果初值为全 0，则使用 `zeroinitializer`；基于此我也在 MIPS 代码生成时进行了简化形式的声明。
